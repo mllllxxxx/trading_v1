@@ -1,0 +1,22 @@
+{
+  "hard": {
+    "rr_minimum": 1.2,
+    "max_position_pct": 0.20,
+    "max_leverage": 3.0,
+    "stop_loss_required": true,
+    "take_profit_required": true
+  },
+  "soft": {
+    "avoid_overbought_long": "Khong long khi 1d RSI > 75 (overbought)",
+    "avoid_oversold_short": "Khong short khi 1d RSI < 25 (oversold)",
+    "high_vol_caution": "ATR ratio > 1.5 thi giam position size 50%",
+    "major_news_avoid": "Tranh mo position 30 phut truoc/sau FOMC, CPI, NFP",
+    "btc_dominance_rule": "BTC dominance > 60% thi uu tien BTC trade hon altcoin",
+    "trend_persistence": "Trong trending regime, doi pullback de entry tot hon",
+    "correlation_check": "Khong long ca BTC va ETH cung luc (correlation cao, 2x risk)",
+    "alt_season_indicator": "BTC dominance giam va ETH/BTC tang thi altcoin co the outperform",
+    "eth_btc_lead_lag": "ETH thuong follow BTC 5-15 phut. Neu BTC choppy, doi ETH settle",
+    "low_cap_caution": "SOL/BNB co volatility cao hon BTC 1.5-2x. Tang R:R toi thieu 1:1.5",
+    "position_correlation": "Toi da 2 positions cung chieu (long hoac short) de giam correlation risk"
+  }
+}

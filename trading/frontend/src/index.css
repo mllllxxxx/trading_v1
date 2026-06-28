@@ -1,0 +1,332 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode surfaces */
+    --background: 220 20% 98%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+
+    /* Brand accent */
+    --primary: 27 90% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 14% 46%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 14% 87%;
+    --radius: 0.5rem;
+
+    /* Semantic colors */
+    --success: 142 71% 45%;
+    --danger: 0 84% 60%;
+    --warning: 38 92% 50%;
+    --info: 217 91% 60%;
+
+    /* Chart tokens */
+    --chart-grid: 220 14% 90%;
+    --chart-text: 220 14% 46%;
+    --chart-axis: 220 14% 80%;
+    --chart-compare-a: #3b82f6;
+    --chart-compare-b: #f59e0b;
+  }
+
+  .dark {
+    /* Dark mode: 4-level surface system */
+    --background: 220 20% 5%;       /* bg-base */
+    --foreground: 220 10% 92%;
+    --card: 220 20% 8%;             /* surface-1 */
+    --card-foreground: 220 10% 92%;
+
+    --primary: 27 90% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    --muted: 220 20% 13%;           /* surface-2 */
+    --muted-foreground: 220 10% 55%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 18%;          /* surface-3 */
+
+    /* Semantic colors */
+    --success: 142 71% 45%;
+    --danger: 0 62% 50%;
+    --warning: 38 92% 50%;
+    --info: 217 91% 60%;
+
+    /* Chart tokens */
+    --chart-grid: 220 20% 12%;
+    --chart-text: 220 10% 42%;
+    --chart-axis: 220 20% 22%;
+    --chart-compare-a: #60a5fa;
+    --chart-compare-b: #fbbf24;
+  }
+
+  * { @apply border-border; }
+  html, body { overflow-x: hidden; }
+  body { @apply bg-background text-foreground; }
+
+  /* Prose table enhancements */
+  .prose table { border-collapse: collapse; width: 100%; }
+  .prose th, .prose td { border: 1px solid hsl(var(--border)); }
+  .prose tbody tr:nth-child(even) { background: hsl(var(--muted) / 0.3); }
+
+  /* Smooth scrollbar for webkit */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+}
+
+/* ============================================================ */
+/*  PRO TRADING TERMINAL — design tokens                         */
+/*  Bloomberg / TradingView / 3Commas density                   */
+/* ============================================================ */
+
+@layer base {
+  /* Trading Command Center palette — overridden at .ttcc-root. */
+  .ttcc-root {
+    --tt-bg: #0D1117;
+    --tt-surface: #161B22;
+    --tt-surface-2: #21262D;
+    --tt-border: #30363D;
+    --tt-text: #E6EDF3;
+    --tt-text-secondary: #8B949E;
+    --tt-text-muted: #484F58;
+    --tt-green: #3FB950;
+    --tt-red: #F85149;
+    --tt-yellow: #D29922;
+    --tt-blue: #58A6FF;
+    --tt-accent: #7C5CFC;
+
+    /* Surface helpers used across panels. */
+    --tt-grid-line: rgba(255, 255, 255, 0.04);
+    --tt-divider: rgba(255, 255, 255, 0.08);
+    color-scheme: dark;
+  }
+
+  /* Force dark canvas for the trading terminal surface. */
+  .dark .tt-root,
+  .tt-root {
+    color-scheme: dark;
+  }
+
+  /* Terminal tabular numerals everywhere we want them. */
+  .tt-root .tabular,
+  .ttcc-root .tabular { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+  /* Native scrollbar tweaks for the dense terminal. */
+  .tt-root ::-webkit-scrollbar,
+  .ttcc-root ::-webkit-scrollbar { width: 6px; height: 6px; }
+  .tt-root ::-webkit-scrollbar-track,
+  .ttcc-root ::-webkit-scrollbar-track { background: transparent; }
+  .tt-root ::-webkit-scrollbar-thumb,
+  .ttcc-root ::-webkit-scrollbar-thumb {
+    background: var(--tt-border);
+    border-radius: 3px;
+  }
+  .tt-root ::-webkit-scrollbar-thumb:hover,
+  .ttcc-root ::-webkit-scrollbar-thumb:hover {
+    background: var(--tt-text-secondary);
+  }
+}
+
+/* ============================================================ */
+/*  Animations                                                   */
+/* ============================================================ */
+
+/* Streaming pulse-slide animation (running bar). */
+@keyframes pulse-slide {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(200%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* PnL flash — green when value rises, red when it falls. */
+@keyframes pnl-flash-up {
+  0%   { background-color: rgba(34, 197, 94, 0.22); color: inherit; }
+  100% { background-color: rgba(34, 197, 94, 0); }
+}
+@keyframes pnl-flash-down {
+  0%   { background-color: rgba(239, 68, 68, 0.22); color: inherit; }
+  100% { background-color: rgba(239, 68, 68, 0); }
+}
+
+/* Auto-refresh indicator dot — slow heartbeat. */
+@keyframes live-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  50%      { opacity: 0.55; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+
+/* Skeleton shimmer. */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Live tick mark — a quick green flash for new rows. */
+@keyframes live-row-flash {
+  0%   { background-color: rgba(34, 197, 94, 0.10); }
+  100% { background-color: transparent; }
+}
+
+/* Ticker scroll — used by the marquee header. */
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Toast slide-in. */
+@keyframes toast-slide-in {
+  0%   { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
+/* Position-card SL/TP progress — smooth interpolation. */
+@keyframes progress-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+/* Kill switch armed-pulse. */
+@keyframes danger-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
+  50%      { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+}
+
+/* ============================================================ */
+/*  Trading Command Center — tab + brain log animations          */
+/* ============================================================ */
+
+@keyframes ttcc-tab-fade {
+  0%   { opacity: 0; transform: translateY(2px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ttcc-row-in {
+  0%   { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0);   opacity: 1; }
+}
+
+/* ============================================================ */
+/*  Component utilities                                          */
+/* ============================================================ */
+
+@layer utilities {
+  /* PnL flash classes — toggled by JS for ~500ms after a value changes. */
+  .tt-flash-up   { animation: pnl-flash-up   500ms ease-out; }
+  .tt-flash-down { animation: pnl-flash-down 500ms ease-out; }
+
+  /* Auto-refresh dot. */
+  .tt-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: hsl(var(--success));
+    animation: live-dot 1.6s ease-in-out infinite;
+  }
+  .tt-live-dot--idle {
+    background: hsl(var(--muted-foreground));
+    animation: none;
+  }
+
+  /* Skeleton block. */
+  .tt-skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--border)) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+    border-radius: 3px;
+  }
+
+  /* Marquee ticker track — JS duplicates content so the animation can loop. */
+  .tt-ticker-track {
+    display: inline-flex;
+    white-space: nowrap;
+    animation: ticker-scroll 60s linear infinite;
+    will-change: transform;
+  }
+  .tt-ticker-track:hover { animation-play-state: paused; }
+
+  /* New row flash — applied for ~1s when a new closed trade shows up. */
+  .tt-row-new { animation: live-row-flash 1.2s ease-out; }
+
+  /* Toast slide-in (used if we replace sonner with custom). */
+  .tt-toast-in { animation: toast-slide-in 200ms ease-out; }
+
+  /* Danger pulse for armed kill switch. */
+  .tt-kill-armed { animation: danger-pulse 1.8s ease-in-out infinite; }
+
+  /* Card hover lift (border highlight, no scale). */
+  .tt-card-hover {
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+  .tt-card-hover:hover { border-color: hsl(var(--muted-foreground) / 0.45); }
+
+  /* Small caps label used in section headers. */
+  .tt-label {
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+    font-weight: 600;
+  }
+
+  /* Subtle 1px surface divider. */
+  .tt-divider {
+    border-top: 1px solid hsl(var(--border) / 0.6);
+  }
+
+  /* Trading Command Center — tab content fade transition. */
+  .field-input {
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid var(--tt-border);
+    background: var(--tt-bg);
+    padding: 0.5rem 0.625rem;
+    font-size: 12px;
+    line-height: 1.25rem;
+    color: var(--tt-text);
+    outline: none;
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+  .field-input::placeholder { color: var(--tt-text-muted); }
+  .field-input:focus {
+    border-color: var(--tt-accent);
+    background: var(--tt-surface);
+  }
+
+  .ttcc-tab-fade {
+    animation: ttcc-tab-fade 200ms ease-out;
+  }
+
+  /* Brain log new row — slide in from below. */
+  .ttcc-row-in {
+    animation: ttcc-row-in 220ms ease-out;
+  }
+}
+
+/* ============================================================ */
+/*  Stream marquee fallback (older browsers)                      */
+/* ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .tt-ticker-track,
+  .tt-flash-up,
+  .tt-flash-down,
+  .tt-live-dot,
+  .tt-row-new,
+  .tt-skeleton,
+  .tt-kill-armed,
+  .ttcc-tab-fade,
+  .ttcc-row-in {
+    animation: none !important;
+  }
+}

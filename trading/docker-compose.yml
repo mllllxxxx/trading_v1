@@ -1,0 +1,92 @@
+# Unified single-container compose
+#
+# One container, all services:
+#   - Vibe-Trading UI    (port 8000)  - chat with LLM
+#   - Auto-trader        (no port)    - scheduler + monitor threads
+#   - Auto-trader dashboard (port 8001) - live PnL, positions, LLM decisions
+#
+# Usage:
+#   docker compose build           # build image
+#   docker compose up -d           # start in background
+#   docker compose logs -f         # view logs (all services)
+#   docker compose down            # stop everything
+#   docker compose exec vt bash    # shell into container
+#
+# Access:
+#   Vibe-Trading UI:  http://localhost:8000
+#   Auto-trader UI:   http://localhost:8001
+#
+# Custom scripts run from inside the container:
+#   docker compose exec vt python /app/brackets/okx_bracket.py \
+#       --symbol BTC-USDT --side buy --entry 65000 --dry-run
+
+name: vibe-trading
+
+services:
+  vt:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vibe-trading:local
+    container_name: vibe-trading
+    restart: unless-stopped
+    ports:
+      # Single port serves:
+      #   /              - Vibe-Trading UI (chat, alpha zoo)
+      #   /trader        - Auto-trader dashboard (PnL, decisions, indicators)
+      #   /api/trader/*  - Auto-trader REST API
+      - "8000:8000"
+    env_file:
+      - ${USERPROFILE}/.vibe-trading/.env
+    environment:
+      - OKX_TESTNET=true
+      - OKX_SANDBOX=true
+      - VIBE_TRADING_DATA_CACHE=true
+      - VIBE_TRADING_HOME=/data
+      # Local timezone (Vietnam UTC+7)
+      - TZ=Asia/Ho_Chi_Minh
+      # Trust Docker host gateway IPs as loopback (host browser reaches container
+      # via the bridge gateway IP, not 127.0.0.1). Required so that
+      # http://localhost:8000 doesn't get blocked by Vibe-Trading's API auth.
+      # Safe because port 8000 is bound to host loopback in this compose file.
+      - VIBE_TRADING_TRUST_DOCKER_LOOPBACK=true
+      # Auto-trader settings (multi-symbol) — Tuần 1 (2026-06-23):
+      # - DOT swapped for TRX (user confirmed top-10 list, 2026-06-22)
+      # - TRADE_MODE env added for spot/futures fork (default spot for backward compat)
+      - AUTO_SYMBOLS=BTC-USDT,ETH-USDT,SOL-USDT,BNB-USDT,XRP-USDT,DOGE-USDT,ADA-USDT,AVAX-USDT,LINK-USDT,TRX-USDT
+      - TRADE_MODE=spot
+      - AUTO_INTERVAL_S=600                # scheduler: 10 min cycle for 10 symbols (was 5min for 4)
+      - AUTO_MONITOR_INTERVAL_S=30         # monitor: poll positions every 30s
+      - AUTO_MIN_CONFLUENCE=3              # tightened: only LLM-call when ≥3 TFs aligned (T1B)
+      - AUTO_MAX_POSITIONS=3
+      - AUTO_DAILY_LOSS_CAP_PCT=0.03       # halt if -3% daily
+      - AUTO_CAPITAL=73611.68
+      # C2: Cool-down after a losing trade (gap fill — prevent revenge trading)
+      - AUTO_COOLDOWN_MINUTES=30           # 0 = disabled
+      # T3F: Daily LLM cost cap (v4-flash). Auto-throttles to rules-only fallback.
+      - AUTO_DAILY_LLM_COST_CAP_USD=0.10   # $0.10/day = $3/month max
+      - AUTO_LLM_INPUT_PRICE_PER_M=0.14    # v4-flash: $0.14/M input tokens
+      - AUTO_LLM_OUTPUT_PRICE_PER_M=0.28   # v4-flash: $0.28/M output tokens (incl. reasoning)
+      # LLM brain
+      - AUTO_LLM_MODEL=deepseek-v4-flash
+      - AUTO_LLM_TIMEOUT_S=30
+      - AUTO_LLM_MAX_TOKENS=4000            # v4-flash is a reasoning model: budget 2-3K reasoning + ~500 JSON
+      - AUTO_LLM_REASONING_EFFORT=low
+      - AUTO_LLM_TEMPERATURE=0.1
+      - AUTO_OVERRIDE_ALLOWED=true
+    volumes:
+      # Persistent data: OKX config, sessions, decision log, journal, OKX cache
+      - vt-data:/data
+    # auto.auto runs Vibe-Trading server + scheduler + monitor + dashboard in threads
+    command: ["python", "-m", "auto.auto"]
+    healthcheck:
+      # Check Vibe-Trading health (most important service)
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+volumes:
+  vt-data:
+    name: vibe-trading-data
