@@ -34,6 +34,7 @@ import validator as _validator  # type: ignore
 import brain as _brain  # type: ignore
 import prompts as _prompts  # type: ignore
 import alerts as _alerts  # type: ignore
+from confluence_signal import classify_confluence_direction  # type: ignore
 
 # Futures layer (lazy: imported only when TRADE_MODE=futures to avoid ccxt dep
 # on bare spot deployments)
@@ -129,7 +130,7 @@ _REGIME_STATE: dict[str, str] = {}
 SYMBOLS_STR = os.getenv("AUTO_SYMBOLS", os.getenv("AUTO_SYMBOL", "BTC-USDT"))
 SYMBOLS = [s.strip() for s in SYMBOLS_STR.split(",") if s.strip()]
 SCHED_INTERVAL = int(os.getenv("AUTO_INTERVAL_S", "300"))  # 5 min default
-MIN_CONFLUENCE = int(os.getenv("AUTO_MIN_CONFLUENCE", "2"))  # need +2 or better
+MIN_CONFLUENCE = int(os.getenv("AUTO_MIN_CONFLUENCE", "2"))  # need abs(score) >= threshold
 ALLOWED_REGIMES = {"TRENDING_UP", "TRENDING_DOWN"}
 MAX_OPEN_POSITIONS = int(os.getenv("AUTO_MAX_POSITIONS", "3"))
 DAILY_LOSS_CAP_PCT = float(os.getenv("AUTO_DAILY_LOSS_CAP_PCT", "0.03"))
@@ -253,15 +254,52 @@ _API_KEY_MISSING = "DEEPSEEK_API_KEY not set"
 def _classify_llm_error(err: str | None) -> str:
     """Return one of: 'ok', 'no_key', 'api_error', 'unexpected'.
 
-    Only 'no_key' allows the rules-only fallback (backward-compat with
-    setups that never wired DeepSeek). Any real API error must abort the
-    cycle so we never trade without LLM oversight.
+    The explicit fallback policy decides whether 'no_key' can use legacy
+    rules-only execution. Any real API error still aborts the cycle.
     """
     if not err:
         return "ok"
     if _API_KEY_MISSING in err:
         return "no_key"
     return "api_error"
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    """Read a bool env var with conservative parsing."""
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _is_live_like_mode() -> bool:
+    """Return True when rules-only fallback must be disabled."""
+    mode = (
+        os.getenv("AUTONOMY_MODE")
+        or os.getenv("TRADING_AUTONOMY_MODE")
+        or os.getenv("VIBE_TRADING_MODE")
+        or "paper"
+    ).strip().lower()
+    if mode in {"live", "live_like", "live-like", "production"}:
+        return True
+
+    okx_testnet = os.getenv("OKX_TESTNET", "").strip().lower()
+    okx_sandbox = os.getenv("OKX_SANDBOX", "").strip().lower()
+    disabled = {"0", "false", "no", "off"}
+    return okx_testnet in disabled or okx_sandbox in disabled
+
+
+def _llm_fallback_policy() -> dict[str, bool]:
+    """Return explicit LLM fallback policy for this cycle."""
+    live_like = _is_live_like_mode()
+    enable_rules_only = _env_bool("ENABLE_RULES_ONLY_FALLBACK", False)
+    if live_like:
+        enable_rules_only = False
+    return {
+        "require_llm": _env_bool("REQUIRE_LLM_DECISION", True),
+        "enable_rules_only": enable_rules_only,
+        "live_like": live_like,
+    }
 
 
 def _place_bracket_via_script(symbol: str, side: str, entry: float,
@@ -440,15 +478,27 @@ def run_once_symbol(current_symbol: str) -> None:
                                           "score": score_raw, "error": str(exc),
                                           "symbol": current_symbol})
         return
-    if score < cfg.min_confluence:
+    is_candidate, candidate_direction, candidate_side = classify_confluence_direction(
+        score,
+        cfg.min_confluence,
+    )
+    if not is_candidate:
         journal.append_decision("skip", {"reason": "weak_confluence", "score": score,
-                                          "min_required": cfg.min_confluence,
+                                          "min_required_abs": cfg.min_confluence,
                                           "symbol": current_symbol})
         return
-    if score <= -cfg.min_confluence:
-        journal.append_decision("skip", {"reason": "bearish_confluence", "score": score,
-                                          "symbol": current_symbol})
-        return
+    assert candidate_direction is not None
+    assert candidate_side is not None
+    conf["candidate_direction"] = candidate_direction
+    conf["candidate_side"] = candidate_side
+    conf["min_required_abs"] = cfg.min_confluence
+    journal.append_decision("candidate", {
+        "symbol": current_symbol,
+        "score": score,
+        "min_required_abs": cfg.min_confluence,
+        "candidate_direction": candidate_direction,
+        "candidate_side": candidate_side,
+    })
 
     # 4. Regime (C2: guard missing keys)
     try:
@@ -483,6 +533,19 @@ def run_once_symbol(current_symbol: str) -> None:
         journal.append_decision("skip", {"reason": "bad_regime", "regime": regime_name,
                                           "allowed": list(ALLOWED_REGIMES)})
         return
+    if (
+        (candidate_direction == "long" and regime_name == "TRENDING_DOWN")
+        or (candidate_direction == "short" and regime_name == "TRENDING_UP")
+    ):
+        journal.append_decision("skip", {
+            "reason": "regime_direction_conflict",
+            "symbol": current_symbol,
+            "score": score,
+            "candidate_direction": candidate_direction,
+            "candidate_side": candidate_side,
+            "regime": regime_name,
+        })
+        return
 
     # T1A: Regime-conflict short-circuit. When 1d and 1w trends point in opposite
     # directions, the LLM brain correctly detects this and returns no_trade/hold
@@ -503,7 +566,7 @@ def run_once_symbol(current_symbol: str) -> None:
         return
 
     # 5. Direction + price (C2: guard missing close; C4: guard zero price)
-    is_long = score > 0
+    is_long = candidate_direction == "long"
     close_raw = reg.get("close")
     if close_raw is None:
         journal.append_decision("skip", {"reason": "regime_missing_close",
@@ -565,24 +628,48 @@ def run_once_symbol(current_symbol: str) -> None:
         "rsi_1d": rsi_1d,
         "atr_14": reg.get("indicators", {}).get("atr_14"),
         "current_price": current_price,
+        "confluence_score": score,
+        "candidate_direction": candidate_direction,
+        "candidate_side": candidate_side,
         "news_blackout": reg.get("technical_indicators", {}).get("news_blackout", {}),
     }
 
     # 5a. Phase 2: call LLM brain to get a refined decision
     llm_decision = None
     llm_error = None
+    fallback_policy = _llm_fallback_policy()
     # T3F: Daily cost cap gate. If today's LLM spend >= cap, skip LLM call
-    # and fall back to rules-only path below. The cost is still tracked for
+    # and use the explicit fallback policy below. The cost is still tracked for
     # the day; auto-resets at local midnight via _load_cost_state().
     cost_status = journal.daily_cost_status()
     cap_reached = bool(cost_status.get("cap_reached", False))
     if cap_reached:
-        journal.append_decision("skip", {
-            "reason": "daily_llm_cost_cap",
+        cost_payload = {
             "symbol": current_symbol,
             "cost_usd": round(float(cost_status.get("cost_usd", 0.0)), 6),
             "cap_usd": float(cost_status.get("cap_usd", 0.0)),
             "calls_today": int(cost_status.get("calls", 0)),
+            "require_llm": fallback_policy["require_llm"],
+            "enable_rules_only": fallback_policy["enable_rules_only"],
+            "live_like": fallback_policy["live_like"],
+        }
+        if fallback_policy["require_llm"]:
+            journal.append_decision("skip", {
+                **cost_payload,
+                "reason": "llm_required_cost_cap",
+                "msg": "Daily LLM cost cap reached; LLM decision is required.",
+            })
+            return
+        if not fallback_policy["enable_rules_only"]:
+            journal.append_decision("skip", {
+                **cost_payload,
+                "reason": "daily_llm_cost_cap_rules_only_disabled",
+                "msg": "Daily LLM cost cap reached; rules-only fallback disabled.",
+            })
+            return
+        journal.append_decision("skip", {
+            **cost_payload,
+            "reason": "daily_llm_cost_cap",
             "msg": "Daily LLM cost cap reached; using rules-only fallback.",
         })
         # Do NOT call LLM; fall through to the Phase 1 rules-only path.
@@ -641,6 +728,24 @@ def run_once_symbol(current_symbol: str) -> None:
             journal.append_decision("skip", {"reason": "llm_unavailable",
                                               "error": llm_error,
                                               "policy": "abort_no_llm_oversight"})
+            return
+        if fallback_policy["require_llm"]:
+            journal.append_decision("skip", {
+                "reason": "llm_required_unavailable",
+                "error": llm_error,
+                "llm_error_class": llm_class,
+                "policy": "require_llm_decision",
+                "symbol": current_symbol,
+            })
+            return
+        if not fallback_policy["enable_rules_only"]:
+            journal.append_decision("skip", {
+                "reason": "llm_unavailable_rules_only_disabled",
+                "error": llm_error,
+                "llm_error_class": llm_class,
+                "policy": "rules_only_fallback_disabled",
+                "symbol": current_symbol,
+            })
             return
         # else 'no_key' or 'ok' (no_key): continue with rules-only fallback
     else:

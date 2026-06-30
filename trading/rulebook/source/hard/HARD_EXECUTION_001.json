@@ -1,0 +1,15 @@
+{
+  "id": "HARD_EXECUTION_001",
+  "title": "No execution before verifier pass",
+  "type": "hard_rule",
+  "status": "active",
+  "markets": ["crypto", "forex"],
+  "description": "Broker execution is allowed only after the verifier and risk/order compiler approve a decision.",
+  "enforcement": {
+    "severity": "reject",
+    "applies_to": ["OPEN_LONG", "OPEN_SHORT", "CLOSE_POSITION", "REDUCE_POSITION"],
+    "required_inputs": ["verifier_result.passed", "compiled_order"]
+  },
+  "llm_guidance": "You may propose intent only. You cannot request direct broker execution."
+}
+

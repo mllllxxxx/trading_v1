@@ -12,12 +12,16 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import threading
 import time
-from datetime import datetime
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from schemas.models import JournalEvent
 
 DATA_DIR = Path(os.getenv("VIBE_TRADING_HOME", "/data"))
 JOURNAL_DIR = DATA_DIR / "journal"
@@ -25,7 +29,20 @@ DECISIONS_LOG = JOURNAL_DIR / "decisions.jsonl"
 POSITIONS_FILE = JOURNAL_DIR / "positions.json"
 CLOSED_LOG = JOURNAL_DIR / "closed_trades.jsonl"
 STATS_FILE = JOURNAL_DIR / "stats.json"
+SNAPSHOTS_DIR = JOURNAL_DIR / "snapshots"
 KILL_SWITCH = DATA_DIR / "STOP"
+
+LIFECYCLE_EVENT_TYPES = {
+    "market_dossier",
+    "rule_retrieval",
+    "llm_draft_ticket",
+    "critic_review",
+    "final_ticket",
+    "rule_verification",
+    "risk_compilation",
+    "execution_result",
+    "fail_closed_skip",
+}
 
 
 class JournalCorruptError(RuntimeError):
@@ -51,6 +68,7 @@ if hasattr(time, "tzset"):
 
 def ensure_dirs() -> None:
     JOURNAL_DIR.mkdir(parents=True, exist_ok=True)
+    SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
     if not POSITIONS_FILE.exists():
         POSITIONS_FILE.write_text("[]", encoding="utf-8")
     if not STATS_FILE.exists():
@@ -74,6 +92,17 @@ def _now() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
+def _utc_now() -> str:
+    """Return UTC ISO 8601 timestamp for schema-level journal events."""
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def _safe_fragment(value: str) -> str:
+    """Return a filesystem-safe snapshot filename fragment."""
+    cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "_", value.strip())
+    return cleaned.strip("._") or "unknown"
+
+
 def append_decision(decision_type: str, payload: dict[str, Any]) -> None:
     """Append a decision event. decision_type: 'check', 'open', 'cancel', 'fill', 'skip'."""
     ensure_dirs()
@@ -81,6 +110,91 @@ def append_decision(decision_type: str, payload: dict[str, Any]) -> None:
     with _FILE_LOCK:
         with DECISIONS_LOG.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def append_lifecycle_event(
+    event_type: str,
+    *,
+    decision_id: str,
+    payload: dict[str, Any],
+    snapshots: dict[str, Any] | None = None,
+) -> JournalEvent:
+    """Append a replayable lifecycle event and optional snapshot artifacts."""
+    if event_type not in LIFECYCLE_EVENT_TYPES:
+        raise ValueError(f"unknown lifecycle event_type: {event_type}")
+    if not decision_id.strip():
+        raise ValueError("decision_id is required")
+
+    snapshot_refs = write_lifecycle_snapshots(decision_id, snapshots or {})
+    event_payload = dict(payload)
+    if snapshot_refs:
+        event_payload["snapshot_refs"] = snapshot_refs
+
+    event = JournalEvent(
+        event_id=str(uuid.uuid4()),
+        timestamp_utc=_utc_now(),
+        event_type=event_type,
+        decision_id=decision_id,
+        payload=event_payload,
+    )
+    append_decision(event_type, {
+        "event_id": event.event_id,
+        "timestamp_utc": event.timestamp_utc,
+        "event_type": event.event_type,
+        "decision_id": event.decision_id,
+        "payload": event.payload,
+    })
+    return event
+
+
+def write_lifecycle_snapshots(
+    decision_id: str,
+    snapshots: dict[str, Any],
+    *,
+    date_key: str | None = None,
+) -> dict[str, str]:
+    """Write replay snapshots and return journal-relative references."""
+    ensure_dirs()
+    if not snapshots:
+        return {}
+    safe_id = _safe_fragment(decision_id)
+    day = date_key or _today_key()
+    snapshot_dir = SNAPSHOTS_DIR / day
+    snapshot_dir.mkdir(parents=True, exist_ok=True)
+
+    refs: dict[str, str] = {}
+    with _FILE_LOCK:
+        for artifact_type, artifact_payload in snapshots.items():
+            safe_artifact = _safe_fragment(str(artifact_type))
+            path = snapshot_dir / f"{safe_id}.{safe_artifact}.json"
+            path.write_text(
+                json.dumps(artifact_payload, ensure_ascii=False, indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
+            refs[safe_artifact] = path.relative_to(JOURNAL_DIR).as_posix()
+    return refs
+
+
+def read_lifecycle_snapshots(
+    decision_id: str,
+    *,
+    date_key: str | None = None,
+) -> dict[str, Any]:
+    """Load all snapshots for a decision ID."""
+    ensure_dirs()
+    safe_id = _safe_fragment(decision_id)
+    roots = [SNAPSHOTS_DIR / date_key] if date_key else sorted(SNAPSHOTS_DIR.glob("*"))
+    snapshots: dict[str, Any] = {}
+    for root in roots:
+        if not root.exists() or not root.is_dir():
+            continue
+        for path in sorted(root.glob(f"{safe_id}.*.json")):
+            artifact_type = path.name[len(safe_id) + 1:-5]
+            try:
+                snapshots[artifact_type] = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise JournalCorruptError(f"snapshot corrupt: {path}") from exc
+    return snapshots
 
 
 def read_positions() -> list[dict[str, Any]]:

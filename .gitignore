@@ -15,3 +15,7 @@ scripts/bin/harness-cli.exe
 .hermes/features/in_progress.md
 .hermes/features/*/status
 .hermes/features/*/branch
+
+# Local test cache/temp directories.
+.test-tmp/
+.test-runs/

@@ -1,0 +1,17 @@
+{
+  "id": "CASE_BAD_FUNDING_OVERHEATED_001",
+  "title": "Bad trade with overheated funding",
+  "type": "case_memory",
+  "status": "active",
+  "markets": ["crypto"],
+  "description": "A crowded long setup ignored elevated funding and produced poor entry quality.",
+  "playbook_id": "PB_CRYPTO_TREND_CONTINUATION_001",
+  "rule_citations": [
+    "HARD_RISK_001",
+    "HARD_RISK_002",
+    "SOFT_CRYPTO_002"
+  ],
+  "lesson": "Crowded funding should reduce risk, require a better entry, or lead to HOLD.",
+  "llm_guidance": "Use this as a warning when funding state is elevated or extreme."
+}
+

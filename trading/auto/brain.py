@@ -23,7 +23,14 @@ import logging
 import os
 import re
 import time
+from collections.abc import Callable
 from typing import Any
+
+from schemas.models import (
+    SchemaValidationError,
+    TradeDecisionTicket,
+    validate_trade_decision_ticket,
+)
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +39,8 @@ DEFAULT_MODEL = os.getenv("AUTO_LLM_MODEL", "deepseek-chat")
 DEFAULT_TIMEOUT_S = int(os.getenv("AUTO_LLM_TIMEOUT_S", "30"))
 DEFAULT_MAX_TOKENS = int(os.getenv("AUTO_LLM_MAX_TOKENS", "4000"))
 DEFAULT_TEMPERATURE = float(os.getenv("AUTO_LLM_TEMPERATURE", "0.2"))
+LLMMessage = dict[str, str]
+TicketClient = Callable[[list[LLMMessage]], str | dict[str, Any]]
 
 
 class BrainError(Exception):
@@ -93,6 +102,104 @@ def _validate_decision(decision: dict[str, Any]) -> None:
             raise BrainError(f"Confidence {conf} not in [0,1]")
     except (TypeError, ValueError):
         raise BrainError(f"Missing or non-numeric confidence: {decision.get('confidence')!r}")
+
+
+def parse_trade_decision_ticket(
+    raw: str | dict[str, Any],
+    *,
+    known_rule_ids: set[str] | None = None,
+    known_playbook_ids: set[str] | None = None,
+) -> TradeDecisionTicket:
+    """Parse and validate an LLM response as a TradeDecisionTicket.
+
+    Raises BrainError on invalid JSON, schema mismatch, unknown rules, or
+    unknown playbooks. Callers should treat BrainError as HOLD/no order.
+    """
+    if isinstance(raw, str):
+        payload = _parse_json_response(raw)
+    elif isinstance(raw, dict):
+        payload = dict(raw)
+    else:
+        raise BrainError("TradeDecisionTicket response must be JSON text or object")
+
+    try:
+        return validate_trade_decision_ticket(
+            payload,
+            known_rule_ids=known_rule_ids,
+            known_playbook_ids=known_playbook_ids,
+        )
+    except SchemaValidationError as exc:
+        raise BrainError(f"TradeDecisionTicket validation failed: {exc}") from exc
+
+
+def call_trade_decision_ticket(
+    messages: list[LLMMessage],
+    *,
+    known_rule_ids: set[str] | None = None,
+    known_playbook_ids: set[str] | None = None,
+    client: TicketClient | None = None,
+    model: str | None = None,
+    timeout_s: int | None = None,
+    max_tokens: int | None = None,
+    temperature: float | None = None,
+) -> TradeDecisionTicket:
+    """Call an LLM client and validate its TradeDecisionTicket response."""
+    if not messages:
+        raise BrainError("TradeDecisionTicket call requires prompt messages")
+    raw = (
+        client(messages)
+        if client is not None
+        else _call_messages_for_json(
+            messages,
+            model=model,
+            timeout_s=timeout_s,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+    )
+    return parse_trade_decision_ticket(
+        raw,
+        known_rule_ids=known_rule_ids,
+        known_playbook_ids=known_playbook_ids,
+    )
+
+
+def _call_messages_for_json(
+    messages: list[LLMMessage],
+    *,
+    model: str | None,
+    timeout_s: int | None,
+    max_tokens: int | None,
+    temperature: float | None,
+) -> str:
+    """Call the configured chat provider and return raw JSON text content."""
+    client = _get_client()
+    used_model = model or os.getenv("AUTO_LLM_MODEL", DEFAULT_MODEL)
+    used_timeout = timeout_s or DEFAULT_TIMEOUT_S
+    used_max_tokens = max_tokens or DEFAULT_MAX_TOKENS
+    used_temperature = temperature if temperature is not None else DEFAULT_TEMPERATURE
+    api_kwargs: dict[str, Any] = {
+        "model": used_model,
+        "messages": messages,
+        "max_tokens": used_max_tokens,
+        "temperature": used_temperature,
+        "response_format": {"type": "json_object"},
+        "timeout": used_timeout,
+    }
+    reasoning_effort = os.getenv("AUTO_LLM_REASONING_EFFORT", "low").strip().lower()
+    if reasoning_effort in ("low", "medium", "high"):
+        api_kwargs["reasoning_effort"] = reasoning_effort
+
+    try:
+        resp = _call_with_retry(client, api_kwargs)
+        content = resp.choices[0].message.content or ""
+    except BrainError:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise BrainError(f"LLM TradeDecisionTicket call failed: {exc}") from exc
+    if not content.strip():
+        raise BrainError("Empty TradeDecisionTicket response")
+    return content
 
 
 def _extract_tokens(usage_obj: Any) -> tuple[int, int]:

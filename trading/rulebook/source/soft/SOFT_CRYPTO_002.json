@@ -1,0 +1,15 @@
+{
+  "id": "SOFT_CRYPTO_002",
+  "title": "Reduce risk when funding is elevated",
+  "type": "soft_policy",
+  "status": "active",
+  "markets": ["crypto"],
+  "description": "Crypto breakouts are lower quality when funding is unusually elevated or crowded.",
+  "legacy_skills": {
+    "soft": {
+      "funding_overheated_caution": "Funding elevated thi uu tien HOLD, reduced risk, hoac doi pullback"
+    }
+  },
+  "llm_guidance": "Treat elevated funding as a warning, not automatic permission to trade."
+}
+

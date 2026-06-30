@@ -1,0 +1,18 @@
+{
+  "id": "SOFT_CORRELATION_001",
+  "title": "Avoid stacking correlated exposure",
+  "type": "soft_policy",
+  "status": "active",
+  "markets": ["crypto", "forex"],
+  "description": "Avoid accumulating several highly correlated positions in the same direction.",
+  "legacy_skills": {
+    "soft": {
+      "btc_dominance_rule": "BTC dominance > 60% thi uu tien BTC trade hon altcoin",
+      "correlation_check": "Khong long ca BTC va ETH cung luc (correlation cao, 2x risk)",
+      "alt_season_indicator": "BTC dominance giam va ETH/BTC tang thi altcoin co the outperform",
+      "position_correlation": "Toi da 2 positions cung chieu (long hoac short) de giam correlation risk"
+    }
+  },
+  "llm_guidance": "If correlation exposure is already high, reduce risk or return HOLD."
+}
+

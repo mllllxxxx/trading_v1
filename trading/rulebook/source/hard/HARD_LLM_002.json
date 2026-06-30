@@ -1,0 +1,15 @@
+{
+  "id": "HARD_LLM_002",
+  "title": "Invalid LLM JSON or schema failure means hold",
+  "type": "hard_rule",
+  "status": "active",
+  "markets": ["crypto", "forex"],
+  "description": "Invalid LLM output must not reach execution after bounded repair attempts fail.",
+  "enforcement": {
+    "severity": "reject",
+    "applies_to": ["OPEN_LONG", "OPEN_SHORT", "CLOSE_POSITION", "REDUCE_POSITION"],
+    "required_inputs": ["trade_decision_ticket.schema_valid"]
+  },
+  "llm_guidance": "Return only valid JSON matching the required schema."
+}
+

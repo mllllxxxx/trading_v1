@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_generated_notice": "DO NOT EDIT - generated from trading/schemas/models.py",
+  "additionalProperties": false,
+  "properties": {
+    "candidate_direction": {
+      "enum": [
+        "long",
+        "short",
+        "none"
+      ],
+      "type": "string"
+    },
+    "confluence_score": {
+      "type": "number"
+    },
+    "current_price": {
+      "exclusiveMinimum": 0,
+      "type": "number"
+    },
+    "data_age_s": {
+      "minimum": 0,
+      "type": "number"
+    },
+    "data_quality": {
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "data_source": {
+      "type": "string"
+    },
+    "funding_state": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "market": {
+      "type": "string"
+    },
+    "open_positions": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "portfolio_exposure": {
+      "type": "object"
+    },
+    "regime": {
+      "type": "string"
+    },
+    "spread_state": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "symbol": {
+      "type": "string"
+    },
+    "timeframe": {
+      "type": "string"
+    },
+    "trend_state": {
+      "type": "string"
+    },
+    "volatility_state": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "symbol",
+    "market",
+    "timeframe",
+    "current_price",
+    "confluence_score",
+    "candidate_direction",
+    "regime",
+    "trend_state",
+    "volatility_state",
+    "data_source",
+    "data_age_s",
+    "data_quality"
+  ],
+  "title": "MarketDossier",
+  "type": "object"
+}

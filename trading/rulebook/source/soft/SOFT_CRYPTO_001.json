@@ -1,0 +1,19 @@
+{
+  "id": "SOFT_CRYPTO_001",
+  "title": "Avoid chasing extended crypto moves",
+  "type": "soft_policy",
+  "status": "active",
+  "markets": ["crypto"],
+  "description": "A valid trend does not justify chasing late entries after extended candles or extreme oscillator readings.",
+  "legacy_skills": {
+    "soft": {
+      "avoid_overbought_long": "Khong long khi 1d RSI > 75 (overbought)",
+      "avoid_oversold_short": "Khong short khi 1d RSI < 25 (oversold)",
+      "high_vol_caution": "ATR ratio > 1.5 thi giam position size 50%",
+      "low_cap_caution": "SOL/BNB co volatility cao hon BTC 1.5-2x. Tang R:R toi thieu 1:1.5",
+      "major_news_avoid": "Tranh mo position 30 phut truoc/sau FOMC, CPI, NFP"
+    }
+  },
+  "llm_guidance": "Prefer waiting for a retest or returning HOLD when price is stretched."
+}
+

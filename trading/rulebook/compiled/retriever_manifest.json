@@ -1,0 +1,581 @@
+{
+  "_generated_notice": "DO NOT EDIT - generated from trading/rulebook/source by compile_rulebook.py",
+  "rules": {
+    "CASE_BAD_CHASE_BREAKOUT_001": {
+      "category": "cases",
+      "description": "A breakout trade entered late after price had already extended far from the breakout base.",
+      "directions": [],
+      "id": "CASE_BAD_CHASE_BREAKOUT_001",
+      "llm_guidance": "Use this as a warning against late impulse entries.",
+      "markdown": "## CASE_BAD_CHASE_BREAKOUT_001 - Bad trade chasing extended breakout\n\n- Type: `case_memory`\n- Category: `cases`\n- Status: `active`\n- Markets: crypto\n\nA breakout trade entered late after price had already extended far from the breakout base.\n\nLLM guidance:\n\nUse this as a warning against late impulse entries.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": "PB_CRYPTO_BREAKOUT_PULLBACK_001",
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [
+        "HARD_RISK_001",
+        "HARD_RISK_002",
+        "SOFT_CRYPTO_001"
+      ],
+      "source_path": "trading/rulebook/source/cases/CASE_BAD_CHASE_BREAKOUT_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Bad trade chasing extended breakout",
+      "type": "case_memory"
+    },
+    "CASE_BAD_FUNDING_OVERHEATED_001": {
+      "category": "cases",
+      "description": "A crowded long setup ignored elevated funding and produced poor entry quality.",
+      "directions": [],
+      "id": "CASE_BAD_FUNDING_OVERHEATED_001",
+      "llm_guidance": "Use this as a warning when funding state is elevated or extreme.",
+      "markdown": "## CASE_BAD_FUNDING_OVERHEATED_001 - Bad trade with overheated funding\n\n- Type: `case_memory`\n- Category: `cases`\n- Status: `active`\n- Markets: crypto\n\nA crowded long setup ignored elevated funding and produced poor entry quality.\n\nLLM guidance:\n\nUse this as a warning when funding state is elevated or extreme.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": "PB_CRYPTO_TREND_CONTINUATION_001",
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [
+        "HARD_RISK_001",
+        "HARD_RISK_002",
+        "SOFT_CRYPTO_002"
+      ],
+      "source_path": "trading/rulebook/source/cases/CASE_BAD_FUNDING_OVERHEATED_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Bad trade with overheated funding",
+      "type": "case_memory"
+    },
+    "CASE_GOOD_TREND_LONG_001": {
+      "category": "cases",
+      "description": "A trend-following long where confluence, regime, and pullback entry aligned before risk checks passed.",
+      "directions": [],
+      "id": "CASE_GOOD_TREND_LONG_001",
+      "llm_guidance": "Use this as a positive example for trend-aligned pullback entries.",
+      "markdown": "## CASE_GOOD_TREND_LONG_001 - Good trend long after pullback\n\n- Type: `case_memory`\n- Category: `cases`\n- Status: `active`\n- Markets: crypto\n\nA trend-following long where confluence, regime, and pullback entry aligned before risk checks passed.\n\nLLM guidance:\n\nUse this as a positive example for trend-aligned pullback entries.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": "PB_CRYPTO_TREND_CONTINUATION_001",
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [
+        "HARD_RISK_001",
+        "HARD_RISK_002",
+        "HARD_RISK_003",
+        "HARD_DATA_001",
+        "HARD_LLM_001"
+      ],
+      "source_path": "trading/rulebook/source/cases/CASE_GOOD_TREND_LONG_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Good trend long after pullback",
+      "type": "case_memory"
+    },
+    "HARD_DATA_001": {
+      "category": "hard",
+      "description": "If required market data is missing, stale, or has invalid current price, the system must not open a new order.",
+      "directions": [],
+      "id": "HARD_DATA_001",
+      "llm_guidance": "When data quality is poor or unknown, return HOLD or REQUEST_MORE_DATA.",
+      "markdown": "## HARD_DATA_001 - Missing or stale market data means hold\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto, forex\n\nIf required market data is missing, stale, or has invalid current price, the system must not open a new order.\n\nLLM guidance:\n\nWhen data quality is poor or unknown, return HOLD or REQUEST_MORE_DATA.",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/hard/HARD_DATA_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Missing or stale market data means hold",
+      "type": "hard_rule"
+    },
+    "HARD_EXECUTION_001": {
+      "category": "hard",
+      "description": "Broker execution is allowed only after the verifier and risk/order compiler approve a decision.",
+      "directions": [],
+      "id": "HARD_EXECUTION_001",
+      "llm_guidance": "You may propose intent only. You cannot request direct broker execution.",
+      "markdown": "## HARD_EXECUTION_001 - No execution before verifier pass\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto, forex\n\nBroker execution is allowed only after the verifier and risk/order compiler approve a decision.\n\nLLM guidance:\n\nYou may propose intent only. You cannot request direct broker execution.",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/hard/HARD_EXECUTION_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "No execution before verifier pass",
+      "type": "hard_rule"
+    },
+    "HARD_LLM_001": {
+      "category": "hard",
+      "description": "Any non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID.",
+      "directions": [],
+      "id": "HARD_LLM_001",
+      "llm_guidance": "If no retrieved playbook fits, return HOLD. Never invent rule IDs.",
+      "markdown": "## HARD_LLM_001 - Non-HOLD LLM decisions must cite real rule IDs\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto, forex\n\nAny non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID.\n\nLLM guidance:\n\nIf no retrieved playbook fits, return HOLD. Never invent rule IDs.",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/hard/HARD_LLM_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Non-HOLD LLM decisions must cite real rule IDs",
+      "type": "hard_rule"
+    },
+    "HARD_LLM_002": {
+      "category": "hard",
+      "description": "Invalid LLM output must not reach execution after bounded repair attempts fail.",
+      "directions": [],
+      "id": "HARD_LLM_002",
+      "llm_guidance": "Return only valid JSON matching the required schema.",
+      "markdown": "## HARD_LLM_002 - Invalid LLM JSON or schema failure means hold\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto, forex\n\nInvalid LLM output must not reach execution after bounded repair attempts fail.\n\nLLM guidance:\n\nReturn only valid JSON matching the required schema.",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/hard/HARD_LLM_002.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Invalid LLM JSON or schema failure means hold",
+      "type": "hard_rule"
+    },
+    "HARD_MODE_001": {
+      "category": "hard",
+      "description": "In autonomous paper or live-like modes, LLM, data, rule retrieval, verifier, compiler, or broker uncertainty must result in HOLD or halted execution.",
+      "directions": [],
+      "id": "HARD_MODE_001",
+      "llm_guidance": "Uncertainty is not permission to trade. Return HOLD when required context is unavailable.",
+      "markdown": "## HARD_MODE_001 - Paper and live-like modes fail closed\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto, forex\n\nIn autonomous paper or live-like modes, LLM, data, rule retrieval, verifier, compiler, or broker uncertainty must result in HOLD or halted execution.\n\nLLM guidance:\n\nUncertainty is not permission to trade. Return HOLD when required context is unavailable.",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/hard/HARD_MODE_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Paper and live-like modes fail closed",
+      "type": "hard_rule"
+    },
+    "HARD_RISK_001": {
+      "category": "hard",
+      "description": "A single position must not exceed the configured max risk percentage or max notional percentage of capital. Legacy validator compatibility also keeps the generic max leverage value.",
+      "directions": [],
+      "id": "HARD_RISK_001",
+      "llm_guidance": "Do not propose trades that exceed the maximum notional cap. If the setup needs too much size, return HOLD or reduce risk.",
+      "markdown": "## HARD_RISK_001 - Maximum risk, position, and legacy leverage policy\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto\n\nA single position must not exceed the configured max risk percentage or max notional percentage of capital. Legacy validator compatibility also keeps the generic max leverage value.\n\nLLM guidance:\n\nDo not propose trades that exceed the maximum notional cap. If the setup needs too much size, return HOLD or reduce risk.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/hard/HARD_RISK_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Maximum risk, position, and legacy leverage policy",
+      "type": "hard_rule"
+    },
+    "HARD_RISK_002": {
+      "category": "hard",
+      "description": "Any new non-HOLD trade must include both stop-loss and take-profit planning.",
+      "directions": [],
+      "id": "HARD_RISK_002",
+      "llm_guidance": "If a valid stop-loss or take-profit cannot be defined, return HOLD.",
+      "markdown": "## HARD_RISK_002 - Stop loss and take profit required\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto\n\nAny new non-HOLD trade must include both stop-loss and take-profit planning.\n\nLLM guidance:\n\nIf a valid stop-loss or take-profit cannot be defined, return HOLD.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/hard/HARD_RISK_002.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Stop loss and take profit required",
+      "type": "hard_rule"
+    },
+    "HARD_RISK_003": {
+      "category": "hard",
+      "description": "New trades must satisfy the minimum reward-to-risk threshold before execution.",
+      "directions": [],
+      "id": "HARD_RISK_003",
+      "llm_guidance": "Prefer HOLD over forcing an entry with insufficient reward-to-risk.",
+      "markdown": "## HARD_RISK_003 - Minimum reward-to-risk requirement\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto\n\nNew trades must satisfy the minimum reward-to-risk threshold before execution.\n\nLLM guidance:\n\nPrefer HOLD over forcing an entry with insufficient reward-to-risk.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/hard/HARD_RISK_003.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Minimum reward-to-risk requirement",
+      "type": "hard_rule"
+    },
+    "PB_CRYPTO_BREAKOUT_PULLBACK_001": {
+      "category": "playbooks",
+      "description": "Use after a confirmed breakout when price retests the breakout level with controlled volatility.",
+      "directions": [
+        "long",
+        "short"
+      ],
+      "id": "PB_CRYPTO_BREAKOUT_PULLBACK_001",
+      "llm_guidance": "Prefer entry near retest; do not chase far above or below the breakout base.",
+      "markdown": "## PB_CRYPTO_BREAKOUT_PULLBACK_001 - Crypto breakout pullback\n\n- Type: `playbook`\n- Category: `playbooks`\n- Status: `active`\n- Markets: crypto\n- Directions: long, short\n- Regimes: TRENDING_UP, TRENDING_DOWN, MIXED\n- Timeframes: 5m, 15m, 1h, 4h\n\nUse after a confirmed breakout when price retests the breakout level with controlled volatility.\n\nLLM guidance:\n\nPrefer entry near retest; do not chase far above or below the breakout base.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": null,
+      "regimes": [
+        "TRENDING_UP",
+        "TRENDING_DOWN",
+        "MIXED"
+      ],
+      "related_soft_policies": [
+        "SOFT_CRYPTO_001",
+        "SOFT_CRYPTO_002",
+        "SOFT_CORRELATION_001"
+      ],
+      "required_hard_rules": [
+        "HARD_RISK_001",
+        "HARD_RISK_002",
+        "HARD_RISK_003",
+        "HARD_DATA_001",
+        "HARD_EXECUTION_001",
+        "HARD_LLM_001",
+        "HARD_MODE_001"
+      ],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/playbooks/PB_CRYPTO_BREAKOUT_PULLBACK_001.json",
+      "status": "active",
+      "timeframes": [
+        "5m",
+        "15m",
+        "1h",
+        "4h"
+      ],
+      "title": "Crypto breakout pullback",
+      "type": "playbook"
+    },
+    "PB_CRYPTO_MEAN_REVERSION_001": {
+      "category": "playbooks",
+      "description": "Use only when regime is ranging and price is near a well-defined range boundary.",
+      "directions": [
+        "long",
+        "short"
+      ],
+      "id": "PB_CRYPTO_MEAN_REVERSION_001",
+      "llm_guidance": "Mean reversion is invalid in strong trending regimes unless higher timeframe context supports range behavior.",
+      "markdown": "## PB_CRYPTO_MEAN_REVERSION_001 - Crypto mean reversion\n\n- Type: `playbook`\n- Category: `playbooks`\n- Status: `active`\n- Markets: crypto\n- Directions: long, short\n- Regimes: RANGING\n- Timeframes: 5m, 15m, 1h\n\nUse only when regime is ranging and price is near a well-defined range boundary.\n\nLLM guidance:\n\nMean reversion is invalid in strong trending regimes unless higher timeframe context supports range behavior.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": null,
+      "regimes": [
+        "RANGING"
+      ],
+      "related_soft_policies": [
+        "SOFT_REGIME_002",
+        "SOFT_CORRELATION_001"
+      ],
+      "required_hard_rules": [
+        "HARD_RISK_001",
+        "HARD_RISK_002",
+        "HARD_RISK_003",
+        "HARD_DATA_001",
+        "HARD_EXECUTION_001",
+        "HARD_LLM_001",
+        "HARD_MODE_001"
+      ],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/playbooks/PB_CRYPTO_MEAN_REVERSION_001.json",
+      "status": "active",
+      "timeframes": [
+        "5m",
+        "15m",
+        "1h"
+      ],
+      "title": "Crypto mean reversion",
+      "type": "playbook"
+    },
+    "PB_CRYPTO_TREND_CONTINUATION_001": {
+      "category": "playbooks",
+      "description": "Use when higher timeframe regime and confluence point in the same trend direction.",
+      "directions": [
+        "long",
+        "short"
+      ],
+      "id": "PB_CRYPTO_TREND_CONTINUATION_001",
+      "llm_guidance": "Prefer pullback or retest entries aligned with trend. Avoid late impulse entries.",
+      "markdown": "## PB_CRYPTO_TREND_CONTINUATION_001 - Crypto trend continuation\n\n- Type: `playbook`\n- Category: `playbooks`\n- Status: `active`\n- Markets: crypto\n- Directions: long, short\n- Regimes: TRENDING_UP, TRENDING_DOWN\n- Timeframes: 15m, 1h, 4h, 1d\n\nUse when higher timeframe regime and confluence point in the same trend direction.\n\nLLM guidance:\n\nPrefer pullback or retest entries aligned with trend. Avoid late impulse entries.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": null,
+      "regimes": [
+        "TRENDING_UP",
+        "TRENDING_DOWN"
+      ],
+      "related_soft_policies": [
+        "SOFT_CRYPTO_001",
+        "SOFT_CRYPTO_002",
+        "SOFT_REGIME_001",
+        "SOFT_CORRELATION_001"
+      ],
+      "required_hard_rules": [
+        "HARD_RISK_001",
+        "HARD_RISK_002",
+        "HARD_RISK_003",
+        "HARD_DATA_001",
+        "HARD_EXECUTION_001",
+        "HARD_LLM_001",
+        "HARD_MODE_001"
+      ],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/playbooks/PB_CRYPTO_TREND_CONTINUATION_001.json",
+      "status": "active",
+      "timeframes": [
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "title": "Crypto trend continuation",
+      "type": "playbook"
+    },
+    "PB_FX_POST_EVENT_CONTINUATION_001": {
+      "category": "playbooks",
+      "description": "Future forex playbook for continuation after high-impact event volatility settles.",
+      "directions": [
+        "long",
+        "short"
+      ],
+      "id": "PB_FX_POST_EVENT_CONTINUATION_001",
+      "llm_guidance": "Use only after event spread and data quality policies exist and pass.",
+      "markdown": "## PB_FX_POST_EVENT_CONTINUATION_001 - Forex post-event continuation\n\n- Type: `playbook`\n- Category: `playbooks`\n- Status: `active`\n- Markets: forex\n- Directions: long, short\n- Regimes: TRENDING_UP, TRENDING_DOWN, HIGH_VOLATILITY\n- Timeframes: 5m, 15m, 1h\n\nFuture forex playbook for continuation after high-impact event volatility settles.\n\nLLM guidance:\n\nUse only after event spread and data quality policies exist and pass.",
+      "markets": [
+        "forex"
+      ],
+      "playbook_id": null,
+      "regimes": [
+        "TRENDING_UP",
+        "TRENDING_DOWN",
+        "HIGH_VOLATILITY"
+      ],
+      "related_soft_policies": [
+        "SOFT_REGIME_001",
+        "SOFT_CORRELATION_001"
+      ],
+      "required_hard_rules": [
+        "HARD_RISK_001",
+        "HARD_RISK_002",
+        "HARD_RISK_003",
+        "HARD_DATA_001",
+        "HARD_EXECUTION_001",
+        "HARD_LLM_001",
+        "HARD_MODE_001"
+      ],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/playbooks/PB_FX_POST_EVENT_CONTINUATION_001.json",
+      "status": "active",
+      "timeframes": [
+        "5m",
+        "15m",
+        "1h"
+      ],
+      "title": "Forex post-event continuation",
+      "type": "playbook"
+    },
+    "PB_FX_TREND_CONTINUATION_001": {
+      "category": "playbooks",
+      "description": "Future forex playbook for aligned trend continuation after forex data and execution adapters exist.",
+      "directions": [
+        "long",
+        "short"
+      ],
+      "id": "PB_FX_TREND_CONTINUATION_001",
+      "llm_guidance": "Forex execution is not enabled by this playbook. It is source material for future adapter work.",
+      "markdown": "## PB_FX_TREND_CONTINUATION_001 - Forex trend continuation\n\n- Type: `playbook`\n- Category: `playbooks`\n- Status: `active`\n- Markets: forex\n- Directions: long, short\n- Regimes: TRENDING_UP, TRENDING_DOWN\n- Timeframes: 15m, 1h, 4h, 1d\n\nFuture forex playbook for aligned trend continuation after forex data and execution adapters exist.\n\nLLM guidance:\n\nForex execution is not enabled by this playbook. It is source material for future adapter work.",
+      "markets": [
+        "forex"
+      ],
+      "playbook_id": null,
+      "regimes": [
+        "TRENDING_UP",
+        "TRENDING_DOWN"
+      ],
+      "related_soft_policies": [
+        "SOFT_REGIME_001",
+        "SOFT_CORRELATION_001"
+      ],
+      "required_hard_rules": [
+        "HARD_RISK_001",
+        "HARD_RISK_002",
+        "HARD_RISK_003",
+        "HARD_DATA_001",
+        "HARD_EXECUTION_001",
+        "HARD_LLM_001",
+        "HARD_MODE_001"
+      ],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/playbooks/PB_FX_TREND_CONTINUATION_001.json",
+      "status": "active",
+      "timeframes": [
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "title": "Forex trend continuation",
+      "type": "playbook"
+    },
+    "SOFT_CORRELATION_001": {
+      "category": "soft",
+      "description": "Avoid accumulating several highly correlated positions in the same direction.",
+      "directions": [],
+      "id": "SOFT_CORRELATION_001",
+      "llm_guidance": "If correlation exposure is already high, reduce risk or return HOLD.",
+      "markdown": "## SOFT_CORRELATION_001 - Avoid stacking correlated exposure\n\n- Type: `soft_policy`\n- Category: `soft`\n- Status: `active`\n- Markets: crypto, forex\n\nAvoid accumulating several highly correlated positions in the same direction.\n\nLLM guidance:\n\nIf correlation exposure is already high, reduce risk or return HOLD.",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/soft/SOFT_CORRELATION_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Avoid stacking correlated exposure",
+      "type": "soft_policy"
+    },
+    "SOFT_CRYPTO_001": {
+      "category": "soft",
+      "description": "A valid trend does not justify chasing late entries after extended candles or extreme oscillator readings.",
+      "directions": [],
+      "id": "SOFT_CRYPTO_001",
+      "llm_guidance": "Prefer waiting for a retest or returning HOLD when price is stretched.",
+      "markdown": "## SOFT_CRYPTO_001 - Avoid chasing extended crypto moves\n\n- Type: `soft_policy`\n- Category: `soft`\n- Status: `active`\n- Markets: crypto\n\nA valid trend does not justify chasing late entries after extended candles or extreme oscillator readings.\n\nLLM guidance:\n\nPrefer waiting for a retest or returning HOLD when price is stretched.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/soft/SOFT_CRYPTO_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Avoid chasing extended crypto moves",
+      "type": "soft_policy"
+    },
+    "SOFT_CRYPTO_002": {
+      "category": "soft",
+      "description": "Crypto breakouts are lower quality when funding is unusually elevated or crowded.",
+      "directions": [],
+      "id": "SOFT_CRYPTO_002",
+      "llm_guidance": "Treat elevated funding as a warning, not automatic permission to trade.",
+      "markdown": "## SOFT_CRYPTO_002 - Reduce risk when funding is elevated\n\n- Type: `soft_policy`\n- Category: `soft`\n- Status: `active`\n- Markets: crypto\n\nCrypto breakouts are lower quality when funding is unusually elevated or crowded.\n\nLLM guidance:\n\nTreat elevated funding as a warning, not automatic permission to trade.",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/soft/SOFT_CRYPTO_002.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Reduce risk when funding is elevated",
+      "type": "soft_policy"
+    },
+    "SOFT_REGIME_001": {
+      "category": "soft",
+      "description": "In a strong trend, prefer continuation setups aligned with higher timeframe direction.",
+      "directions": [],
+      "id": "SOFT_REGIME_001",
+      "llm_guidance": "Use pullbacks or retests rather than impulse chasing.",
+      "markdown": "## SOFT_REGIME_001 - Trend-following preferred in trending regimes\n\n- Type: `soft_policy`\n- Category: `soft`\n- Status: `active`\n- Markets: crypto, forex\n\nIn a strong trend, prefer continuation setups aligned with higher timeframe direction.\n\nLLM guidance:\n\nUse pullbacks or retests rather than impulse chasing.",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/soft/SOFT_REGIME_001.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Trend-following preferred in trending regimes",
+      "type": "soft_policy"
+    },
+    "SOFT_REGIME_002": {
+      "category": "soft",
+      "description": "Mean-reversion setups are preferred only when regime and structure indicate a range.",
+      "directions": [],
+      "id": "SOFT_REGIME_002",
+      "llm_guidance": "Do not fade strong trends just because a short-term oscillator is extended.",
+      "markdown": "## SOFT_REGIME_002 - Mean reversion only in ranging regimes\n\n- Type: `soft_policy`\n- Category: `soft`\n- Status: `active`\n- Markets: crypto, forex\n\nMean-reversion setups are preferred only when regime and structure indicate a range.\n\nLLM guidance:\n\nDo not fade strong trends just because a short-term oscillator is extended.",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "playbook_id": null,
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/soft/SOFT_REGIME_002.json",
+      "status": "active",
+      "timeframes": [],
+      "title": "Mean reversion only in ranging regimes",
+      "type": "soft_policy"
+    }
+  },
+  "source_hash": "92e746abff99848ba0fffcb103a43399290ce02c87c9abbda3ecdcb0b561edb4"
+}

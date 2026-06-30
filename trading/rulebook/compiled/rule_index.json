@@ -1,0 +1,252 @@
+{
+  "_generated_notice": "DO NOT EDIT - generated from trading/rulebook/source by compile_rulebook.py",
+  "counts": {
+    "cases": 3,
+    "hard": 8,
+    "playbooks": 5,
+    "soft": 5
+  },
+  "rulebook_version": "rulebook.v1",
+  "rules": {
+    "CASE_BAD_CHASE_BREAKOUT_001": {
+      "category": "cases",
+      "id": "CASE_BAD_CHASE_BREAKOUT_001",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/cases/CASE_BAD_CHASE_BREAKOUT_001.json",
+      "status": "active",
+      "title": "Bad trade chasing extended breakout",
+      "type": "case_memory"
+    },
+    "CASE_BAD_FUNDING_OVERHEATED_001": {
+      "category": "cases",
+      "id": "CASE_BAD_FUNDING_OVERHEATED_001",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/cases/CASE_BAD_FUNDING_OVERHEATED_001.json",
+      "status": "active",
+      "title": "Bad trade with overheated funding",
+      "type": "case_memory"
+    },
+    "CASE_GOOD_TREND_LONG_001": {
+      "category": "cases",
+      "id": "CASE_GOOD_TREND_LONG_001",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/cases/CASE_GOOD_TREND_LONG_001.json",
+      "status": "active",
+      "title": "Good trend long after pullback",
+      "type": "case_memory"
+    },
+    "HARD_DATA_001": {
+      "category": "hard",
+      "id": "HARD_DATA_001",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "source_path": "trading/rulebook/source/hard/HARD_DATA_001.json",
+      "status": "active",
+      "title": "Missing or stale market data means hold",
+      "type": "hard_rule"
+    },
+    "HARD_EXECUTION_001": {
+      "category": "hard",
+      "id": "HARD_EXECUTION_001",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "source_path": "trading/rulebook/source/hard/HARD_EXECUTION_001.json",
+      "status": "active",
+      "title": "No execution before verifier pass",
+      "type": "hard_rule"
+    },
+    "HARD_LLM_001": {
+      "category": "hard",
+      "id": "HARD_LLM_001",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "source_path": "trading/rulebook/source/hard/HARD_LLM_001.json",
+      "status": "active",
+      "title": "Non-HOLD LLM decisions must cite real rule IDs",
+      "type": "hard_rule"
+    },
+    "HARD_LLM_002": {
+      "category": "hard",
+      "id": "HARD_LLM_002",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "source_path": "trading/rulebook/source/hard/HARD_LLM_002.json",
+      "status": "active",
+      "title": "Invalid LLM JSON or schema failure means hold",
+      "type": "hard_rule"
+    },
+    "HARD_MODE_001": {
+      "category": "hard",
+      "id": "HARD_MODE_001",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "source_path": "trading/rulebook/source/hard/HARD_MODE_001.json",
+      "status": "active",
+      "title": "Paper and live-like modes fail closed",
+      "type": "hard_rule"
+    },
+    "HARD_RISK_001": {
+      "category": "hard",
+      "id": "HARD_RISK_001",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/hard/HARD_RISK_001.json",
+      "status": "active",
+      "title": "Maximum risk, position, and legacy leverage policy",
+      "type": "hard_rule"
+    },
+    "HARD_RISK_002": {
+      "category": "hard",
+      "id": "HARD_RISK_002",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/hard/HARD_RISK_002.json",
+      "status": "active",
+      "title": "Stop loss and take profit required",
+      "type": "hard_rule"
+    },
+    "HARD_RISK_003": {
+      "category": "hard",
+      "id": "HARD_RISK_003",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/hard/HARD_RISK_003.json",
+      "status": "active",
+      "title": "Minimum reward-to-risk requirement",
+      "type": "hard_rule"
+    },
+    "PB_CRYPTO_BREAKOUT_PULLBACK_001": {
+      "category": "playbooks",
+      "id": "PB_CRYPTO_BREAKOUT_PULLBACK_001",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/playbooks/PB_CRYPTO_BREAKOUT_PULLBACK_001.json",
+      "status": "active",
+      "title": "Crypto breakout pullback",
+      "type": "playbook"
+    },
+    "PB_CRYPTO_MEAN_REVERSION_001": {
+      "category": "playbooks",
+      "id": "PB_CRYPTO_MEAN_REVERSION_001",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/playbooks/PB_CRYPTO_MEAN_REVERSION_001.json",
+      "status": "active",
+      "title": "Crypto mean reversion",
+      "type": "playbook"
+    },
+    "PB_CRYPTO_TREND_CONTINUATION_001": {
+      "category": "playbooks",
+      "id": "PB_CRYPTO_TREND_CONTINUATION_001",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/playbooks/PB_CRYPTO_TREND_CONTINUATION_001.json",
+      "status": "active",
+      "title": "Crypto trend continuation",
+      "type": "playbook"
+    },
+    "PB_FX_POST_EVENT_CONTINUATION_001": {
+      "category": "playbooks",
+      "id": "PB_FX_POST_EVENT_CONTINUATION_001",
+      "markets": [
+        "forex"
+      ],
+      "source_path": "trading/rulebook/source/playbooks/PB_FX_POST_EVENT_CONTINUATION_001.json",
+      "status": "active",
+      "title": "Forex post-event continuation",
+      "type": "playbook"
+    },
+    "PB_FX_TREND_CONTINUATION_001": {
+      "category": "playbooks",
+      "id": "PB_FX_TREND_CONTINUATION_001",
+      "markets": [
+        "forex"
+      ],
+      "source_path": "trading/rulebook/source/playbooks/PB_FX_TREND_CONTINUATION_001.json",
+      "status": "active",
+      "title": "Forex trend continuation",
+      "type": "playbook"
+    },
+    "SOFT_CORRELATION_001": {
+      "category": "soft",
+      "id": "SOFT_CORRELATION_001",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "source_path": "trading/rulebook/source/soft/SOFT_CORRELATION_001.json",
+      "status": "active",
+      "title": "Avoid stacking correlated exposure",
+      "type": "soft_policy"
+    },
+    "SOFT_CRYPTO_001": {
+      "category": "soft",
+      "id": "SOFT_CRYPTO_001",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/soft/SOFT_CRYPTO_001.json",
+      "status": "active",
+      "title": "Avoid chasing extended crypto moves",
+      "type": "soft_policy"
+    },
+    "SOFT_CRYPTO_002": {
+      "category": "soft",
+      "id": "SOFT_CRYPTO_002",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/soft/SOFT_CRYPTO_002.json",
+      "status": "active",
+      "title": "Reduce risk when funding is elevated",
+      "type": "soft_policy"
+    },
+    "SOFT_REGIME_001": {
+      "category": "soft",
+      "id": "SOFT_REGIME_001",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "source_path": "trading/rulebook/source/soft/SOFT_REGIME_001.json",
+      "status": "active",
+      "title": "Trend-following preferred in trending regimes",
+      "type": "soft_policy"
+    },
+    "SOFT_REGIME_002": {
+      "category": "soft",
+      "id": "SOFT_REGIME_002",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "source_path": "trading/rulebook/source/soft/SOFT_REGIME_002.json",
+      "status": "active",
+      "title": "Mean reversion only in ranging regimes",
+      "type": "soft_policy"
+    }
+  },
+  "source_hash": "92e746abff99848ba0fffcb103a43399290ce02c87c9abbda3ecdcb0b561edb4"
+}

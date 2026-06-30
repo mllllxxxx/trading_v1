@@ -96,7 +96,7 @@ def build_user_prompt(
                 bearish_count += 1
     aligned_tfs = max(bullish_count, bearish_count)
     direction = "LONG" if bullish_count > bearish_count else (
-                 "SHORT" if bearish_count > bearish_count else "NEUTRAL")
+                 "SHORT" if bearish_count > bullish_count else "NEUTRAL")
 
     pos_lines = []
     for p in open_positions:
@@ -143,6 +143,9 @@ def build_user_prompt(
 - Regime: {regime.get('regime', '?')} ({regime.get('regime_description', '')})
 - S0 trend: {regime.get('trend', '?')} (the regime name mapped to MTF bias)
 - Confluence (flat): {confluence.get('total_score', 0):+d}/5
+- Confluence gate: abs(score) >= {confluence.get('min_required_abs', '?')} (positive=long, negative=short)
+- Candidate direction: {confluence.get('candidate_direction', direction.lower())}
+- Candidate side: {confluence.get('candidate_side', '?')}
 - Confluence (weighted): {confluence.get('weighted_score', 0):+.2f}/6.2 (Direction 1.3x, Conf 1.0x, Entry 0.8x)
 - Direction bias: {confluence.get('direction_bias', '?')} ({confluence.get('bullish_tfs', 0)}L / {confluence.get('bearish_tfs', 0)}S aligned)
 - 1d RSI: {rsi_1d}

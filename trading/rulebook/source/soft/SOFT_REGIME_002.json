@@ -1,0 +1,15 @@
+{
+  "id": "SOFT_REGIME_002",
+  "title": "Mean reversion only in ranging regimes",
+  "type": "soft_policy",
+  "status": "active",
+  "markets": ["crypto", "forex"],
+  "description": "Mean-reversion setups are preferred only when regime and structure indicate a range.",
+  "legacy_skills": {
+    "soft": {
+      "range_mean_reversion": "Chi mean-revert khi regime la ranging va co support/resistance ro"
+    }
+  },
+  "llm_guidance": "Do not fade strong trends just because a short-term oscillator is extended."
+}
+

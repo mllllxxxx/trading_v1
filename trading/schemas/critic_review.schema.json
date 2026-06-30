@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_generated_notice": "DO NOT EDIT - generated from trading/schemas/models.py",
+  "additionalProperties": false,
+  "properties": {
+    "cited_rules": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "concerns": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "confidence_adjustment": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "suggested_changes": {
+      "type": "object"
+    },
+    "verdict": {
+      "enum": [
+        "APPROVE",
+        "REVISE",
+        "REJECT"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "verdict"
+  ],
+  "title": "CriticReview",
+  "type": "object"
+}

@@ -42,6 +42,13 @@ COPY brackets/ /app/brackets/
 COPY confluence/ /app/confluence/
 COPY regime/ /app/regime/
 COPY auto/ /app/auto/
+COPY llm/ /app/llm/
+COPY verifier/ /app/verifier/
+COPY risk/ /app/risk/
+COPY replay/ /app/replay/
+COPY execution/ /app/execution/
+COPY schemas/ /app/schemas/
+COPY rulebook/ /app/rulebook/
 COPY scripts/ /app/scripts/
 
 # Make auto a package by adding __init__.py

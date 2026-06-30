@@ -1,0 +1,16 @@
+{
+  "id": "SOFT_REGIME_001",
+  "title": "Trend-following preferred in trending regimes",
+  "type": "soft_policy",
+  "status": "active",
+  "markets": ["crypto", "forex"],
+  "description": "In a strong trend, prefer continuation setups aligned with higher timeframe direction.",
+  "legacy_skills": {
+    "soft": {
+      "trend_persistence": "Trong trending regime, doi pullback de entry tot hon",
+      "eth_btc_lead_lag": "ETH thuong follow BTC 5-15 phut. Neu BTC choppy, doi ETH settle"
+    }
+  },
+  "llm_guidance": "Use pullbacks or retests rather than impulse chasing."
+}
+
