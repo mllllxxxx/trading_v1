@@ -1,31 +1,36 @@
 # Documentation Map
 
-This directory holds the project harness and any product contract derived from a
-future user-provided spec.
+Role: documentation index
+
+This directory holds repository specs, decisions, stories, templates, and
+development-process Harness docs. Canonical trading product and architecture
+docs live under `trading/docs/`.
 
 ## Main Files
 
-- `HARNESS.md`: how humans and agents collaborate.
-- `FEATURE_INTAKE.md`: how prompts become tiny, normal, or high-risk work.
-- `ARCHITECTURE.md`: architecture discovery and boundary rules.
-- `TEST_MATRIX.md`: legacy proof map; current proof status is queried with
-  `scripts/bin/harness-cli query matrix`.
-- `HARNESS_BACKLOG.md`: legacy improvement list; current improvement records
-  are stored with `scripts/bin/harness-cli backlog`.
-- `GLOSSARY.md`: shared terms.
+- `harness/HARNESS.md`: how humans and agents collaborate.
+- `harness/FEATURE_INTAKE.md`: how prompts become tiny, normal, or high-risk work.
+- `ARCHITECTURE.md`: pointer to canonical trading architecture and the demoted
+  Harness architecture template.
+- `harness/TEST_MATRIX.md`: legacy proof map; current proof status is queried
+  with `scripts/bin/harness-cli query matrix`.
+- `harness/HARNESS_BACKLOG.md`: legacy improvement list; current improvement
+  records are stored with `scripts/bin/harness-cli backlog`.
+- `harness/GLOSSARY.md`: Harness/process terms.
 
 ## Folders
 
-- `product/`: current product truth, empty until a spec is derived.
+- `specs/`: accepted Trade_V1 governance and refactor specifications.
+- `harness/`: development-process docs only; not trading policy or runtime
+  context.
+- `product/`: compatibility pointer; canonical trading product docs are under
+  `trading/docs/product/`.
 - `stories/`: feature packets and backlog.
 - `decisions/`: durable decisions and tradeoffs.
-- `demo/`: concrete walkthroughs that show how the harness transforms input
-  into agent-ready work.
 - `templates/`: reusable spec-intake, story, plan, decision, and validation
   formats.
 
 ## Current State
 
-Harness v0 exists before implementation. These docs define how the project will
-grow; they do not imply that app code, tests, CI, or deployment automation exist
-yet.
+Trade_V1 has an active trading runtime under `trading/`. Root Harness docs are
+process support only and must not be indexed as trading context.

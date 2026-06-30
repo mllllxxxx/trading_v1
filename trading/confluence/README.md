@@ -17,6 +17,10 @@ và đưa ra điểm tổng hợp từ -5 đến +5.
 | -2 đến -3 | **MODERATE SELL** | 3-4/5 TFs bearish |
 | -4 đến -5 | **STRONG SELL** | 4-5/5 TFs bearish — high conviction short |
 
+Scheduler gate: use `abs(total_score) >= AUTO_MIN_CONFLUENCE`. Positive scores
+are long candidates; negative scores are short candidates; weak absolute scores
+are no-trade candidates.
+
 ## Cách mỗi timeframe được chấm
 
 Mỗi TF được chấm **+1, 0, hoặc -1** dựa trên:

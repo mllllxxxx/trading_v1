@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_generated_notice": "DO NOT EDIT - generated from trading/schemas/models.py",
+  "additionalProperties": false,
+  "properties": {
+    "checked_rule_ids": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "passed": {
+      "type": "boolean"
+    },
+    "violations": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "passed"
+  ],
+  "title": "VerifierResult",
+  "type": "object"
+}

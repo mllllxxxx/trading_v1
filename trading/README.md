@@ -1,3 +1,22 @@
+# Trade_V1 Trading Runtime
+
+The trading application lives in this `trading/` directory. Root-level Harness
+docs are workflow support, not the runtime itself.
+
+For future refactor work, read these first:
+
+- `../docs/specs/trading_v1_source_of_truth_governance_plan.md`
+- `../docs/specs/trading_v1_llm_governed_refactor_spec.md`
+- `docs/architecture/SOURCE_OF_TRUTH_MAP.md`
+- `docs/architecture/DECISION_FLOW.md`
+- `docs/product/TRADING_SYSTEM_INTENT.md`
+- `docs/product/AUTONOMY_POLICY.md`
+- `docs/product/RISK_MANDATE.md`
+- `docs/product/LLM_ROLE.md`
+
+Current README sections below describe the existing runtime. If they conflict
+with the governance plan, the governance plan wins.
+
 # Vibe-Trading workspace
 
 Personal AI trading assistant. Paper-trades on **OKX** (crypto) using **DeepSeek**
@@ -190,7 +209,8 @@ Trader retail thường nhìn 1 chart → confluence lọc ra ~70% lệnh xấu.
 
 - Script: `confluence/confluence.py`
 - Test: `confluence/test-confluence.ps1 -Symbol BTC-USDT`
-- Score: -5 đến +5. >= +2 mới vào lệnh.
+- Score: -5 đến +5. Gate dùng `abs(score) >= AUTO_MIN_CONFLUENCE`;
+  score dương là long candidate, score âm là short candidate.
 
 Xem chi tiết trong `confluence/README.md`.
 
@@ -213,7 +233,7 @@ Xem chi tiết trong `regime/README.md`.
                     → biết regime + list alphas phù hợp
 
 2. CONFLUENCE:      .\trading\confluence\run-confluence.ps1 -Symbol BTC-USDT
-                    → score MTF, phải >= +2 mới trade
+                    → score MTF, cần abs(score) >= threshold; dương long, âm short
 
 3. BRACKET:         .\trading\brackets\run-bracket.ps1 -Symbol BTC-USDT ... 
                     → R:R >= 1:2, position <= 20%, risk <= 1%
@@ -285,7 +305,7 @@ Container `auto` chạy 100% tự động:
 2. Số open positions < 3
 3. Chưa có open position cho symbol
 4. Daily loss chưa chạm -3% vốn
-5. Confluence score >= +2 (BTC hiện tại = -3 → skip)
+5. `abs(confluence score) >= AUTO_MIN_CONFLUENCE`; score dương → long, score âm → short
 6. Regime ∈ {TRENDING_UP, TRENDING_DOWN}
 7. R:R >= 1:2 (auto-validated)
 8. Risk per trade <= 1% vốn
@@ -334,7 +354,7 @@ Mở http://localhost:8001 để xem UI.
 
 Từ Phase 2, scheduler tích hợp **LLM brain** (deepseek-v4-flash) vào workflow:
 1. Pre-filter (rules-only): confluence + regime check
-2. **STRONG signal** (confluence >= +2 + regime OK) → gọi LLM
+2. **STRONG signal** (`abs(confluence) >= threshold` + direction-aware regime OK) → gọi LLM
 3. LLM đọc: stats + open positions + recent PnL + **skills** (từ `auto/skills.json`)
 4. LLM output JSON: action (long/short/hold), entry, SL, TP, size, reasoning
 5. Validator kiểm tra hard rules (R:R >= 1.2, position <= 20%, SL/TP set)

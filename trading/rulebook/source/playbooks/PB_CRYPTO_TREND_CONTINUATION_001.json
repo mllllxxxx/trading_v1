@@ -1,0 +1,28 @@
+{
+  "id": "PB_CRYPTO_TREND_CONTINUATION_001",
+  "title": "Crypto trend continuation",
+  "type": "playbook",
+  "status": "active",
+  "markets": ["crypto"],
+  "description": "Use when higher timeframe regime and confluence point in the same trend direction.",
+  "directions": ["long", "short"],
+  "regimes": ["TRENDING_UP", "TRENDING_DOWN"],
+  "timeframes": ["15m", "1h", "4h", "1d"],
+  "required_hard_rules": [
+    "HARD_RISK_001",
+    "HARD_RISK_002",
+    "HARD_RISK_003",
+    "HARD_DATA_001",
+    "HARD_EXECUTION_001",
+    "HARD_LLM_001",
+    "HARD_MODE_001"
+  ],
+  "related_soft_policies": [
+    "SOFT_CRYPTO_001",
+    "SOFT_CRYPTO_002",
+    "SOFT_REGIME_001",
+    "SOFT_CORRELATION_001"
+  ],
+  "llm_guidance": "Prefer pullback or retest entries aligned with trend. Avoid late impulse entries."
+}
+

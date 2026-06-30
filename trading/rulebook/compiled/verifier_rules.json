@@ -1,0 +1,169 @@
+{
+  "_generated_notice": "DO NOT EDIT - generated from trading/rulebook/source by compile_rulebook.py",
+  "hard_rules": [
+    {
+      "description": "If required market data is missing, stale, or has invalid current price, the system must not open a new order.",
+      "enforcement": {
+        "applies_to": [
+          "OPEN_LONG",
+          "OPEN_SHORT"
+        ],
+        "required_inputs": [
+          "market_dossier.current_price",
+          "market_dossier.data_quality"
+        ],
+        "severity": "reject"
+      },
+      "id": "HARD_DATA_001",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "title": "Missing or stale market data means hold"
+    },
+    {
+      "description": "Broker execution is allowed only after the verifier and risk/order compiler approve a decision.",
+      "enforcement": {
+        "applies_to": [
+          "OPEN_LONG",
+          "OPEN_SHORT",
+          "CLOSE_POSITION",
+          "REDUCE_POSITION"
+        ],
+        "required_inputs": [
+          "verifier_result.passed",
+          "compiled_order"
+        ],
+        "severity": "reject"
+      },
+      "id": "HARD_EXECUTION_001",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "title": "No execution before verifier pass"
+    },
+    {
+      "description": "Any non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID.",
+      "enforcement": {
+        "applies_to": [
+          "OPEN_LONG",
+          "OPEN_SHORT",
+          "CLOSE_POSITION",
+          "REDUCE_POSITION"
+        ],
+        "fields": {
+          "min_rule_citations_for_non_hold": 1,
+          "require_playbook_for_non_hold": true
+        },
+        "severity": "reject"
+      },
+      "id": "HARD_LLM_001",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "title": "Non-HOLD LLM decisions must cite real rule IDs"
+    },
+    {
+      "description": "Invalid LLM output must not reach execution after bounded repair attempts fail.",
+      "enforcement": {
+        "applies_to": [
+          "OPEN_LONG",
+          "OPEN_SHORT",
+          "CLOSE_POSITION",
+          "REDUCE_POSITION"
+        ],
+        "required_inputs": [
+          "trade_decision_ticket.schema_valid"
+        ],
+        "severity": "reject"
+      },
+      "id": "HARD_LLM_002",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "title": "Invalid LLM JSON or schema failure means hold"
+    },
+    {
+      "description": "In autonomous paper or live-like modes, LLM, data, rule retrieval, verifier, compiler, or broker uncertainty must result in HOLD or halted execution.",
+      "enforcement": {
+        "applies_to": [
+          "OPEN_LONG",
+          "OPEN_SHORT",
+          "CLOSE_POSITION",
+          "REDUCE_POSITION"
+        ],
+        "fields": {
+          "fallback_to_rules_only_when_llm_required": false
+        },
+        "severity": "reject"
+      },
+      "id": "HARD_MODE_001",
+      "markets": [
+        "crypto",
+        "forex"
+      ],
+      "title": "Paper and live-like modes fail closed"
+    },
+    {
+      "description": "A single position must not exceed the configured max risk percentage or max notional percentage of capital. Legacy validator compatibility also keeps the generic max leverage value.",
+      "enforcement": {
+        "applies_to": [
+          "OPEN_LONG",
+          "OPEN_SHORT"
+        ],
+        "fields": {
+          "max_leverage": 3.0,
+          "max_position_pct": 0.2,
+          "max_risk_pct_equity": 0.01
+        },
+        "severity": "reject"
+      },
+      "id": "HARD_RISK_001",
+      "markets": [
+        "crypto"
+      ],
+      "title": "Maximum risk, position, and legacy leverage policy"
+    },
+    {
+      "description": "Any new non-HOLD trade must include both stop-loss and take-profit planning.",
+      "enforcement": {
+        "applies_to": [
+          "OPEN_LONG",
+          "OPEN_SHORT"
+        ],
+        "fields": {
+          "stop_loss_required": true,
+          "take_profit_required": true
+        },
+        "severity": "reject"
+      },
+      "id": "HARD_RISK_002",
+      "markets": [
+        "crypto"
+      ],
+      "title": "Stop loss and take profit required"
+    },
+    {
+      "description": "New trades must satisfy the minimum reward-to-risk threshold before execution.",
+      "enforcement": {
+        "applies_to": [
+          "OPEN_LONG",
+          "OPEN_SHORT"
+        ],
+        "fields": {
+          "rr_minimum": 1.2
+        },
+        "severity": "reject"
+      },
+      "id": "HARD_RISK_003",
+      "markets": [
+        "crypto"
+      ],
+      "title": "Minimum reward-to-risk requirement"
+    }
+  ],
+  "source_hash": "92e746abff99848ba0fffcb103a43399290ce02c87c9abbda3ecdcb0b561edb4"
+}

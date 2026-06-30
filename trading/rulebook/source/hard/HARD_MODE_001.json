@@ -1,0 +1,17 @@
+{
+  "id": "HARD_MODE_001",
+  "title": "Paper and live-like modes fail closed",
+  "type": "hard_rule",
+  "status": "active",
+  "markets": ["crypto", "forex"],
+  "description": "In autonomous paper or live-like modes, LLM, data, rule retrieval, verifier, compiler, or broker uncertainty must result in HOLD or halted execution.",
+  "enforcement": {
+    "severity": "reject",
+    "applies_to": ["OPEN_LONG", "OPEN_SHORT", "CLOSE_POSITION", "REDUCE_POSITION"],
+    "fields": {
+      "fallback_to_rules_only_when_llm_required": false
+    }
+  },
+  "llm_guidance": "Uncertainty is not permission to trade. Return HOLD when required context is unavailable."
+}
+

@@ -1,0 +1,17 @@
+{
+  "id": "CASE_BAD_CHASE_BREAKOUT_001",
+  "title": "Bad trade chasing extended breakout",
+  "type": "case_memory",
+  "status": "active",
+  "markets": ["crypto"],
+  "description": "A breakout trade entered late after price had already extended far from the breakout base.",
+  "playbook_id": "PB_CRYPTO_BREAKOUT_PULLBACK_001",
+  "rule_citations": [
+    "HARD_RISK_001",
+    "HARD_RISK_002",
+    "SOFT_CRYPTO_001"
+  ],
+  "lesson": "A valid breakout still requires a controlled entry. Wait for retest or return HOLD.",
+  "llm_guidance": "Use this as a warning against late impulse entries."
+}
+

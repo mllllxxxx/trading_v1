@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_generated_notice": "DO NOT EDIT - generated from trading/schemas/models.py",
+  "additionalProperties": false,
+  "properties": {
+    "entry": {
+      "type": "number"
+    },
+    "position_notional_usd": {
+      "type": "number"
+    },
+    "position_size_units": {
+      "type": "number"
+    },
+    "risk_amount_usd": {
+      "type": "number"
+    },
+    "risk_pct_equity": {
+      "type": "number"
+    },
+    "side": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "stop_loss": {
+      "type": "number"
+    },
+    "symbol": {
+      "type": "string"
+    },
+    "take_profit": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "symbol",
+    "side",
+    "entry",
+    "stop_loss",
+    "take_profit",
+    "risk_pct_equity",
+    "risk_amount_usd",
+    "position_size_units",
+    "position_notional_usd",
+    "source"
+  ],
+  "title": "CompiledOrder",
+  "type": "object"
+}

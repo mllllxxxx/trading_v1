@@ -1,0 +1,26 @@
+{
+  "id": "PB_FX_TREND_CONTINUATION_001",
+  "title": "Forex trend continuation",
+  "type": "playbook",
+  "status": "active",
+  "markets": ["forex"],
+  "description": "Future forex playbook for aligned trend continuation after forex data and execution adapters exist.",
+  "directions": ["long", "short"],
+  "regimes": ["TRENDING_UP", "TRENDING_DOWN"],
+  "timeframes": ["15m", "1h", "4h", "1d"],
+  "required_hard_rules": [
+    "HARD_RISK_001",
+    "HARD_RISK_002",
+    "HARD_RISK_003",
+    "HARD_DATA_001",
+    "HARD_EXECUTION_001",
+    "HARD_LLM_001",
+    "HARD_MODE_001"
+  ],
+  "related_soft_policies": [
+    "SOFT_REGIME_001",
+    "SOFT_CORRELATION_001"
+  ],
+  "llm_guidance": "Forex execution is not enabled by this playbook. It is source material for future adapter work."
+}
+

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_generated_notice": "DO NOT EDIT - generated from trading/schemas/models.py",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "type": "string"
+    },
+    "entry_plan": {
+      "properties": {
+        "chase_market": {
+          "type": "boolean"
+        },
+        "entry_reference": {
+          "type": "string"
+        },
+        "order_type": {
+          "enum": [
+            "market",
+            "limit",
+            "none"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "market": {
+      "type": "string"
+    },
+    "risk_plan": {
+      "properties": {
+        "risk_pct_equity": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "stop_logic": {
+          "type": "string"
+        },
+        "take_profit_logic": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "side": {
+      "type": "string"
+    },
+    "source_decision_id": {
+      "type": "string"
+    },
+    "symbol": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_decision_id",
+    "action",
+    "market",
+    "symbol",
+    "side",
+    "entry_plan",
+    "risk_plan"
+  ],
+  "title": "OrderIntent",
+  "type": "object"
+}

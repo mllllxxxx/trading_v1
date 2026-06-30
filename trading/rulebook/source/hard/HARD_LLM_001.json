@@ -1,0 +1,18 @@
+{
+  "id": "HARD_LLM_001",
+  "title": "Non-HOLD LLM decisions must cite real rule IDs",
+  "type": "hard_rule",
+  "status": "active",
+  "markets": ["crypto", "forex"],
+  "description": "Any non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID.",
+  "enforcement": {
+    "severity": "reject",
+    "applies_to": ["OPEN_LONG", "OPEN_SHORT", "CLOSE_POSITION", "REDUCE_POSITION"],
+    "fields": {
+      "require_playbook_for_non_hold": true,
+      "min_rule_citations_for_non_hold": 1
+    }
+  },
+  "llm_guidance": "If no retrieved playbook fits, return HOLD. Never invent rule IDs."
+}
+

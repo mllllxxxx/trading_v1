@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_generated_notice": "DO NOT EDIT - generated from trading/schemas/models.py",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "enum": [
+        "HOLD",
+        "OPEN_LONG",
+        "OPEN_SHORT",
+        "CLOSE_POSITION",
+        "REDUCE_POSITION",
+        "REQUEST_MORE_DATA"
+      ],
+      "type": "string"
+    },
+    "confidence": {
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "data_quality": {
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "decision_id": {
+      "type": "string"
+    },
+    "entry_plan": {
+      "additionalProperties": false,
+      "properties": {
+        "chase_market": {
+          "type": "boolean"
+        },
+        "entry_reference": {
+          "type": "string"
+        },
+        "order_type": {
+          "enum": [
+            "market",
+            "limit",
+            "none"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "order_type",
+        "entry_reference",
+        "chase_market"
+      ],
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "invalidation_conditions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "market": {
+      "type": "string"
+    },
+    "playbook_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reasoning_summary": {
+      "type": "string"
+    },
+    "risk_plan": {
+      "additionalProperties": false,
+      "properties": {
+        "risk_pct_equity": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "stop_logic": {
+          "type": "string"
+        },
+        "take_profit_logic": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "risk_pct_equity",
+        "stop_logic",
+        "take_profit_logic"
+      ],
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "rule_citations": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "symbol": {
+      "type": "string"
+    },
+    "thesis": {
+      "type": "string"
+    },
+    "timeframe": {
+      "type": "string"
+    },
+    "timestamp_utc": {
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "decision_id",
+    "timestamp_utc",
+    "action",
+    "market",
+    "symbol",
+    "timeframe",
+    "playbook_id",
+    "rule_citations",
+    "thesis",
+    "confidence",
+    "data_quality",
+    "reasoning_summary"
+  ],
+  "title": "TradeDecisionTicket",
+  "type": "object"
+}

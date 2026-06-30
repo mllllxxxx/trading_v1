@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_generated_notice": "DO NOT EDIT - generated from trading/schemas/models.py",
+  "additionalProperties": false,
+  "properties": {
+    "all_rule_ids": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "candidate_playbooks": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "markdown": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "source_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "markdown"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "case_memory": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "markdown": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "source_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "markdown"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "mandatory_hard_rules": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "markdown": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "source_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "markdown"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "soft_policies": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "markdown": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "source_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "markdown"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "mandatory_hard_rules",
+    "candidate_playbooks",
+    "soft_policies",
+    "case_memory",
+    "all_rule_ids"
+  ],
+  "title": "RetrievedRuleContext",
+  "type": "object"
+}

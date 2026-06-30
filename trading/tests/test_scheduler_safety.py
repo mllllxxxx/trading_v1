@@ -103,6 +103,131 @@ class TestKeyErrorGuards:
         ]
         assert "confluence_missing_total_score" in skip_reasons
 
+
+class TestSignedConfluenceDirection:
+    """Step 9: signed confluence must support both long and short candidates."""
+
+    @pytest.mark.parametrize(
+        ("score", "is_candidate", "direction", "side"),
+        [
+            (4, True, "long", "buy"),
+            (-4, True, "short", "sell"),
+            (1, False, None, None),
+            (-1, False, None, None),
+            (0, False, None, None),
+        ],
+    )
+    def test_classify_confluence_direction(
+        self,
+        isolated_scheduler,
+        score,
+        is_candidate,
+        direction,
+        side,
+    ):
+        assert isolated_scheduler.classify_confluence_direction(score, 2) == (
+            is_candidate,
+            direction,
+            side,
+        )
+
+    def test_negative_confluence_reaches_llm_as_short_candidate(
+        self,
+        isolated_scheduler,
+        tmp_data_dir,
+    ):
+        s = isolated_scheduler
+        s.journal.ensure_dirs()
+        captured: dict[str, dict] = {}
+
+        def fake_user_prompt(**kwargs):
+            captured["confluence"] = dict(kwargs["confluence"])
+            return "user-prompt"
+
+        with patch.object(s, "_run_confluence", return_value={
+                "total_score": -3,
+                "timeframes": {
+                    "1d": {"trend": "DOWN", "momentum": "DOWN"},
+                    "1w": {"trend": "DOWN", "momentum": "DOWN"},
+                },
+            }), \
+             patch.object(s, "_run_regime", return_value={
+                "regime": "TRENDING_DOWN",
+                "close": 100.0,
+                "indicators": {"atr_14": 1.0},
+                "technical_indicators": {},
+            }), \
+             patch.object(s, "journal") as mock_journal, \
+             patch.object(s._prompts, "build_system_prompt", return_value="system-prompt"), \
+             patch.object(s._prompts, "build_user_prompt", side_effect=fake_user_prompt), \
+             patch.object(s._brain, "call_brain", return_value={
+                "action": "hold",
+                "reasoning": "Holding after evaluating the short candidate context.",
+                "confidence": 0.5,
+                "_model": "test",
+                "_latency_s": 0,
+            }):
+            mock_journal.read_positions.return_value = []
+            mock_journal.read_closed_trades.return_value = []
+            mock_journal.is_killed.return_value = False
+            mock_journal.check_loss_streak_kill.return_value = False
+            mock_journal.is_in_cooldown.return_value = (False, None, 0)
+            mock_journal.daily_cost_status.return_value = {"cap_reached": False}
+            s.run_once_symbol("BTC-USDT")
+
+        candidate_events = [
+            c.args[1] for c in mock_journal.append_decision.call_args_list
+            if c.args[0] == "candidate"
+        ]
+        assert candidate_events
+        assert candidate_events[0]["candidate_direction"] == "short"
+        assert candidate_events[0]["candidate_side"] == "sell"
+        assert captured["confluence"]["candidate_direction"] == "short"
+        assert captured["confluence"]["candidate_side"] == "sell"
+        skip_reasons = [
+            c.args[1].get("reason") for c in mock_journal.append_decision.call_args_list
+            if c.args[0] == "skip"
+        ]
+        assert "weak_confluence" not in skip_reasons
+        assert "bearish_confluence" not in skip_reasons
+
+    def test_direction_regime_conflict_skips_safely(
+        self,
+        isolated_scheduler,
+        tmp_data_dir,
+    ):
+        s = isolated_scheduler
+        s.journal.ensure_dirs()
+        with patch.object(s, "_run_confluence", return_value={
+                "total_score": -3,
+                "timeframes": {},
+            }), \
+             patch.object(s, "_run_regime", return_value={
+                "regime": "TRENDING_UP",
+                "close": 100.0,
+                "indicators": {},
+                "technical_indicators": {},
+            }), \
+             patch.object(s, "journal") as mock_journal:
+            mock_journal.read_positions.return_value = []
+            mock_journal.read_closed_trades.return_value = []
+            mock_journal.is_killed.return_value = False
+            mock_journal.check_loss_streak_kill.return_value = False
+            mock_journal.is_in_cooldown.return_value = (False, None, 0)
+            s.run_once_symbol("BTC-USDT")
+
+        conflict_events = [
+            c.args[1] for c in mock_journal.append_decision.call_args_list
+            if c.args[0] == "skip"
+            and c.args[1].get("reason") == "regime_direction_conflict"
+        ]
+        assert conflict_events
+        assert conflict_events[0]["candidate_direction"] == "short"
+
+
+class TestRegimeKeyGuards:
+    """C2: regime JSON missing or malformed close must not crash scheduler."""
+
     def test_regime_missing_close_skips(self, isolated_scheduler, tmp_data_dir):
         s = isolated_scheduler
         s.journal.ensure_dirs()
@@ -301,3 +426,134 @@ class TestCorruptJournalHalt:
             if c.args[0] == "skip" and c.args[1].get("reason") == "corrupt_journal"
         ]
         assert "corrupt_journal" in skip_reasons
+
+
+class TestExplicitLLMFallbackPolicy:
+    """Step 16: rules-only fallback must be explicit and fail closed."""
+
+    def test_cost_cap_skips_when_llm_is_required(
+        self,
+        isolated_scheduler,
+        tmp_data_dir,
+        monkeypatch,
+    ):
+        s = isolated_scheduler
+        s.journal.ensure_dirs()
+        monkeypatch.setenv("REQUIRE_LLM_DECISION", "true")
+        monkeypatch.setenv("ENABLE_RULES_ONLY_FALLBACK", "true")
+
+        with patch.object(s, "_run_confluence", return_value={
+                "total_score": 3,
+                "timeframes": {},
+            }), \
+             patch.object(s, "_run_regime", return_value={
+                "regime": "TRENDING_UP",
+                "close": 100.0,
+                "indicators": {},
+                "technical_indicators": {},
+            }), \
+             patch.object(s, "journal") as mock_journal, \
+             patch.object(s, "_place_bracket_via_script") as mock_place:
+            mock_journal.read_positions.return_value = []
+            mock_journal.read_closed_trades.return_value = []
+            mock_journal.is_killed.return_value = False
+            mock_journal.check_loss_streak_kill.return_value = False
+            mock_journal.is_in_cooldown.return_value = (False, None, 0)
+            mock_journal.daily_cost_status.return_value = {
+                "cap_reached": True,
+                "cost_usd": 1.0,
+                "cap_usd": 1.0,
+                "calls": 12,
+            }
+            s.run_once_symbol("BTC-USDT")
+
+        mock_place.assert_not_called()
+        skip_reasons = [
+            c.args[1].get("reason") for c in mock_journal.append_decision.call_args_list
+            if c.args[0] == "skip"
+        ]
+        assert "llm_required_cost_cap" in skip_reasons
+
+    def test_missing_llm_skips_when_llm_is_required(
+        self,
+        isolated_scheduler,
+        tmp_data_dir,
+        monkeypatch,
+    ):
+        s = isolated_scheduler
+        s.journal.ensure_dirs()
+        monkeypatch.setenv("REQUIRE_LLM_DECISION", "true")
+        monkeypatch.setenv("ENABLE_RULES_ONLY_FALLBACK", "true")
+
+        with patch.object(s, "_run_confluence", return_value={
+                "total_score": 3,
+                "timeframes": {},
+            }), \
+             patch.object(s, "_run_regime", return_value={
+                "regime": "TRENDING_UP",
+                "close": 100.0,
+                "indicators": {},
+                "technical_indicators": {},
+            }), \
+             patch.object(s, "journal") as mock_journal, \
+             patch.object(s._prompts, "build_system_prompt", return_value="system"), \
+             patch.object(s._prompts, "build_user_prompt", return_value="user"), \
+             patch.object(s._brain, "call_brain",
+                          side_effect=s._brain.BrainError("DEEPSEEK_API_KEY not set")), \
+             patch.object(s, "_place_bracket_via_script") as mock_place:
+            mock_journal.read_positions.return_value = []
+            mock_journal.read_closed_trades.return_value = []
+            mock_journal.is_killed.return_value = False
+            mock_journal.check_loss_streak_kill.return_value = False
+            mock_journal.is_in_cooldown.return_value = (False, None, 0)
+            mock_journal.daily_cost_status.return_value = {"cap_reached": False}
+            s.run_once_symbol("BTC-USDT")
+
+        mock_place.assert_not_called()
+        skip_reasons = [
+            c.args[1].get("reason") for c in mock_journal.append_decision.call_args_list
+            if c.args[0] == "skip"
+        ]
+        assert "llm_required_unavailable" in skip_reasons
+
+    def test_rules_only_disabled_skips_even_when_llm_not_required(
+        self,
+        isolated_scheduler,
+        tmp_data_dir,
+        monkeypatch,
+    ):
+        s = isolated_scheduler
+        s.journal.ensure_dirs()
+        monkeypatch.setenv("REQUIRE_LLM_DECISION", "false")
+        monkeypatch.setenv("ENABLE_RULES_ONLY_FALLBACK", "false")
+
+        with patch.object(s, "_run_confluence", return_value={
+                "total_score": 3,
+                "timeframes": {},
+            }), \
+             patch.object(s, "_run_regime", return_value={
+                "regime": "TRENDING_UP",
+                "close": 100.0,
+                "indicators": {},
+                "technical_indicators": {},
+            }), \
+             patch.object(s, "journal") as mock_journal, \
+             patch.object(s._prompts, "build_system_prompt", return_value="system"), \
+             patch.object(s._prompts, "build_user_prompt", return_value="user"), \
+             patch.object(s._brain, "call_brain",
+                          side_effect=s._brain.BrainError("DEEPSEEK_API_KEY not set")), \
+             patch.object(s, "_place_bracket_via_script") as mock_place:
+            mock_journal.read_positions.return_value = []
+            mock_journal.read_closed_trades.return_value = []
+            mock_journal.is_killed.return_value = False
+            mock_journal.check_loss_streak_kill.return_value = False
+            mock_journal.is_in_cooldown.return_value = (False, None, 0)
+            mock_journal.daily_cost_status.return_value = {"cap_reached": False}
+            s.run_once_symbol("BTC-USDT")
+
+        mock_place.assert_not_called()
+        skip_reasons = [
+            c.args[1].get("reason") for c in mock_journal.append_decision.call_args_list
+            if c.args[0] == "skip"
+        ]
+        assert "llm_unavailable_rules_only_disabled" in skip_reasons

@@ -1,62 +1,78 @@
-# Agent Instructions
+# Agent Instructions - trading_v1
 
-## Project: Trade_V1 — Hybrid Agentic Trading System
+Role: coding-agent routing and safety instructions
 
-Read these docs in order:
-1. `README.md`
-2. `docs/ARCHITECTURE_V2.md` ← **Main architecture doc (start here)**
-3. `docs/HARNESS.md`
-4. `docs/FEATURE_INTAKE.md`
-5. `docs/CONTEXT_RULES.md`
-6. `docs/TOOL_REGISTRY.md`
+## Communication
 
-## Key Files
-- `trading/auto/brain.py` — LLM decision engine
-- `trading/auto/prompts.py` — System/User prompts (cần update với trading rules)
-- `trading/auto/validator.py` — Hard rules validator (cần mở rộng)
-- `trading/auto/scheduler.py` — Main trading loop
-- `trading/confluence/confluence.py` — MTF confluence scoring (cần mở rộng)
-- `trading/regime/regime.py` — Market regime detector
-- `trading/brackets/okx_bracket.py` — OKX bracket orders
+Respond in Vietnamese, casual and friendly. Xung "toi", goi Ben la "fen".
+Be direct and action-oriented. Roast nhe loi ngo ngan neu can, dung toxic.
 
-## Project Vision
-- **Target Market & Platform**: Cryptocurrency Futures (Swap contracts) trading via the **OKX** exchange.
-- **Performance Target**: Consistent winrate of **55% - 65%**.
-- **Watchlist**: Top 50 market cap coins (USDT-margined SWAP contracts).
-- **Leverage Policy**: Medium leverage of **5x - 10x**.
-- **Max Exposure**: Maximum of **10 concurrent open positions** at any time.
-- **Dynamic Capital Management**: Capital risk per trade is dynamically scaled based on LLM confidence:
-  - *High Confidence ($\ge$ 0.85)*: Risk **3% - 5%** of total capital (based on Stop Loss distance).
-  - *Normal Confidence (0.60 - 0.84)*: Risk **1% - 2%** of total capital.
-  - *Probe/Low Confidence (0.40 - 0.59)*: Risk **0.5%** of total capital.
-- **Holding Strategy (Swing + Dynamic Exits)**: Primarily swing trading (retaining positions for a few days to 1 week) to capture major trends (accepting funding fees), integrated with dynamic exits managed by LLM market context evaluation.
-- **Post-Trade Review & Self-Improvement**: Actively log all losing trades and validator rejections to `llm_overrides.jsonl` and/or `closed_trades.jsonl`. This failure telemetry is fed back into the LLM context to refine subsequent decision prompts.
+## Read First
+
+Read in this order before changing trading behavior:
+
+1. `docs/specs/trading_v1_source_of_truth_governance_plan.md`
+2. `docs/specs/trading_v1_llm_governed_refactor_spec.md`
+3. `docs/specs/trading_v1_harness_docs_source_of_truth_addendum.md`
+4. `trading/docs/architecture/SOURCE_OF_TRUTH_MAP.md`
+5. `trading/docs/architecture/DECISION_FLOW.md`
+6. `trading/docs/product/RISK_MANDATE.md`
+7. `trading/docs/product/AUTONOMY_POLICY.md`
+8. `trading/docs/product/LLM_ROLE.md`
+9. `trading/README.md`
+
+Harness docs under `docs/harness/` are process guidance only.
+
+Do not treat Harness docs as:
+
+- trading policy
+- risk policy
+- prompt policy
+- runtime configuration
+- broker or execution policy
+- rulebook source of truth
+- LLM trading context
+
+Before changing trading behavior, identify the canonical source-of-truth
+domain. If no canonical source exists, create or update the canonical source
+first.
+
+## Governance Priority
+
+1. Source-of-truth governance plan
+2. LLM-governed refactor spec
+3. Harness-docs demotion addendum
+4. Canonical trading docs, rulebook, schemas, and config
+5. Current code
+6. Legacy README/comments
+
+Do not place new trading policy only in prompts, scheduler, validator, README,
+AGENTS, or env files. Put policy in the canonical source first, then compile or
+render it for runtime consumers.
 
 ## Development Rules
-- **Design before code**: Create a design doc in `.hermes/features/{name}/design.md` before starting development.
-- **Testing Mandate (Strict)**: Every new feature or logic change **MUST** be accompanied by comprehensive automated tests (Unit Tests) covering the changes.
-- **Verification**: Run `pytest -x` after every change. All tests (new and existing) must pass 100%.
-- **Autopilot Autonomy**: The Dev Autopilot is fully autonomous. Branches named `dev-autopilot/{feature-name}` may be merged automatically *only* if all automated tests pass 100%.
-- **Max 3 retries**: If tests fail 3 times during development, stop immediately, log the failure, and notify the user.
-- **Backward compatibility**: Never break existing JSON schemas, databases, or trade journal formats.
-- **Docker Deployment**: Rebuild the Docker container (`docker compose build` and `docker compose up -d`) after every code change to deploy the changes to the running environment.
 
-<!-- HARNESS:BEGIN -->
+- Design before code: create or update `.hermes/features/{name}/design.md`
+  before development.
+- Contract-first: update canonical docs or specs before code when behavior
+  changes.
+- Test-driven: add automated tests for new or changed logic.
+- Run `pytest -x` after code changes when feasible, and report any blocker.
+- Keep backward compatibility for JSON schemas, databases, and trade journals.
+- Use Docker Compose for runtime deployment work.
+- Keep secrets in environment files or secret stores, never in repo docs or
+  chat.
+- Do not enable live trading or weaken paper, sandbox, or testnet guards.
+
 ## Harness
 
-This repo uses Harness. Before work, read:
-
-- `README.md`
-- `docs/HARNESS.md`
-- `docs/FEATURE_INTAKE.md`
-- `docs/ARCHITECTURE.md`
-- `docs/CONTEXT_RULES.md`
-- `docs/TOOL_REGISTRY.md`
-- `scripts/bin/harness-cli query matrix` on macOS/Linux, or `.\scripts\bin\harness-cli.exe query matrix` on Windows
-
 Use the Rust Harness CLI at `scripts/bin/harness-cli` on macOS/Linux or
-`scripts/bin/harness-cli.exe` on Windows as the main operational tool. Before a
-step that could use an external tool, run `scripts/bin/harness-cli query tools
---capability <name> --status present` to see what is equipped; an absent
-capability is a clean skip.
-<!-- HARNESS:END -->
+`scripts/bin/harness-cli.exe` on Windows as the main operational tool.
+
+Before a step that could use an external tool, run:
+
+```powershell
+.\scripts\bin\harness-cli.exe query tools --capability <name> --status present
+```
+
+An absent capability is a clean skip.

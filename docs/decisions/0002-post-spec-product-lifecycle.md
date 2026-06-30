@@ -30,7 +30,7 @@ through the same harness loop as one of these input types:
 - Harness improvement.
 
 Product docs under `docs/product/`, story packets under `docs/stories/`,
-validation evidence in `docs/TEST_MATRIX.md`, and decision records under
+validation evidence in `docs/harness/TEST_MATRIX.md`, and decision records under
 `docs/decisions/` become the living operating surface.
 
 Large future product areas should be captured as scoped initiative notes instead

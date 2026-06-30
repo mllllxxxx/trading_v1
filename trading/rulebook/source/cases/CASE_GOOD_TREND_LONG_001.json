@@ -1,0 +1,19 @@
+{
+  "id": "CASE_GOOD_TREND_LONG_001",
+  "title": "Good trend long after pullback",
+  "type": "case_memory",
+  "status": "active",
+  "markets": ["crypto"],
+  "description": "A trend-following long where confluence, regime, and pullback entry aligned before risk checks passed.",
+  "playbook_id": "PB_CRYPTO_TREND_CONTINUATION_001",
+  "rule_citations": [
+    "HARD_RISK_001",
+    "HARD_RISK_002",
+    "HARD_RISK_003",
+    "HARD_DATA_001",
+    "HARD_LLM_001"
+  ],
+  "lesson": "Waited for retest instead of chasing the impulse candle.",
+  "llm_guidance": "Use this as a positive example for trend-aligned pullback entries."
+}
+

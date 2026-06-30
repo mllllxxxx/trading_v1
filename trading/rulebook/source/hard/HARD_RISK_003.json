@@ -1,0 +1,22 @@
+{
+  "id": "HARD_RISK_003",
+  "title": "Minimum reward-to-risk requirement",
+  "type": "hard_rule",
+  "status": "active",
+  "markets": ["crypto"],
+  "description": "New trades must satisfy the minimum reward-to-risk threshold before execution.",
+  "enforcement": {
+    "severity": "reject",
+    "applies_to": ["OPEN_LONG", "OPEN_SHORT"],
+    "fields": {
+      "rr_minimum": 1.2
+    }
+  },
+  "legacy_skills": {
+    "hard": {
+      "rr_minimum": 1.2
+    }
+  },
+  "llm_guidance": "Prefer HOLD over forcing an entry with insufficient reward-to-risk."
+}
+
