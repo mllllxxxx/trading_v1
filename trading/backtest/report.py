@@ -33,7 +33,6 @@ PARAMS = dict(
 def run(name, symbols):
     print(f"\n[{name}] Fetching {len(symbols)} symbols × {DAYS}d...")
     t0 = time.time()
-    data = fetch_data.fetch_all if hasattr(fetch_data, "fetch_all") else None
     # Use the public API directly per symbol (cache-aware)
     d = {}
     for s in symbols:
@@ -64,7 +63,7 @@ def summarize(name, cr):
         "combined_sharpe_1.0":   cr.sharpe >= 1.0,
         "max_dd_0.08":           cr.max_drawdown_pct <= 0.08,
     }
-    print(f"  Gates:")
+    print("  Gates:")
     for k, v in gates.items():
         print(f"    {'PASS' if v else 'FAIL'}  {k}")
     return {

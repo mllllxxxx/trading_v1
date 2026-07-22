@@ -4,15 +4,23 @@
 
 This plan defines how to reorganize the project so it can evolve safely over time.
 
-The target system is not a pure rule-based bot and not a free-form LLM trader. It is a **rulebook-grounded LLM trading system**:
+The target system is not a pure rule-based bot and not a free-form LLM trader. It is a **rulebook-grounded adaptive hybrid trading system**:
 
 ```text
 Source of truth files define product intent, risk, markets, data contracts, playbooks, execution policy, model policy, and schemas.
-LLM reads rendered rulebook/playbook context and produces a structured TradeDecisionTicket.
+Deterministic code produces a scored RuleProposal and routes it into strong, gray, or reject zones.
+The strong zone is an explicit paper/demo rules lane; the gray zone requires a narrow LLM ContextReview; the reject zone never calls the LLM.
+Code constructs the TradeDecisionTicket from trusted signal/rule context after routing.
 Verifier reads machine-readable compiled rules and enforces hard constraints.
 Risk/order compiler turns approved intent into broker-specific orders.
 Journal records every decision and creates future case memory.
 ```
+
+The `adaptive_hybrid_v1` routing contract is defined in
+`trading/docs/features/adaptive-hybrid-decision-routing/design.md`. A strong
+rules lane is policy, not an LLM-failure fallback. Gray-zone budget, provider,
+or schema failure remains fail-closed. No adaptive lane may enable live
+trading or bypass verifier and compiler.
 
 The key objective is to prevent future development from scattering policy across prompts, validators, config, README files, and hidden defaults.
 

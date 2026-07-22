@@ -4,7 +4,7 @@
     "cases": 3,
     "hard": 8,
     "playbooks": 5,
-    "soft": 5
+    "soft": 6
   },
   "rulebook_version": "rulebook.v1",
   "rules": {
@@ -74,7 +74,7 @@
       ],
       "source_path": "trading/rulebook/source/hard/HARD_LLM_001.json",
       "status": "active",
-      "title": "Non-HOLD LLM decisions must cite real rule IDs",
+      "title": "Non-HOLD LLM decisions must cite real rule IDs and fit team profiles",
       "type": "hard_rule"
     },
     "HARD_LLM_002": {
@@ -109,7 +109,7 @@
       ],
       "source_path": "trading/rulebook/source/hard/HARD_RISK_001.json",
       "status": "active",
-      "title": "Maximum risk, position, and legacy leverage policy",
+      "title": "Maximum risk, margin, notional, and leverage policy",
       "type": "hard_rule"
     },
     "HARD_RISK_002": {
@@ -246,7 +246,18 @@
       "status": "active",
       "title": "Mean reversion only in ranging regimes",
       "type": "soft_policy"
+    },
+    "SOFT_STRATEGY_TEAM_001": {
+      "category": "soft",
+      "id": "SOFT_STRATEGY_TEAM_001",
+      "markets": [
+        "crypto"
+      ],
+      "source_path": "trading/rulebook/source/soft/SOFT_STRATEGY_TEAM_001.json",
+      "status": "active",
+      "title": "Strategy team skill profiles",
+      "type": "soft_policy"
     }
   },
-  "source_hash": "92e746abff99848ba0fffcb103a43399290ce02c87c9abbda3ecdcb0b561edb4"
+  "source_hash": "b95ba7e36a150ce293a5a577970a1ec3f65a825cf5630da088976babaf6874e4"
 }

@@ -1,4 +1,24 @@
-# Trading V1 — LLM-Governed Rulebook Refactor Spec
+# Trading V1 — Adaptive Hybrid Rulebook Refactor Spec
+
+## Adaptive hybrid addendum
+
+The approved demo/testnet target profile is `adaptive_hybrid_v1`:
+
+```text
+market dossier + retrieved rulebook
+  -> deterministic continuous RuleProposal
+  -> reject zone: no order and no LLM call
+  -> strong zone: explicit deterministic proposal lane
+  -> gray zone: required LLM ContextReview (APPROVE/VETO/WAIT, risk 0/0.5/1)
+  -> deterministic ticket construction
+  -> critic -> verifier -> risk/order compiler -> demo adapter
+```
+
+This addendum narrows the LLM role. The LLM does not generate symbol, side,
+entry, stop, target, leverage, quantity, or order timestamps. Strategy
+conditions are continuous score evidence unless a condition is an actual hard
+safety/data/execution rule. The strong lane is not fallback. A gray-zone LLM
+failure or budget denial still means HOLD/skip. Live trading stays blocked.
 
 **Mục đích của file này:** đưa trực tiếp cho một coding agent / AI model để sửa repo `mllllxxxx/trading_v1` theo hướng: **rulebook là source of truth, LLM là trader-reasoner đọc rulebook + market context để tạo trade intent, verifier/risk compiler là cổng an toàn cuối cùng trước khi đặt lệnh**.
 
@@ -144,7 +164,11 @@ Các invariant này phải có test hoặc ít nhất có code path rõ ràng:
 11. Không có path nào gọi broker trước verifier.
 12. Mọi final decision đều được log vào journal.
 13. LLM phải cite rule_id/playbook_id có tồn tại trong rulebook.
-14. Trong `REQUIRE_LLM_DECISION=true`, tuyệt đối không fallback sang rules-only execution.
+14. Trong gray zone, `REQUIRE_LLM_DECISION=true` tuyệt đối không fallback sang rules-only execution.
+15. Strong rules lane chỉ được phép khi canonical policy chọn `adaptive_hybrid_v1`; đây là explicit lane, không phải fallback.
+16. Reject zone không được tiêu hao LLM quota.
+17. LLM context review không được tạo hoặc sửa identity, side, price levels, leverage, quantity, hoặc order timestamp.
+18. Mọi executable lane vẫn phải qua critic, verifier, compiler và demo/testnet guard.
 ```
 
 ---

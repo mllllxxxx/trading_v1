@@ -31,9 +31,11 @@ import math
 import sys
 import time
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 # Lazy imports so the help text is fast and unit tests can stub modules.
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def okx_to_yf(symbol: str) -> str:
@@ -72,8 +74,6 @@ def fetch_timeframe(symbol: str, interval: str, period: str) -> "pd.DataFrame":
 
 def score_timeframe(df: "pd.DataFrame") -> dict[str, Any]:
     """Score a single timeframe. Returns dict with direction, components."""
-    import pandas as pd  # type: ignore
-
     if df is None or df.empty or len(df) < 60:
         return {
             "direction": 0,

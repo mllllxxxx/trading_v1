@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_generated_notice": "DO NOT EDIT - generated from trading/schemas/models.py",
+  "additionalProperties": false,
+  "properties": {
+    "conflict_flags": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "decision": {
+      "enum": [
+        "APPROVE",
+        "VETO",
+        "WAIT"
+      ],
+      "type": "string"
+    },
+    "evidence_refs": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "reasoning_summary": {
+      "type": "string"
+    },
+    "review_id": {
+      "type": "string"
+    },
+    "risk_multiplier": {
+      "enum": [
+        0,
+        0.5,
+        1
+      ],
+      "type": "number"
+    },
+    "schema_version": {
+      "const": "llm_context_review.v1",
+      "type": "string"
+    },
+    "timestamp_utc": {
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "review_id",
+    "timestamp_utc",
+    "decision",
+    "risk_multiplier",
+    "conflict_flags",
+    "evidence_refs",
+    "reasoning_summary"
+  ],
+  "title": "LLMContextReview",
+  "type": "object"
+}

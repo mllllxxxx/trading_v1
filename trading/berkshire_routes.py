@@ -1,10 +1,10 @@
-"""AI Berkshire research desk routes for Trade_V1.
+"""AI Berkshire research and signal-source routes for Trade_V1.
 
 This module turns the upstream AI Berkshire idea into an operational, local
-research workflow for the Web UI. It intentionally does not place orders or
-touch the crypto scheduler. The first version persists research runs and
-produces deterministic four-lens analysis that can later be swapped for real
-LLM or swarm workers behind the same API contract.
+research workflow and crypto SignalCandidate source for the Web UI. It
+defaults to signal-only output. When explicitly requested, eligible signals may
+feed the LLM-governed demo trading pipeline only through the shared contracts,
+verifier, risk compiler, execution adapter, and journal.
 """
 
 from __future__ import annotations
@@ -24,6 +24,16 @@ from typing import Any, Callable, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field, field_validator
+
+from berkshire_scanner import rank_signal_candidates, scan_crypto_market
+from strategy_teams import build_team_dashboard, resolve_team, team_ids_from_env
+
+try:
+    from auto.equity import runtime_equity
+    from auto.signal_pipeline import run_signal_to_demo_execution
+except Exception:  # pragma: no cover - package topology fallback
+    from equity import runtime_equity  # type: ignore
+    from signal_pipeline import run_signal_to_demo_execution  # type: ignore
 
 LaneKey = Literal["crypto", "forex"]
 SkillKey = Literal[
@@ -72,6 +82,67 @@ class BerkshireResearchRequest(BaseModel):
         return value.strip()
 
 
+class BerkshireCryptoScanRequest(BaseModel):
+    """Request body for creating one crypto signal scan."""
+
+    symbols: list[str] | None = Field(None, max_length=50)
+    limit: int = Field(50, ge=1, le=50)
+    team_id: str = Field("berkshire", min_length=2, max_length=40)
+    auto_promote_demo: bool = False
+    max_promotions: int = Field(10, ge=1, le=10)
+    equity_usd: float | None = Field(None, gt=0)
+
+    @field_validator("symbols")
+    @classmethod
+    def _symbols_shape(cls, value: list[str] | None) -> list[str] | None:
+        return _normalize_symbols(value)
+
+    @field_validator("team_id")
+    @classmethod
+    def _team_id_shape(cls, value: str) -> str:
+        return resolve_team(value).team_id
+
+
+class TradingTeamsScanRequest(BaseModel):
+    """Request body for scanning one or more tournament teams."""
+
+    symbols: list[str] | None = Field(None, max_length=50)
+    limit: int = Field(50, ge=1, le=50)
+    team_ids: list[str] | None = Field(None, max_length=4)
+    auto_promote_demo: bool = False
+    max_promotions: int = Field(10, ge=1, le=10)
+    equity_usd: float | None = Field(None, gt=0)
+
+    @field_validator("symbols")
+    @classmethod
+    def _symbols_shape(cls, value: list[str] | None) -> list[str] | None:
+        return _normalize_symbols(value)
+
+    @field_validator("team_ids")
+    @classmethod
+    def _team_ids_shape(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        normalized = [resolve_team(item).team_id for item in value]
+        return list(dict.fromkeys(normalized))
+
+
+def _normalize_symbols(value: list[str] | None) -> list[str] | None:
+    """Normalize request symbols and reject unsafe shapes."""
+    if value is None:
+        return None
+    normalized: list[str] = []
+    for raw in value:
+        symbol = str(raw).strip().upper()
+        if symbol.endswith("-SWAP"):
+            symbol = symbol[: -len("-SWAP")]
+        if not _SYMBOL_RE.fullmatch(symbol):
+            raise ValueError("symbols must be 2-25 chars: A-Z, 0-9, '.', '/', ':', '-'")
+        if symbol not in normalized:
+            normalized.append(symbol)
+    return normalized
+
+
 def register_berkshire_routes(app: FastAPI, require_auth: AuthDep | None = None) -> None:
     """Register AI Berkshire research endpoints on the host FastAPI app."""
     if require_auth is None:
@@ -102,6 +173,125 @@ def register_berkshire_routes(app: FastAPI, require_auth: AuthDep | None = None)
         _save_store(store)
         state = _build_state(store)
         return {"status": "ok", "run": run, "state": state}
+
+    @app.post(
+        "/api/berkshire/crypto/scan",
+        status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_auth)],
+    )
+    async def scan_berkshire_crypto(payload: BerkshireCryptoScanRequest) -> dict[str, Any]:
+        """Create and persist one crypto SignalCandidate scan."""
+        team = resolve_team(payload.team_id)
+        scan = scan_crypto_market(symbols=payload.symbols, limit=payload.limit, team_id=team.team_id)
+        if payload.auto_promote_demo:
+            scan["demo_promotions"] = _promote_scan_signals_to_demo(
+                scan,
+                max_promotions=payload.max_promotions,
+                equity=payload.equity_usd or runtime_equity(team.team_capital_usd),
+            )
+        store = _load_store()
+        scans = store.setdefault("crypto_scans", [])
+        scans.insert(0, scan)
+        del scans[20:]
+        events = store.setdefault("system_events", _system_events())
+        events.insert(
+            0,
+            {
+                "time": _time_label(scan.get("created_at")),
+                "label": "Crypto signal scan",
+                "value": f"{scan.get('signal_count', 0)} signals, top {scan.get('top_symbol') or 'n/a'}",
+                "tone": "success" if scan.get("top_signal") in {"strong_candidate", "candidate"} else "info",
+            },
+        )
+        del events[20:]
+        store["updated_at"] = _now_iso()
+        _save_store(store)
+        state = _build_state(store)
+        return {"status": "ok", "scan": scan, "state": state}
+
+    @app.get("/api/trading-teams/status", dependencies=[Depends(require_auth)])
+    async def get_trading_teams_status() -> dict[str, Any]:
+        """Return strategy-team tournament metrics from journal evidence."""
+        try:
+            from auto import journal as _journal  # type: ignore
+            _journal.ensure_dirs()
+            positions = _journal.read_positions()
+            closed = _journal.read_closed_trades()
+        except Exception as exc:  # noqa: BLE001
+            return {"status": "error", "error": str(exc), "teams": []}
+        return {
+            "status": "ok",
+            "ts": _now_iso(),
+            "teams": build_team_dashboard(positions, closed),
+        }
+
+    @app.post(
+        "/api/trading-teams/crypto/scan",
+        status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_auth)],
+    )
+    async def scan_trading_teams_crypto(payload: TradingTeamsScanRequest) -> dict[str, Any]:
+        """Create crypto SignalCandidate scans for multiple strategy teams."""
+        team_ids = payload.team_ids or list(team_ids_from_env())
+        scans: list[dict[str, Any]] = []
+        for team_id in team_ids:
+            team = resolve_team(team_id)
+            scan = scan_crypto_market(symbols=payload.symbols, limit=payload.limit, team_id=team.team_id)
+            if payload.auto_promote_demo:
+                scan["demo_promotions"] = _promote_scan_signals_to_demo(
+                    scan,
+                    max_promotions=payload.max_promotions,
+                    equity=payload.equity_usd or runtime_equity(team.team_capital_usd),
+                )
+            scans.append(scan)
+        return {"status": "ok", "scans": scans, "team_count": len(scans)}
+
+
+def _promote_scan_signals_to_demo(
+    scan: dict[str, Any],
+    *,
+    max_promotions: int,
+    equity: float,
+) -> list[dict[str, Any]]:
+    """Promote eligible scan signals through the demo execution pipeline."""
+    promotions: list[dict[str, Any]] = []
+    candidates = rank_signal_candidates([
+        dict(signal)
+        for signal in scan.get("signals", [])
+        if _looks_demo_promotable(signal)
+    ])
+    cap = min(max_promotions, _env_int("AUTO_MAX_POSITIONS", 10))
+    for signal in candidates:
+        executed_count = sum(1 for item in promotions if item.get("executed"))
+        if executed_count >= cap:
+            break
+        result = run_signal_to_demo_execution(
+            signal,
+            equity=equity,
+            autonomy_mode="paper",
+        )
+        promotions.append(result.to_dict())
+    return promotions
+
+
+def _looks_demo_promotable(signal: Any) -> bool:
+    """Cheap prefilter before the full SignalCandidate validator runs."""
+    if not isinstance(signal, dict):
+        return False
+    status_value = signal.get("status") or signal.get("signal")
+    return (
+        status_value in {"strong_candidate", "candidate"}
+        and signal.get("direction") in {"long", "short"}
+        and signal.get("action_hint") in {"OPEN_LONG", "OPEN_SHORT"}
+        and not signal.get("blockers")
+    )
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
 
 
 def _data_dir() -> Path:
@@ -150,6 +340,7 @@ def _load_store() -> dict[str, Any]:
         if not isinstance(raw, dict):
             raw = _empty_store()
         raw.setdefault("runs", [])
+        raw.setdefault("crypto_scans", [])
         raw.setdefault("system_events", _system_events())
         raw.setdefault("active_run_id", None)
         raw.setdefault("created_at", _now_iso())
@@ -179,6 +370,7 @@ def _empty_store() -> dict[str, Any]:
         "updated_at": now,
         "active_run_id": None,
         "runs": [],
+        "crypto_scans": [],
         "system_events": _system_events(),
     }
 
@@ -187,18 +379,21 @@ def _build_state(store: dict[str, Any] | None = None) -> dict[str, Any]:
     """Build the API state payload consumed by the Berkshire screen."""
     store = store or _load_store()
     runs = [r for r in store.get("runs", []) if isinstance(r, dict)]
+    scans = [s for s in store.get("crypto_scans", []) if isinstance(s, dict)]
     active_run_id = store.get("active_run_id")
     active_run = next((r for r in runs if r.get("id") == active_run_id), runs[0] if runs else None)
     return {
         "status": "ok",
         "ts": _now_iso(),
         "schema_version": store.get("schema_version", "berkshire.v1"),
-        "lanes": _lanes(runs),
+        "lanes": _lanes(runs, scans),
         "pipelines": _pipelines(),
         "analyst_pods": _analyst_pods(),
         "roadmap": _roadmap(),
         "capabilities": _capabilities(),
         "requirements": _requirements(),
+        "crypto_scans": scans[:10],
+        "latest_crypto_scan": scans[0] if scans else None,
         "runs": runs[:20],
         "active_run": active_run,
         "audit_events": _audit_events(store, runs),
@@ -507,7 +702,7 @@ def _report_markdown(
         f"- Verdict: {verdict}",
         f"- Info grade: {info_grade}",
         f"- Conviction: {conviction}/100",
-        f"- Mode: research_only",
+        "- Mode: research_only",
         "",
         "## Four-lens view",
     ]
@@ -524,11 +719,13 @@ def _report_markdown(
     return "\n".join(lines)
 
 
-def _lanes(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _lanes(runs: list[dict[str, Any]], scans: list[dict[str, Any]]) -> list[dict[str, Any]]:
     counts = {
         "crypto": sum(1 for run in runs if run.get("lane") == "crypto"),
         "forex": sum(1 for run in runs if run.get("lane") == "forex"),
     }
+    latest_scan = scans[0] if scans else {}
+    latest_signal_count = str(latest_scan.get("signal_count", 0)) if latest_scan else "0"
     return [
         {
             "key": "crypto",
@@ -545,6 +742,7 @@ def _lanes(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "telemetry": [
                 {"label": "runtime", "value": "connected", "tone": "success"},
                 {"label": "research runs", "value": str(counts["crypto"]), "tone": "info"},
+                {"label": "signals", "value": latest_signal_count, "tone": "accent" if scans else "neutral"},
                 {"label": "validator", "value": "hard gate", "tone": "success"},
             ],
         },
@@ -598,7 +796,7 @@ def _analyst_pods() -> list[dict[str, str]]:
 def _roadmap() -> list[dict[str, str]]:
     return [
         {"stage": "Now", "title": "Research workflow API", "state": "done", "tone": "success", "detail": "State, persistence, research creation, four-lens report, and audit are live."},
-        {"stage": "Next", "title": "LLM or swarm workers", "state": "planned", "tone": "warning", "detail": "Replace deterministic synthesis with real multi-agent research behind the same API."},
+        {"stage": "Now", "title": "Signal promotion to LLM tickets", "state": "operational", "tone": "success", "detail": "Eligible SignalCandidate records can feed the LLM decision path before demo execution."},
         {"stage": "Then", "title": "Forex runtime lane", "state": "blocked", "tone": "danger", "detail": "Add broker adapter, spread guards, sessions, and journal compatibility."},
         {"stage": "Guardrail", "title": "Unified exposure ledger", "state": "required", "tone": "accent", "detail": "Crypto and Forex must share global risk, drawdown, and kill-switch policy."},
     ]
@@ -608,8 +806,9 @@ def _capabilities() -> list[dict[str, str]]:
     return [
         {"label": "State API", "value": "GET /api/berkshire/state", "tone": "success"},
         {"label": "Research run", "value": "POST /api/berkshire/research", "tone": "success"},
+        {"label": "Crypto scan", "value": "POST /api/berkshire/crypto/scan", "tone": "success"},
         {"label": "Financial rigor", "value": "Decimal risk/reward audit", "tone": "success"},
-        {"label": "Execution", "value": "research_only", "tone": "warning"},
+        {"label": "Execution", "value": "demo pipeline gated", "tone": "success"},
     ]
 
 
@@ -625,7 +824,7 @@ def _requirements() -> list[dict[str, str]]:
 def _system_events() -> list[dict[str, str]]:
     return [
         {"time": _time_label(), "label": "AI Berkshire source mapped", "value": "skills plus tools, no runtime package", "tone": "info"},
-        {"time": _time_label(), "label": "Research contract active", "value": "state and research endpoints registered", "tone": "success"},
+        {"time": _time_label(), "label": "Signal contract active", "value": "Berkshire emits SignalCandidate records", "tone": "success"},
         {"time": _time_label(), "label": "Execution guard", "value": "research_only, no order payloads", "tone": "success"},
     ]
 

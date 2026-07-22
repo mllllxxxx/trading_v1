@@ -12,6 +12,7 @@
         "crypto"
       ],
       "playbook_id": "PB_CRYPTO_BREAKOUT_PULLBACK_001",
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
@@ -22,6 +23,7 @@
       ],
       "source_path": "trading/rulebook/source/cases/CASE_BAD_CHASE_BREAKOUT_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Bad trade chasing extended breakout",
       "type": "case_memory"
@@ -37,6 +39,7 @@
         "crypto"
       ],
       "playbook_id": "PB_CRYPTO_TREND_CONTINUATION_001",
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
@@ -47,6 +50,7 @@
       ],
       "source_path": "trading/rulebook/source/cases/CASE_BAD_FUNDING_OVERHEATED_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Bad trade with overheated funding",
       "type": "case_memory"
@@ -62,6 +66,7 @@
         "crypto"
       ],
       "playbook_id": "PB_CRYPTO_TREND_CONTINUATION_001",
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
@@ -74,28 +79,31 @@
       ],
       "source_path": "trading/rulebook/source/cases/CASE_GOOD_TREND_LONG_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Good trend long after pullback",
       "type": "case_memory"
     },
     "HARD_DATA_001": {
       "category": "hard",
-      "description": "If required market data is missing, stale, or has invalid current price, the system must not open a new order.",
+      "description": "If required market data is missing, stale, or has invalid current price, the system must not open a new order. For the 15m strategy trigger, freshness is measured from the latest confirmed candle close with a default maximum age of 1080 seconds.",
       "directions": [],
       "id": "HARD_DATA_001",
       "llm_guidance": "When data quality is poor or unknown, return HOLD or REQUEST_MORE_DATA.",
-      "markdown": "## HARD_DATA_001 - Missing or stale market data means hold\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto, forex\n\nIf required market data is missing, stale, or has invalid current price, the system must not open a new order.\n\nLLM guidance:\n\nWhen data quality is poor or unknown, return HOLD or REQUEST_MORE_DATA.",
+      "markdown": "## HARD_DATA_001 - Missing or stale market data means hold\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto, forex\n\nIf required market data is missing, stale, or has invalid current price, the system must not open a new order. For the 15m strategy trigger, freshness is measured from the latest confirmed candle close with a default maximum age of 1080 seconds.\n\nLLM guidance:\n\nWhen data quality is poor or unknown, return HOLD or REQUEST_MORE_DATA.",
       "markets": [
         "crypto",
         "forex"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/hard/HARD_DATA_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Missing or stale market data means hold",
       "type": "hard_rule"
@@ -112,36 +120,40 @@
         "forex"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/hard/HARD_EXECUTION_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "No execution before verifier pass",
       "type": "hard_rule"
     },
     "HARD_LLM_001": {
       "category": "hard",
-      "description": "Any non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID.",
+      "description": "Any non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID. Team-profile OPEN_LONG and OPEN_SHORT tickets must also prove profile compliance.",
       "directions": [],
       "id": "HARD_LLM_001",
-      "llm_guidance": "If no retrieved playbook fits, return HOLD. Never invent rule IDs.",
-      "markdown": "## HARD_LLM_001 - Non-HOLD LLM decisions must cite real rule IDs\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto, forex\n\nAny non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID.\n\nLLM guidance:\n\nIf no retrieved playbook fits, return HOLD. Never invent rule IDs.",
+      "llm_guidance": "If no retrieved playbook fits, return HOLD. Never invent rule IDs. If a team profile is present, OPEN_LONG and OPEN_SHORT tickets must include profile_compliance_score, profile_compliance_summary, and profile_compliance_flags, and must use one of the team's preferred playbooks.",
+      "markdown": "## HARD_LLM_001 - Non-HOLD LLM decisions must cite real rule IDs and fit team profiles\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto, forex\n\nAny non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID. Team-profile OPEN_LONG and OPEN_SHORT tickets must also prove profile compliance.\n\nLLM guidance:\n\nIf no retrieved playbook fits, return HOLD. Never invent rule IDs. If a team profile is present, OPEN_LONG and OPEN_SHORT tickets must include profile_compliance_score, profile_compliance_summary, and profile_compliance_flags, and must use one of the team's preferred playbooks.",
       "markets": [
         "crypto",
         "forex"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/hard/HARD_LLM_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
-      "title": "Non-HOLD LLM decisions must cite real rule IDs",
+      "title": "Non-HOLD LLM decisions must cite real rule IDs and fit team profiles",
       "type": "hard_rule"
     },
     "HARD_LLM_002": {
@@ -156,12 +168,14 @@
         "forex"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/hard/HARD_LLM_002.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Invalid LLM JSON or schema failure means hold",
       "type": "hard_rule"
@@ -178,35 +192,39 @@
         "forex"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/hard/HARD_MODE_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Paper and live-like modes fail closed",
       "type": "hard_rule"
     },
     "HARD_RISK_001": {
       "category": "hard",
-      "description": "A single position must not exceed the configured max risk percentage or max notional percentage of capital. Legacy validator compatibility also keeps the generic max leverage value.",
+      "description": "A team risk percentage is a target capped by market structure and execution limits. A single position must not exceed the hard risk, margin, gross-notional, or leverage limits.",
       "directions": [],
       "id": "HARD_RISK_001",
-      "llm_guidance": "Do not propose trades that exceed the maximum notional cap. If the setup needs too much size, return HOLD or reduce risk.",
-      "markdown": "## HARD_RISK_001 - Maximum risk, position, and legacy leverage policy\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto\n\nA single position must not exceed the configured max risk percentage or max notional percentage of capital. Legacy validator compatibility also keeps the generic max leverage value.\n\nLLM guidance:\n\nDo not propose trades that exceed the maximum notional cap. If the setup needs too much size, return HOLD or reduce risk.",
+      "llm_guidance": "Treat team risk as a target and never force it. The compiler may reduce actual risk to satisfy the 20% margin, 60% gross-notional, 3x leverage, contract-size, and 5% risk ceilings.",
+      "markdown": "## HARD_RISK_001 - Maximum risk, margin, notional, and leverage policy\n\n- Type: `hard_rule`\n- Category: `hard`\n- Status: `active`\n- Markets: crypto\n\nA team risk percentage is a target capped by market structure and execution limits. A single position must not exceed the hard risk, margin, gross-notional, or leverage limits.\n\nLLM guidance:\n\nTreat team risk as a target and never force it. The compiler may reduce actual risk to satisfy the 20% margin, 60% gross-notional, 3x leverage, contract-size, and 5% risk ceilings.",
       "markets": [
         "crypto"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/hard/HARD_RISK_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
-      "title": "Maximum risk, position, and legacy leverage policy",
+      "title": "Maximum risk, margin, notional, and leverage policy",
       "type": "hard_rule"
     },
     "HARD_RISK_002": {
@@ -220,12 +238,14 @@
         "crypto"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/hard/HARD_RISK_002.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Stop loss and take profit required",
       "type": "hard_rule"
@@ -241,12 +261,14 @@
         "crypto"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/hard/HARD_RISK_003.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Minimum reward-to-risk requirement",
       "type": "hard_rule"
@@ -265,6 +287,7 @@
         "crypto"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [
         "TRENDING_UP",
         "TRENDING_DOWN",
@@ -287,6 +310,7 @@
       "rule_citations": [],
       "source_path": "trading/rulebook/source/playbooks/PB_CRYPTO_BREAKOUT_PULLBACK_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [
         "5m",
         "15m",
@@ -310,6 +334,7 @@
         "crypto"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [
         "RANGING"
       ],
@@ -329,6 +354,7 @@
       "rule_citations": [],
       "source_path": "trading/rulebook/source/playbooks/PB_CRYPTO_MEAN_REVERSION_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [
         "5m",
         "15m",
@@ -351,6 +377,7 @@
         "crypto"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [
         "TRENDING_UP",
         "TRENDING_DOWN"
@@ -373,6 +400,7 @@
       "rule_citations": [],
       "source_path": "trading/rulebook/source/playbooks/PB_CRYPTO_TREND_CONTINUATION_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [
         "15m",
         "1h",
@@ -396,6 +424,7 @@
         "forex"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [
         "TRENDING_UP",
         "TRENDING_DOWN",
@@ -417,6 +446,7 @@
       "rule_citations": [],
       "source_path": "trading/rulebook/source/playbooks/PB_FX_POST_EVENT_CONTINUATION_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [
         "5m",
         "15m",
@@ -439,6 +469,7 @@
         "forex"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [
         "TRENDING_UP",
         "TRENDING_DOWN"
@@ -459,6 +490,7 @@
       "rule_citations": [],
       "source_path": "trading/rulebook/source/playbooks/PB_FX_TREND_CONTINUATION_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [
         "15m",
         "1h",
@@ -480,12 +512,14 @@
         "forex"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/soft/SOFT_CORRELATION_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Avoid stacking correlated exposure",
       "type": "soft_policy"
@@ -501,12 +535,14 @@
         "crypto"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/soft/SOFT_CRYPTO_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Avoid chasing extended crypto moves",
       "type": "soft_policy"
@@ -522,12 +558,14 @@
         "crypto"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/soft/SOFT_CRYPTO_002.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Reduce risk when funding is elevated",
       "type": "soft_policy"
@@ -544,12 +582,14 @@
         "forex"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/soft/SOFT_REGIME_001.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Trend-following preferred in trending regimes",
       "type": "soft_policy"
@@ -566,16 +606,114 @@
         "forex"
       ],
       "playbook_id": null,
+      "profile_compliance": {},
       "regimes": [],
       "related_soft_policies": [],
       "required_hard_rules": [],
       "rule_citations": [],
       "source_path": "trading/rulebook/source/soft/SOFT_REGIME_002.json",
       "status": "active",
+      "strategy_skill_profiles": {},
       "timeframes": [],
       "title": "Mean reversion only in ranging regimes",
       "type": "soft_policy"
+    },
+    "SOFT_STRATEGY_TEAM_001": {
+      "category": "soft",
+      "description": "The strategy-team tournament uses distinct advisory skill profiles for Momentum, Mean Reversion, and Volatility Breakout while preserving the shared LLM, verifier, compiler, and demo execution path.",
+      "directions": [],
+      "id": "SOFT_STRATEGY_TEAM_001",
+      "llm_guidance": "Use the strategy_skill_profiles metadata to interpret team-tagged SignalCandidate records. Skill profiles are advisory context only and never bypass hard rules, retrieved playbooks, verifier checks, or the risk compiler. For OPEN_LONG or OPEN_SHORT tickets from a team profile, return profile_compliance_score, profile_compliance_summary, and profile_compliance_flags; use HOLD when the selected setup cannot honestly meet the profile.",
+      "markdown": "## SOFT_STRATEGY_TEAM_001 - Strategy team skill profiles\n\n- Type: `soft_policy`\n- Category: `soft`\n- Status: `active`\n- Markets: crypto\n\nThe strategy-team tournament uses distinct advisory skill profiles for Momentum, Mean Reversion, and Volatility Breakout while preserving the shared LLM, verifier, compiler, and demo execution path.\n\nLLM guidance:\n\nUse the strategy_skill_profiles metadata to interpret team-tagged SignalCandidate records. Skill profiles are advisory context only and never bypass hard rules, retrieved playbooks, verifier checks, or the risk compiler. For OPEN_LONG or OPEN_SHORT tickets from a team profile, return profile_compliance_score, profile_compliance_summary, and profile_compliance_flags; use HOLD when the selected setup cannot honestly meet the profile.\n\nProfile compliance:\n\n```json\n{\n  \"applies_to\": [\n    \"OPEN_LONG\",\n    \"OPEN_SHORT\"\n  ],\n  \"failure_behavior\": \"verifier_reject\",\n  \"min_profile_compliance_score\": 0.6,\n  \"preferred_playbook_required\": true,\n  \"required_ticket_fields\": [\n    \"profile_compliance_score\",\n    \"profile_compliance_summary\",\n    \"profile_compliance_flags\"\n  ]\n}\n```\n\nStrategy skill profiles:\n\n```json\n{\n  \"mean_reversion\": {\n    \"avoid_conditions\": [\n      \"strong trending regime\",\n      \"disorderly range expansion\",\n      \"missing range structure\",\n      \"thin liquidity\"\n    ],\n    \"entry_style\": \"Fade a stretched RSI/Bollinger move only in a confirmed 1H range after 15m turns back toward value.\",\n    \"llm_guidance\": \"Mean Reversion must not fade strong trends by default. It should return HOLD unless range behavior and invalidation are clear.\",\n    \"preferred_playbook_ids\": [\n      \"PB_CRYPTO_MEAN_REVERSION_001\"\n    ],\n    \"required_soft_policy_ids\": [\n      \"SOFT_REGIME_002\",\n      \"SOFT_CORRELATION_001\",\n      \"SOFT_STRATEGY_TEAM_001\"\n    ],\n    \"risk_personality\": \"patient contrarian; low target risk unless range quality is clear.\"\n  },\n  \"momentum\": {\n    \"avoid_conditions\": [\n      \"late impulse chase\",\n      \"thin liquidity\",\n      \"wide spread\",\n      \"funding or crowding warning\"\n    ],\n    \"entry_style\": \"Wait for a confirmed 1H/15m pullback or EMA20 reclaim inside a 4H trend; do not chase beyond 0.5 ATR.\",\n    \"llm_guidance\": \"Momentum may promote trend continuation only when liquidity, spread, and regime support the impulse. Prefer HOLD over chasing an extended move.\",\n    \"preferred_playbook_ids\": [\n      \"PB_CRYPTO_TREND_CONTINUATION_001\"\n    ],\n    \"required_soft_policy_ids\": [\n      \"SOFT_CRYPTO_001\",\n      \"SOFT_CRYPTO_002\",\n      \"SOFT_REGIME_001\",\n      \"SOFT_STRATEGY_TEAM_001\"\n    ],\n    \"risk_personality\": \"medium-high conviction trend follower; reduce confidence when entry is far from retest.\"\n  },\n  \"volatility_breakout\": {\n    \"avoid_conditions\": [\n      \"range expansion missing\",\n      \"failed breakout\",\n      \"overextended breakout\",\n      \"wide spread\"\n    ],\n    \"entry_style\": \"Trade range expansion only after directional pressure is visible, preferring retest or pullback over raw chase.\",\n    \"llm_guidance\": \"Volatility Breakout may promote expansion setups, but must prefer pullback entries and reject failed or overextended breakouts.\",\n    \"preferred_playbook_ids\": [\n      \"PB_CRYPTO_BREAKOUT_PULLBACK_001\"\n    ],\n    \"required_soft_policy_ids\": [\n      \"SOFT_CRYPTO_001\",\n      \"SOFT_CRYPTO_002\",\n      \"SOFT_CORRELATION_001\",\n      \"SOFT_STRATEGY_TEAM_001\"\n    ],\n    \"risk_personality\": \"highest tournament risk target, but only for confirmed expansion with clear invalidation.\"\n  }\n}\n```",
+      "markets": [
+        "crypto"
+      ],
+      "playbook_id": null,
+      "profile_compliance": {
+        "applies_to": [
+          "OPEN_LONG",
+          "OPEN_SHORT"
+        ],
+        "failure_behavior": "verifier_reject",
+        "min_profile_compliance_score": 0.6,
+        "preferred_playbook_required": true,
+        "required_ticket_fields": [
+          "profile_compliance_score",
+          "profile_compliance_summary",
+          "profile_compliance_flags"
+        ]
+      },
+      "regimes": [],
+      "related_soft_policies": [],
+      "required_hard_rules": [],
+      "rule_citations": [],
+      "source_path": "trading/rulebook/source/soft/SOFT_STRATEGY_TEAM_001.json",
+      "status": "active",
+      "strategy_skill_profiles": {
+        "mean_reversion": {
+          "avoid_conditions": [
+            "strong trending regime",
+            "disorderly range expansion",
+            "missing range structure",
+            "thin liquidity"
+          ],
+          "entry_style": "Fade a stretched RSI/Bollinger move only in a confirmed 1H range after 15m turns back toward value.",
+          "llm_guidance": "Mean Reversion must not fade strong trends by default. It should return HOLD unless range behavior and invalidation are clear.",
+          "preferred_playbook_ids": [
+            "PB_CRYPTO_MEAN_REVERSION_001"
+          ],
+          "required_soft_policy_ids": [
+            "SOFT_REGIME_002",
+            "SOFT_CORRELATION_001",
+            "SOFT_STRATEGY_TEAM_001"
+          ],
+          "risk_personality": "patient contrarian; low target risk unless range quality is clear."
+        },
+        "momentum": {
+          "avoid_conditions": [
+            "late impulse chase",
+            "thin liquidity",
+            "wide spread",
+            "funding or crowding warning"
+          ],
+          "entry_style": "Wait for a confirmed 1H/15m pullback or EMA20 reclaim inside a 4H trend; do not chase beyond 0.5 ATR.",
+          "llm_guidance": "Momentum may promote trend continuation only when liquidity, spread, and regime support the impulse. Prefer HOLD over chasing an extended move.",
+          "preferred_playbook_ids": [
+            "PB_CRYPTO_TREND_CONTINUATION_001"
+          ],
+          "required_soft_policy_ids": [
+            "SOFT_CRYPTO_001",
+            "SOFT_CRYPTO_002",
+            "SOFT_REGIME_001",
+            "SOFT_STRATEGY_TEAM_001"
+          ],
+          "risk_personality": "medium-high conviction trend follower; reduce confidence when entry is far from retest."
+        },
+        "volatility_breakout": {
+          "avoid_conditions": [
+            "range expansion missing",
+            "failed breakout",
+            "overextended breakout",
+            "wide spread"
+          ],
+          "entry_style": "Trade range expansion only after directional pressure is visible, preferring retest or pullback over raw chase.",
+          "llm_guidance": "Volatility Breakout may promote expansion setups, but must prefer pullback entries and reject failed or overextended breakouts.",
+          "preferred_playbook_ids": [
+            "PB_CRYPTO_BREAKOUT_PULLBACK_001"
+          ],
+          "required_soft_policy_ids": [
+            "SOFT_CRYPTO_001",
+            "SOFT_CRYPTO_002",
+            "SOFT_CORRELATION_001",
+            "SOFT_STRATEGY_TEAM_001"
+          ],
+          "risk_personality": "highest tournament risk target, but only for confirmed expansion with clear invalidation."
+        }
+      },
+      "timeframes": [],
+      "title": "Strategy team skill profiles",
+      "type": "soft_policy"
     }
   },
-  "source_hash": "92e746abff99848ba0fffcb103a43399290ce02c87c9abbda3ecdcb0b561edb4"
+  "source_hash": "b95ba7e36a150ce293a5a577970a1ec3f65a825cf5630da088976babaf6874e4"
 }

@@ -74,6 +74,26 @@
         "null"
       ]
     },
+    "profile_compliance_flags": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "profile_compliance_score": {
+      "maximum": 1,
+      "minimum": 0,
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "profile_compliance_summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "reasoning_summary": {
       "type": "string"
     },

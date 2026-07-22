@@ -16,6 +16,7 @@ import re
 import signal
 import time
 import csv
+import importlib.resources
 import uuid
 import urllib.parse
 from datetime import datetime
@@ -23,7 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, Security, UploadFile, status
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,6 +46,11 @@ for _s in ("stdout", "stderr"):
 _APP_DIR = "/app"
 if _APP_DIR not in _sys.path:
     _sys.path.insert(0, _APP_DIR)
+
+try:
+    from auto.ui_cache import cache_is_fresh, cache_status, should_refresh_cache  # type: ignore
+except Exception:  # pragma: no cover - legacy sys.path may expose auto/ as top-level
+    from ui_cache import cache_is_fresh, cache_status, should_refresh_cache  # type: ignore
 
 RUNS_DIR = Path(__file__).resolve().parent / "runs"
 SESSIONS_DIR = Path(__file__).resolve().parent / "sessions"
@@ -913,13 +919,27 @@ async def require_settings_write_auth(
 LLM_PROVIDER_CONFIG_PATH = AGENT_DIR / "src" / "providers" / "llm_providers.json"
 
 
+def _read_llm_provider_config() -> str:
+    """Read provider metadata from the checkout or installed package."""
+    if LLM_PROVIDER_CONFIG_PATH.exists():
+        return LLM_PROVIDER_CONFIG_PATH.read_text(encoding="utf-8")
+    try:
+        resource = importlib.resources.files("src.providers").joinpath("llm_providers.json")
+        return resource.read_text(encoding="utf-8")
+    except (FileNotFoundError, ModuleNotFoundError, OSError) as exc:
+        raise RuntimeError(
+            "Failed to load LLM provider config from "
+            f"{LLM_PROVIDER_CONFIG_PATH} or installed src.providers"
+        ) from exc
+
+
 def _load_llm_providers() -> List[LLMProviderOption]:
     """Load provider metadata from JSON so additions stay data-driven."""
     try:
-        raw = json.loads(LLM_PROVIDER_CONFIG_PATH.read_text(encoding="utf-8"))
+        raw = json.loads(_read_llm_provider_config())
         providers = [LLMProviderOption(**item) for item in raw]
     except Exception as exc:
-        raise RuntimeError(f"Failed to load LLM provider config: {LLM_PROVIDER_CONFIG_PATH}") from exc
+        raise RuntimeError("Failed to load LLM provider config") from exc
 
     seen: set[str] = set()
     for provider in providers:
@@ -1669,8 +1689,413 @@ async def health_check():
 # data endpoints live here.
 # ---------------------------------------------------------------------------
 
-_TICKER_CACHE: dict[str, Any] = {"ts": 0.0, "data": []}
-_TICKER_TTL_S = 5.0
+_TICKER_CACHE: dict[str, Any] = {
+    "ts": 0.0,
+    "data": [],
+    "symbols": "",
+    "error": None,
+    "refreshing": False,
+}
+_TICKER_REFRESH_TASK: asyncio.Task[Any] | None = None
+_TRADER_STATUS_EXCHANGE_CACHE: dict[str, Any] = {
+    "ts": 0.0,
+    "snapshot": None,
+    "sync_status": None,
+    "error": None,
+    "refreshing": False,
+}
+_TRADER_STATUS_EXCHANGE_REFRESH_TASK: asyncio.Task[Any] | None = None
+_ADAPTIVE_EVALUATION_CACHE: dict[str, Any] = {
+    "ts": 0.0,
+    "data": None,
+    "fingerprint": "",
+    "error": None,
+    "refreshing": False,
+}
+_ADAPTIVE_EVALUATION_REFRESH_TASK: asyncio.Task[Any] | None = None
+
+
+def _env_float(name: str, default: float, *, minimum: float | None = None) -> float:
+    """Read a float env var with a bounded fallback."""
+    try:
+        value = float(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    if minimum is not None:
+        value = max(minimum, value)
+    return value
+
+
+def _env_int(name: str, default: int, *, minimum: int | None = None) -> int:
+    """Read an int env var with a bounded fallback."""
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    if minimum is not None:
+        value = max(minimum, value)
+    return value
+
+
+def _ticker_ttl_s() -> float:
+    """Return dashboard ticker cache TTL."""
+    return _env_float("TRADER_TICKER_CACHE_TTL_S", 10.0, minimum=1.0)
+
+
+def _exchange_status_ttl_s() -> float:
+    """Return dashboard exchange status cache TTL."""
+    return _env_float("TRADER_STATUS_EXCHANGE_CACHE_TTL_S", 15.0, minimum=1.0)
+
+
+def _exchange_status_stale_ttl_s() -> float:
+    """Return dashboard exchange status stale marker TTL."""
+    return _env_float("TRADER_STATUS_EXCHANGE_STALE_TTL_S", 120.0, minimum=1.0)
+
+
+def _adaptive_evaluation_ttl_s() -> float:
+    """Return TTL for journal-derived adaptive evaluation status."""
+    return _env_float("TRADER_ADAPTIVE_EVALUATION_TTL_S", 60.0, minimum=5.0)
+
+
+def _adaptive_evaluation_fingerprint(
+    closed_trades: list[dict[str, Any]],
+    *,
+    zone_override: dict[str, Any] | None = None,
+) -> str:
+    latest = closed_trades[-1] if closed_trades else {}
+    return "|".join(
+        [
+            str(len(closed_trades)),
+            str(
+                latest.get("decision_id")
+                or latest.get("position_id")
+                or latest.get("shadow_id")
+                or ""
+            ),
+            str(latest.get("closed_at") or latest.get("resolved_at") or ""),
+            str(latest.get("pnl_usd") or latest.get("r_multiple") or ""),
+            str((zone_override or {}).get("strong_min_score") or ""),
+            str((zone_override or {}).get("gray_min_score") or ""),
+        ]
+    )
+
+
+def _compute_adaptive_evaluation(
+    closed_trades: list[dict[str, Any]],
+    *,
+    zone_override: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Compute the compact status evaluation in a broker-free worker."""
+    try:
+        from replay.adaptive_evaluation import evaluate_adaptive_thresholds
+
+        evaluation = evaluate_adaptive_thresholds(
+            closed_trades,
+            zone_override=zone_override,
+        )
+        data = {
+            key: evaluation.get(key)
+            for key in (
+                "schema_version",
+                "recommendation_method",
+                "generated_at",
+                "status",
+                "current_policy",
+                "current_policy_metrics",
+                "current_policy_validation_metrics",
+                "total_records",
+                "eligible_records",
+                "excluded_records",
+                "exclusion_reasons",
+                "insufficiency_reasons",
+                "evidence_coverage",
+                "chronological_validation",
+                "llm_review_effectiveness",
+                "llm_review_health",
+                "strategy_threshold_diagnostics",
+                "conflict_penalty_diagnostics",
+                "shadow_scoring_experiment_evaluation",
+                "recommended_thresholds",
+                "candidate_gate_failures",
+                "minimum_samples",
+                "auto_apply",
+            )
+        }
+    except Exception as exc:  # noqa: BLE001
+        data = {
+            "schema_version": "adaptive_threshold_evaluation.v1",
+            "status": "unavailable",
+            "error": str(exc),
+            "auto_apply": False,
+        }
+    return data
+
+
+def _refresh_adaptive_evaluation_cache(
+    closed_trades: list[dict[str, Any]],
+    *,
+    zone_override: dict[str, Any] | None,
+    fingerprint: str,
+) -> None:
+    """Refresh adaptive status data without blocking the API event loop."""
+    _ADAPTIVE_EVALUATION_CACHE["refreshing"] = True
+    try:
+        data = _compute_adaptive_evaluation(
+            closed_trades,
+            zone_override=zone_override,
+        )
+        _ADAPTIVE_EVALUATION_CACHE.update(
+            {
+                "ts": time.time(),
+                "data": data,
+                "fingerprint": fingerprint,
+                "error": data.get("error"),
+            }
+        )
+    except Exception as exc:  # noqa: BLE001
+        _ADAPTIVE_EVALUATION_CACHE["error"] = str(exc)
+    finally:
+        _ADAPTIVE_EVALUATION_CACHE["refreshing"] = False
+
+
+async def _cached_adaptive_evaluation(
+    closed_trades: list[dict[str, Any]],
+    *,
+    zone_override: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return stale data immediately and refresh changed evidence in a worker."""
+    global _ADAPTIVE_EVALUATION_REFRESH_TASK
+
+    fingerprint = _adaptive_evaluation_fingerprint(
+        closed_trades,
+        zone_override=zone_override,
+    )
+    fingerprint_matches = _ADAPTIVE_EVALUATION_CACHE.get("fingerprint") == fingerprint
+    fresh = fingerprint_matches and cache_is_fresh(
+        _ADAPTIVE_EVALUATION_CACHE,
+        ttl_s=_adaptive_evaluation_ttl_s(),
+        value_key="data",
+    )
+    task_running = (
+        _ADAPTIVE_EVALUATION_REFRESH_TASK is not None
+        and not _ADAPTIVE_EVALUATION_REFRESH_TASK.done()
+    )
+    if not fresh and not task_running:
+        rows_snapshot = [dict(item) for item in closed_trades]
+        zones_snapshot = dict(zone_override) if zone_override is not None else None
+        _ADAPTIVE_EVALUATION_CACHE["refreshing"] = True
+        _ADAPTIVE_EVALUATION_REFRESH_TASK = asyncio.create_task(
+            asyncio.to_thread(
+                _refresh_adaptive_evaluation_cache,
+                rows_snapshot,
+                zone_override=zones_snapshot,
+                fingerprint=fingerprint,
+            )
+        )
+    cached = _ADAPTIVE_EVALUATION_CACHE.get("data")
+    if isinstance(cached, dict):
+        data = dict(cached)
+    else:
+        data = {
+            "schema_version": "adaptive_threshold_evaluation.v1",
+            "status": "refreshing",
+            "auto_apply": False,
+        }
+    data["cache"] = cache_status(
+        _ADAPTIVE_EVALUATION_CACHE,
+        ttl_s=_adaptive_evaluation_ttl_s(),
+        value_key="data",
+    )
+    if _ADAPTIVE_EVALUATION_CACHE.get("error"):
+        data["cache_error"] = str(_ADAPTIVE_EVALUATION_CACHE["error"])
+    return data
+
+
+def _okx_http_timeout_ms() -> int:
+    """Return timeout for dashboard OKX read calls."""
+    return _env_int("OKX_HTTP_TIMEOUT_MS", 5_000, minimum=1_000)
+
+
+def _exchange_reconcile_enabled() -> bool:
+    """Return whether dashboard exchange reconciliation is enabled."""
+    return os.getenv("TRADER_STATUS_EXCHANGE_RECONCILE", "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _default_sync_status(status_value: str = "disabled", *, error: str | None = None) -> dict[str, Any]:
+    """Return a dashboard-compatible sync status skeleton."""
+    errors = [error] if error else []
+    return {
+        "status": status_value,
+        "positions_on_exchange": 0,
+        "positions_in_journal": 0,
+        "missing_in_journal": [],
+        "missing_on_exchange": [],
+        "errors": errors,
+    }
+
+
+def _fetch_tickers_sync(symbols_key: str, symbols_list: list[str]) -> list[dict[str, Any]]:
+    """Fetch OKX tickers synchronously for a background dashboard refresh."""
+    import ccxt  # type: ignore
+
+    now = time.time()
+    cfg = {
+        "apiKey": os.getenv("OKX_API_KEY", "").strip(),
+        "secret": os.getenv("OKX_API_SECRET", "").strip(),
+        "password": os.getenv("OKX_PASSPHRASE", "").strip(),
+        "enableRateLimit": True,
+        "timeout": _okx_http_timeout_ms(),
+        "options": {"defaultType": "spot"},
+    }
+    exchange = ccxt.okx(cfg)
+    if os.getenv("OKX_TESTNET", "true").lower() in ("true", "1", "yes"):
+        exchange.set_sandbox_mode(True)
+
+    out: list[dict[str, Any]] = []
+    for sym in symbols_list:
+        try:
+            t = exchange.fetch_ticker(sym)
+            out.append({
+                "symbol": sym,
+                "price": float(t.get("last") or 0),
+                "change_24h_pct": float(t.get("percentage") or 0),
+                "volume_24h": float(t.get("quoteVolume") or 0),
+                "high_24h": float(t.get("high") or 0),
+                "low_24h": float(t.get("low") or 0),
+                "ts": int(t.get("timestamp") or now * 1000),
+            })
+        except Exception as exc:  # noqa: BLE001
+            out.append({"symbol": sym, "error": str(exc)})
+    return out
+
+
+def _refresh_ticker_cache(symbols_key: str, symbols_list: list[str]) -> None:
+    """Refresh ticker cache without blocking the request loop."""
+    _TICKER_CACHE["refreshing"] = True
+    try:
+        out = _fetch_tickers_sync(symbols_key, symbols_list)
+        _TICKER_CACHE.update({
+            "ts": time.time(),
+            "data": out,
+            "symbols": symbols_key,
+            "error": None,
+        })
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("dashboard ticker refresh failed: %s", exc)
+        _TICKER_CACHE.update({"error": str(exc)})
+    finally:
+        _TICKER_CACHE["refreshing"] = False
+
+
+async def _ensure_ticker_refresh(symbols_key: str, symbols_list: list[str]) -> None:
+    """Schedule ticker refresh if the cache is stale and no refresh is running."""
+    global _TICKER_REFRESH_TASK
+    if _TICKER_REFRESH_TASK is not None and _TICKER_REFRESH_TASK.done():
+        try:
+            _TICKER_REFRESH_TASK.result()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("dashboard ticker refresh task failed: %s", exc)
+        _TICKER_REFRESH_TASK = None
+
+    if not should_refresh_cache(
+        _TICKER_CACHE,
+        ttl_s=_ticker_ttl_s(),
+        value_key="data",
+    ) and _TICKER_CACHE.get("symbols") == symbols_key:
+        return
+    if _TICKER_REFRESH_TASK is not None and not _TICKER_REFRESH_TASK.done():
+        return
+
+    _TICKER_CACHE["refreshing"] = True
+    _TICKER_REFRESH_TASK = asyncio.create_task(
+        asyncio.to_thread(_refresh_ticker_cache, symbols_key, symbols_list)
+    )
+
+
+def _refresh_trader_status_exchange_cache() -> None:
+    """Refresh exchange position/account snapshot for dashboard status."""
+    _TRADER_STATUS_EXCHANGE_CACHE["refreshing"] = True
+    try:
+        from auto import journal as _journal  # type: ignore
+        from auto import exchange_reconciler as _exchange_reconciler  # type: ignore
+
+        _journal.ensure_dirs()
+        exchange_snapshot = _exchange_reconciler.fetch_okx_demo_snapshot(
+            include_pending_algo=True,
+            include_account=True,
+            journal_module=_journal,
+        )
+        sync_status = _exchange_reconciler.reconcile_journal_with_exchange(
+            snapshot=exchange_snapshot,
+            journal_module=_journal,
+            import_missing=True,
+            update_existing=True,
+        )
+        if not sync_status.get("errors") and getattr(_journal, "startup_sync_guard_active", lambda: False)():
+            _journal.clear_startup_sync_guard()
+        _TRADER_STATUS_EXCHANGE_CACHE.update({
+            "ts": time.time(),
+            "snapshot": exchange_snapshot,
+            "sync_status": sync_status,
+            "error": None,
+        })
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("dashboard exchange status refresh failed: %s", exc)
+        _TRADER_STATUS_EXCHANGE_CACHE.update({"error": str(exc)})
+    finally:
+        _TRADER_STATUS_EXCHANGE_CACHE["refreshing"] = False
+
+
+async def _ensure_trader_status_exchange_refresh() -> None:
+    """Schedule exchange status refresh without blocking the dashboard route."""
+    global _TRADER_STATUS_EXCHANGE_REFRESH_TASK
+    if _TRADER_STATUS_EXCHANGE_REFRESH_TASK is not None and _TRADER_STATUS_EXCHANGE_REFRESH_TASK.done():
+        try:
+            _TRADER_STATUS_EXCHANGE_REFRESH_TASK.result()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("dashboard exchange status task failed: %s", exc)
+        _TRADER_STATUS_EXCHANGE_REFRESH_TASK = None
+
+    if not should_refresh_cache(
+        _TRADER_STATUS_EXCHANGE_CACHE,
+        ttl_s=_exchange_status_ttl_s(),
+        value_key="snapshot",
+    ):
+        return
+    if _TRADER_STATUS_EXCHANGE_REFRESH_TASK is not None and not _TRADER_STATUS_EXCHANGE_REFRESH_TASK.done():
+        return
+
+    _TRADER_STATUS_EXCHANGE_CACHE["refreshing"] = True
+    _TRADER_STATUS_EXCHANGE_REFRESH_TASK = asyncio.create_task(
+        asyncio.to_thread(_refresh_trader_status_exchange_cache)
+    )
+
+
+def _cached_exchange_sync_status() -> dict[str, Any]:
+    """Return cached exchange sync status with cache metadata."""
+    raw_sync = _TRADER_STATUS_EXCHANGE_CACHE.get("sync_status")
+    sync_status = dict(raw_sync) if isinstance(raw_sync, dict) else _default_sync_status(
+        "refreshing" if _TRADER_STATUS_EXCHANGE_CACHE.get("refreshing") else "cache_empty",
+        error=str(_TRADER_STATUS_EXCHANGE_CACHE.get("error") or "") or None,
+    )
+    error = str(_TRADER_STATUS_EXCHANGE_CACHE.get("error") or "")
+    if error:
+        errors = list(sync_status.get("errors") or [])
+        if error not in errors:
+            errors.append(error)
+        sync_status["errors"] = errors
+    sync_status["cache"] = cache_status(
+        _TRADER_STATUS_EXCHANGE_CACHE,
+        ttl_s=_exchange_status_ttl_s(),
+        stale_ttl_s=_exchange_status_stale_ttl_s(),
+        value_key="snapshot",
+    )
+    return sync_status
 
 
 @app.get("/api/trader/history")
@@ -1727,7 +2152,9 @@ async def get_trader_history_stats() -> dict:
                 "total_pnl_usd": 0.0, "avg_pnl_usd": 0.0,
                 "best_trade_usd": 0.0, "worst_trade_usd": 0.0,
                 "avg_rr": 0.0, "avg_duration_s": 0,
-                "by_symbol": {}, "by_regime": {}, "by_exit_reason": {},
+                "by_symbol": {}, "by_regime": {}, "by_exit_reason": {}, "by_team": {},
+                "by_strategy_profile": {}, "by_profile_regime": {},
+                "avg_profile_compliance_score": None,
                 "max_consec_wins": 0, "max_consec_losses": 0,
             }
 
@@ -1769,12 +2196,102 @@ async def get_trader_history_stats() -> dict:
         for v in by_regime.values():
             v["winrate_pct"] = round(v["wins"] / v["n"] * 100, 1) if v["n"] else 0.0
 
+        def _profile_key(trade: dict[str, Any]) -> str:
+            return str(trade.get("strategy_id") or trade.get("team_id") or "unknown")
+
+        def _compliance_score(trade: dict[str, Any]) -> float | None:
+            for value in (
+                trade.get("profile_compliance_score"),
+                (trade.get("decision_context") or {}).get("profile_compliance_score")
+                if isinstance(trade.get("decision_context"), dict) else None,
+            ):
+                if value is None or isinstance(value, bool):
+                    continue
+                try:
+                    return float(value)
+                except (TypeError, ValueError):
+                    continue
+            return None
+
+        def _add_profile_bucket(bucket: dict[str, Any], trade: dict[str, Any]) -> None:
+            pnl = float(trade.get("pnl_usd", 0))
+            bucket["wins" if pnl > 0 else "losses"] += 1
+            bucket["pnl"] = round(bucket["pnl"] + pnl, 2)
+            bucket["n"] += 1
+            score = _compliance_score(trade)
+            if score is not None:
+                bucket["profile_compliance_score_sum"] = round(
+                    float(bucket.get("profile_compliance_score_sum", 0.0)) + score,
+                    4,
+                )
+                bucket["profile_compliance_score_count"] = int(
+                    bucket.get("profile_compliance_score_count", 0)
+                ) + 1
+
+        def _finalize_profile_bucket(bucket: dict[str, Any]) -> None:
+            bucket["winrate_pct"] = round(bucket["wins"] / bucket["n"] * 100, 1) if bucket["n"] else 0.0
+            count = int(bucket.pop("profile_compliance_score_count", 0))
+            total = float(bucket.pop("profile_compliance_score_sum", 0.0))
+            bucket["avg_profile_compliance_score"] = round(total / count, 4) if count else None
+
+        by_strategy_profile: dict[str, dict[str, Any]] = {}
+        by_profile_regime: dict[str, dict[str, Any]] = {}
+        compliance_scores: list[float] = []
+        for t in closed:
+            profile = _profile_key(t)
+            regime = t.get("regime", "unknown") or "unknown"
+            profile_bucket = by_strategy_profile.setdefault(
+                profile,
+                {"wins": 0, "losses": 0, "pnl": 0.0, "n": 0},
+            )
+            profile_regime_bucket = by_profile_regime.setdefault(
+                f"{profile}|{regime}",
+                {"wins": 0, "losses": 0, "pnl": 0.0, "n": 0},
+            )
+            _add_profile_bucket(profile_bucket, t)
+            _add_profile_bucket(profile_regime_bucket, t)
+            score = _compliance_score(t)
+            if score is not None:
+                compliance_scores.append(score)
+        for v in by_strategy_profile.values():
+            _finalize_profile_bucket(v)
+        for v in by_profile_regime.values():
+            _finalize_profile_bucket(v)
+
         by_reason: dict[str, dict[str, Any]] = {}
         for t in closed:
             r = t.get("exit_reason", "unknown") or "unknown"
             b = by_reason.setdefault(r, {"n": 0, "pnl": 0.0})
             b["n"] += 1
             b["pnl"] = round(b["pnl"] + float(t.get("pnl_usd", 0)), 2)
+
+        by_team: dict[str, Any] = {}
+        try:
+            from strategy_teams import build_team_dashboard  # type: ignore
+
+            by_team = {
+                team["team_id"]: {
+                    "team_name": team["team_name"],
+                    "strategy_name": team["strategy_name"],
+                    "wins": team["wins"],
+                    "losses": team["losses"],
+                    "n": team["closed_trades"],
+                    "pnl": team["realized_pnl_usd"],
+                    "winrate_pct": team["winrate"],
+                    "max_drawdown_usd": team["max_drawdown_usd"],
+                    "max_drawdown_pct": team.get("max_drawdown_pct", 0.0),
+                    "expectancy_r": team.get("expectancy_r", 0.0),
+                    "profit_factor": team.get("profit_factor", 0.0),
+                    "wilson_winrate": team.get("wilson_winrate", 0.0),
+                    "sample_reliability": team.get("sample_reliability", 0.0),
+                    "competition_score": team.get("competition_score", 0.0),
+                    "ranking_status": team.get("ranking_status", "provisional"),
+                    "avg_actual_risk_pct_equity": team.get("avg_actual_risk_pct_equity"),
+                }
+                for team in build_team_dashboard([], closed)
+            }
+        except Exception:
+            by_team = {}
 
         max_cw = max_cl = cw = cl = 0
         for p in pnls:
@@ -1800,6 +2317,13 @@ async def get_trader_history_stats() -> dict:
             "by_symbol": by_sym,
             "by_regime": by_regime,
             "by_exit_reason": by_reason,
+            "by_team": by_team,
+            "by_strategy_profile": by_strategy_profile,
+            "by_profile_regime": by_profile_regime,
+            "avg_profile_compliance_score": (
+                round(sum(compliance_scores) / len(compliance_scores), 4)
+                if compliance_scores else None
+            ),
             "max_consec_wins": max_cw,
             "max_consec_losses": max_cl,
         }
@@ -1811,49 +2335,56 @@ async def get_trader_history_stats() -> dict:
 async def get_trader_ticker(
     symbols: str = Query(default="BTC-USDT,ETH-USDT,SOL-USDT,BNB-USDT"),
 ) -> dict:
-    """Latest price + 24h change for each symbol. Cached 5s server-side.
+    """Latest price + 24h change for each symbol, refreshed off the request path.
 
     Frontend should poll every 10s. OKX testnet rate limit: 20 req/s.
     """
     now = time.time()
-    if now - float(_TICKER_CACHE.get("ts", 0.0)) < _TICKER_TTL_S and _TICKER_CACHE.get("data"):
+    symbols_list = [s.strip() for s in symbols.split(",") if s.strip()]
+    symbols_key = ",".join(symbols_list)
+    is_current_symbol_set = _TICKER_CACHE.get("symbols") == symbols_key
+    if is_current_symbol_set and cache_is_fresh(
+        _TICKER_CACHE,
+        ttl_s=_ticker_ttl_s(),
+        value_key="data",
+        now=now,
+    ):
         return {
             "tickers": _TICKER_CACHE["data"],
             "cached": True,
             "ts": _TICKER_CACHE["ts"],
+            "cache": cache_status(_TICKER_CACHE, ttl_s=_ticker_ttl_s(), value_key="data", now=now),
         }
+
+    await _ensure_ticker_refresh(symbols_key, symbols_list)
+    cached_data = _TICKER_CACHE.get("data") if is_current_symbol_set else []
+    return {
+        "tickers": cached_data or [],
+        "cached": bool(cached_data),
+        "refreshing": bool(_TICKER_CACHE.get("refreshing")),
+        "error": _TICKER_CACHE.get("error"),
+        "ts": _TICKER_CACHE.get("ts") or now,
+        "cache": cache_status(_TICKER_CACHE, ttl_s=_ticker_ttl_s(), value_key="data", now=now),
+    }
+
+
+def _read_jsonl_tail(path: Path, limit: int) -> list[dict[str, Any]]:
+    """Read recent JSONL objects, skipping corrupt legacy lines."""
+    out: list[dict[str, Any]] = []
     try:
-        import ccxt  # type: ignore
-        cfg = {
-            "apiKey": os.getenv("OKX_API_KEY", "").strip(),
-            "secret": os.getenv("OKX_API_SECRET", "").strip(),
-            "password": os.getenv("OKX_PASSPHRASE", "").strip(),
-            "enableRateLimit": True,
-            "options": {"defaultType": "spot"},
-        }
-        if os.getenv("OKX_TESTNET", "true").lower() in ("true", "1", "yes"):
-            cfg["sandbox"] = True
-        exchange = ccxt.okx(cfg)
-        out: list[dict[str, Any]] = []
-        for sym in [s.strip() for s in symbols.split(",") if s.strip()]:
-            try:
-                t = exchange.fetch_ticker(sym)
-                out.append({
-                    "symbol": sym,
-                    "price": float(t.get("last") or 0),
-                    "change_24h_pct": float(t.get("percentage") or 0),
-                    "volume_24h": float(t.get("quoteVolume") or 0),
-                    "high_24h": float(t.get("high") or 0),
-                    "low_24h": float(t.get("low") or 0),
-                    "ts": int(t.get("timestamp") or now * 1000),
-                })
-            except Exception as exc:  # noqa: BLE001
-                out.append({"symbol": sym, "error": str(exc)})
-        _TICKER_CACHE["ts"] = now
-        _TICKER_CACHE["data"] = out
-        return {"tickers": out, "cached": False, "ts": now}
-    except Exception as exc:  # noqa: BLE001
-        return {"error": str(exc), "tickers": [], "ts": now}
+        with path.open("r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    item = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(item, dict):
+                    out.append(item)
+    except OSError:
+        return []
+    return out[-limit:]
 
 
 @app.get("/api/trader/status")
@@ -1862,35 +2393,184 @@ async def get_trader_status() -> dict:
     try:
         from auto import journal as _journal  # type: ignore
         _journal.ensure_dirs()
-        with _journal.DECISIONS_LOG.open("r", encoding="utf-8") as f:
-            decisions = [json.loads(line) for line in f if line.strip()][-200:]
+        decisions = _read_jsonl_tail(_journal.DECISIONS_LOG, 200)
         # Read a very wide window for LLM brain (last 20000 events) so the UI
         # always shows recent LLM activity. Monitor error spam can dominate the
         # tail, pushing LLM events outside smaller windows.
-        with _journal.DECISIONS_LOG.open("r", encoding="utf-8") as f:
-            all_events = [json.loads(line) for line in f if line.strip()][-20000:]
-        llm_decisions = [d for d in all_events
-                         if d.get("type") in ("llm", "llm_override_hold",
-                                                "llm_override_no_trade",
-                                                "llm_decision_used", "llm_error")][-50:]
+        llm_decisions = _journal.read_llm_decisions(limit=50, event_limit=20000)
+        sync_status = _default_sync_status()
+        exchange_positions: list[dict[str, Any]] = []
+        exchange_snapshot: dict[str, Any] | None = None
+        exchange_reconciler_module: Any | None = None
+        try:
+            from auto import exchange_reconciler as _exchange_reconciler  # type: ignore
+            exchange_reconciler_module = _exchange_reconciler
+        except Exception:
+            exchange_reconciler_module = None
+        if _exchange_reconcile_enabled():
+            await _ensure_trader_status_exchange_refresh()
+            cached_snapshot = _TRADER_STATUS_EXCHANGE_CACHE.get("snapshot")
+            if isinstance(cached_snapshot, dict):
+                exchange_snapshot = cached_snapshot
+                exchange_positions = list(exchange_snapshot.get("positions") or [])
+            sync_status = _cached_exchange_sync_status()
+        elif exchange_reconciler_module is None:
+            sync_status = _default_sync_status("disabled", error="exchange_reconciler unavailable")
         stats = _journal.read_stats()
+        stats["daily_llm_cost"] = _journal.daily_cost_status()
         positions = _journal.read_positions()
         closed_trades = _journal.read_closed_trades()
+        read_shadow_positions = getattr(_journal, "read_shadow_positions", None)
+        read_shadow_outcomes = getattr(_journal, "read_shadow_outcomes", None)
+        try:
+            shadow_positions = list(read_shadow_positions()) if callable(read_shadow_positions) else []
+            shadow_outcomes = (
+                list(read_shadow_outcomes(limit=5_000))
+                if callable(read_shadow_outcomes)
+                else []
+            )
+        except Exception:
+            shadow_positions = []
+            shadow_outcomes = []
+        observational_trades = [
+            {
+                **dict(trade),
+                "evaluation_source": "observational",
+                "counterfactual_eligible": False,
+            }
+            for trade in closed_trades
+            if isinstance(trade, dict)
+        ]
+        try:
+            from auto.adaptive_policy_controller import read_controller_state  # type: ignore
+
+            adaptive_policy_controller = read_controller_state()
+        except Exception as exc:  # noqa: BLE001
+            adaptive_policy_controller = {
+                "schema_version": "adaptive_policy_state.v1",
+                "status": "error",
+                "error": str(exc),
+            }
+        try:
+            from auto.shadow_score_review_controller import (  # type: ignore
+                read_shadow_score_review_state,
+            )
+
+            shadow_score_review_controller = read_shadow_score_review_state()
+        except Exception as exc:  # noqa: BLE001
+            shadow_score_review_controller = {
+                "schema_version": "continuous_conflict_v2_review_state.v1",
+                "status": "error",
+                "operator_approved": False,
+                "active_for_routing": False,
+                "canary_enabled": False,
+                "error": str(exc),
+            }
+        try:
+            from auto.shadow_score_canary import read_shadow_score_canary_state  # type: ignore
+
+            shadow_score_canary = read_shadow_score_canary_state()
+        except Exception as exc:  # noqa: BLE001
+            shadow_score_canary = {
+                "schema_version": "continuous_conflict_v2_canary_state.v1",
+                "status": "error",
+                "routing_enabled": False,
+                "error": str(exc),
+            }
+        active_zones = adaptive_policy_controller.get("active_zones")
+        evaluation_zone_override = (
+            dict(active_zones) if isinstance(active_zones, dict) else None
+        )
+        adaptive_evaluation = await _cached_adaptive_evaluation(
+            [*observational_trades, *shadow_outcomes],
+            zone_override=evaluation_zone_override,
+        )
+        shadow_evidence = {
+            "pending": len(shadow_positions),
+            "resolved": len(shadow_outcomes),
+            "eligible": sum(
+                1 for item in shadow_outcomes if bool(item.get("counterfactual_eligible"))
+            ),
+            "excluded": sum(
+                1 for item in shadow_outcomes if not bool(item.get("counterfactual_eligible"))
+            ),
+            "last_resolved_at": (
+                shadow_outcomes[-1].get("resolved_at") if shadow_outcomes else None
+            ),
+            "broker_calls": 0,
+        }
+        try:
+            from strategy_teams import build_team_dashboard  # type: ignore
+
+            strategy_teams = build_team_dashboard(positions, closed_trades)
+        except Exception:
+            strategy_teams = []
         stats["open_count"] = len(positions)
         stats["winrate"] = (
             (stats.get("wins", 0) / stats.get("total_trades", 0) * 100.0)
             if stats.get("total_trades", 0) > 0 else 0.0
         )
+        if exchange_reconciler_module is not None:
+            account_state = exchange_reconciler_module.build_account_state(
+                snapshot=exchange_snapshot,
+                journal_stats=stats,
+            )
+            cache_error = str(_TRADER_STATUS_EXCHANGE_CACHE.get("error") or "")
+            if _exchange_reconcile_enabled() and exchange_snapshot is None:
+                cache_error = cache_error or "exchange_status_cache_refreshing"
+            if cache_error:
+                account_state["errors"] = list(account_state.get("errors") or []) + [cache_error]
+            if _exchange_reconcile_enabled():
+                account_state["cache"] = cache_status(
+                    _TRADER_STATUS_EXCHANGE_CACHE,
+                    ttl_s=_exchange_status_ttl_s(),
+                    stale_ttl_s=_exchange_status_stale_ttl_s(),
+                    value_key="snapshot",
+                )
+        else:
+            account_state = {
+                "source": "journal_fallback",
+                "mode": "journal",
+                "synced_at": datetime.now().isoformat(),
+                "starting_capital_usd": round(float(stats.get("starting_capital", 10000.0) or 10000.0), 2),
+                "current_capital_usd": round(float(stats.get("current_capital", 10000.0) or 10000.0), 2),
+                "total_pnl_usd": round(float(stats.get("total_pnl_usd", 0.0) or 0.0), 2),
+                "unrealized_pnl_usd": 0.0,
+                "journal_realized_pnl_usd": round(float(stats.get("total_pnl_usd", 0.0) or 0.0), 2),
+                "available_balance_usd": None,
+                "margin_used_usd": None,
+                "errors": ["exchange_reconciler unavailable"],
+            }
+            try:
+                from auto import equity as _equity  # type: ignore
+
+                account_state = _equity.apply_equity_cap(account_state)
+            except Exception:
+                pass
         payload = {
             "running": True,
             "started_at": _journal.SESSION_START.isoformat() if hasattr(_journal, "SESSION_START") else None,
             "dashboard_url": "/trader",
             "symbols": os.getenv("AUTO_SYMBOLS", "BTC-USDT,ETH-USDT,SOL-USDT,BNB-USDT").split(","),
             "kill_switch_active": _journal.is_killed(),
+            "trading_blocked": getattr(_journal, "is_trading_blocked", _journal.is_killed)(),
+            "trading_block_reason": getattr(_journal, "trading_block_reason", lambda: "kill_switch_active" if _journal.is_killed() else "")(),
+            "startup_sync_guard_active": getattr(_journal, "startup_sync_guard_active", lambda: False)(),
+            "startup_sync_guard": getattr(_journal, "read_startup_sync_guard", lambda: None)(),
             "timestamp": datetime.now().isoformat(),
             "positions": positions,
+            "exchange_positions": exchange_positions,
+            "sync_status": sync_status,
             "closed_trades": closed_trades,
             "stats": stats,
+            "strategy_teams": strategy_teams,
+            "account_state": account_state,
+            "adaptive_evaluation": adaptive_evaluation,
+            "adaptive_policy_controller": adaptive_policy_controller,
+            "shadow_score_review_controller": shadow_score_review_controller,
+            "shadow_score_canary": shadow_score_canary,
+            "llm_review_health": adaptive_evaluation.get("llm_review_health"),
+            "shadow_evidence": shadow_evidence,
             "decisions": decisions,
             "llm_decisions": llm_decisions,
         }
@@ -1912,11 +2592,22 @@ async def post_trader_kill() -> dict:
 
 @app.post("/api/trader/resume")
 async def post_trader_resume() -> dict:
-    """Remove /data/STOP to resume the auto-trader."""
+    """Reconcile OKX demo state, then remove /data/STOP to resume."""
     try:
         from auto import journal as _journal  # type: ignore
+        from auto import exchange_reconciler as _exchange_reconciler  # type: ignore
+        sync_status = _exchange_reconciler.run_startup_reconciliation(
+            trigger="resume",
+            journal_module=_journal,
+        )
+        if sync_status.get("status") == "error":
+            return {
+                "ok": False,
+                "msg": "resume blocked until exchange reconciliation succeeds",
+                "sync_status": sync_status,
+            }
         _journal.clear_kill_switch()
-        return {"ok": True, "msg": "kill switch cleared"}
+        return {"ok": True, "msg": "kill switch cleared", "sync_status": sync_status}
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc)}
 
@@ -1933,6 +2624,7 @@ _ALERT_SEVERITY: dict[str, str] = {
     "auto_stopped": "critical",
     # Warning — needs review
     "llm_cost_alert": "warning",
+    "llm_budget_skip": "warning",
     "cooldown_set": "warning",
     "cooldown_set_failed": "warning",
     "weak_confluence": "warning",
@@ -2086,20 +2778,21 @@ async def get_trader_alerts(limit: int = 100) -> dict:
 
 # Resolve the repo root from this file. In source checkout, api_server.py sits at
 # <repo>/trading/api_server.py so the repo root is one parent up. In a Docker
-# install the path layout differs — fall back to env HERMES_FEATURES_DIR.
+# install the path layout differs — fall back to env PROJECT_FEATURES_DIR.
 _TRADING_DIR = Path(__file__).resolve().parent
-_REPO_ROOT_CANDIDATES = [
-    _TRADING_DIR.parent / ".hermes" / "features",
-    _TRADING_DIR / ".hermes" / "features",
+_PROJECT_FEATURES_DIR_CANDIDATES = [
+    _TRADING_DIR / "docs" / "features",
+    _TRADING_DIR.parent / "trading" / "docs" / "features",
+    Path("/app/docs/features"),
 ]
-HERMES_FEATURES_DIR = Path(
-    os.getenv("HERMES_FEATURES_DIR")
-    or next((str(p) for p in _REPO_ROOT_CANDIDATES if p.exists()), "")
+PROJECT_FEATURES_DIR = Path(
+    os.getenv("PROJECT_FEATURES_DIR")
+    or next((str(p) for p in _PROJECT_FEATURES_DIR_CANDIDATES if p.exists()), "")
 )
 
 
 def _parse_feature_design(path: Path) -> dict | None:
-    """Parse one .hermes/features/<id>/design.md front-matter.
+    """Parse one trading/docs/features/<id>/design.md front-matter.
 
     Two formats are supported:
 
@@ -2144,7 +2837,7 @@ def _parse_feature_design(path: Path) -> dict | None:
                 k, _, v = line.partition(":")
                 meta[k.strip().lower()] = v.strip().strip('"').strip("'")
 
-    # Bold-key fallback (matches current Hermes feature templates).
+    # Bold-key fallback for existing project feature design templates.
     key_aliases = {
         "feature id": "id",
         "id": "id",
@@ -2202,16 +2895,16 @@ def _parse_feature_design(path: Path) -> dict | None:
     }
 
 
-@app.get("/api/hermes/features")
-async def get_hermes_features() -> dict:
-    """List features tracked in .hermes/features/.
+@app.get("/api/project/features")
+async def get_project_features() -> dict:
+    """List project features tracked in trading/docs/features/.
 
     Each feature is a directory containing a design.md with YAML front-matter.
     Returns id, name, status, branch, updated_at, summary.
     """
-    if not HERMES_FEATURES_DIR:
+    if not PROJECT_FEATURES_DIR:
         return {"features": [], "count": 0, "dir": None, "ts": datetime.now().isoformat()}
-    base = Path(HERMES_FEATURES_DIR)
+    base = Path(PROJECT_FEATURES_DIR)
     if not base.exists() or not base.is_dir():
         return {"features": [], "count": 0, "dir": str(base), "ts": datetime.now().isoformat()}
     items: list[dict] = []
@@ -3839,7 +4532,11 @@ from berkshire_routes import register_berkshire_routes  # noqa: E402
 register_berkshire_routes(app, require_auth=require_auth)
 
 from src.api.alpha_routes import register_alpha_routes  # noqa: E402
-register_alpha_routes(app)
+register_alpha_routes(
+    app,
+    require_auth=require_auth,
+    require_event_stream_auth=require_event_stream_auth,
+)
 
 
 # ============================================================================
@@ -3868,18 +4565,39 @@ def serve_main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Vibe-Trading Server")
     parser.add_argument("--port", type=int, default=8000, help="Listen port (default 8000)")
     parser.add_argument("--host", default="0.0.0.0", help="Bind address")
-    parser.add_argument("--dev", action="store_true", help="Dev mode: spawn Vite on :5173")
+    parser.add_argument("--dev", action="store_true", help="Dev mode: spawn Vite beside the API server")
     try:
         args = parser.parse_args(argv)
     except SystemExit as exc:
         return int(exc.code) if isinstance(exc.code, int) else 2
 
-    frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
-    frontend_root = Path(__file__).resolve().parent.parent / "frontend"
+    server_dir = Path(__file__).resolve().parent
+    frontend_dist = next(
+        (
+            path
+            for path in (
+                server_dir / "frontend" / "dist",
+                server_dir.parent / "frontend" / "dist",
+            )
+            if path.exists()
+        ),
+        server_dir / "frontend" / "dist",
+    )
+    frontend_root = next(
+        (
+            path
+            for path in (
+                server_dir / "frontend",
+                server_dir.parent / "frontend",
+            )
+            if path.exists()
+        ),
+        server_dir / "frontend",
+    )
 
     vite_proc = None
     if args.dev and frontend_root.exists():
-        print("[dev] Starting Vite dev server on :5173 ...")
+        print("[dev] Starting Vite dev server ...")
         vite_proc = subprocess.Popen(
             ["npx", "vite", "--host", "0.0.0.0"],
             cwd=str(frontend_root),
@@ -3887,7 +4605,7 @@ def serve_main(argv: list[str] | None = None) -> int:
             stderr=subprocess.DEVNULL,
         )
         print(f"[dev] Vite PID={vite_proc.pid}")
-        print("[dev] Frontend: http://localhost:5173")
+        print("[dev] Frontend: Vite dev server")
         print(f"[dev] API: http://localhost:{args.port}")
     elif frontend_dist.exists():
         if not any(route.path == "/" for route in app.routes):

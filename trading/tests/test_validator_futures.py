@@ -7,8 +7,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
-
 TRADING = Path(__file__).parent.parent
 sys.path.insert(0, str(TRADING / "auto"))
 
@@ -86,7 +84,6 @@ class TestCheckLiquidationBufferH7:
 class TestCheckFundingBlackoutH8:
     def test_far_from_funding_passes(self, monkeypatch):
         # Mock fetch_funding_rate by setting nextFundingTime far in future
-        from brackets import okx_futures_bracket as fb
         # Find check_funding_blackout in validator
         now_ms = 1_700_000_000_000  # some arbitrary ms
         # Mock by passing now_ms and a synthetic next funding time

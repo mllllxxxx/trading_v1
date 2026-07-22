@@ -1,5 +1,6 @@
 """Quick smoke test for new futures modules — run with .venv Python."""
 import sys
+import tempfile
 from pathlib import Path
 
 # Add parent (trading/) and siblings to sys.path
@@ -8,12 +9,11 @@ sys.path.insert(0, str(TRADING))
 sys.path.insert(0, str(TRADING / "brackets"))
 sys.path.insert(0, str(TRADING / "auto"))
 
-import okx_futures_bracket as f
-import universe
-import llm_override_tracker as override_mod
-from validator import check_leverage, check_liquidation_buffer
-from llm_override_tracker import OverrideTracker, HybridOverrideGate, OverrideRecord
-from datetime import datetime, timezone
+import okx_futures_bracket as f  # noqa: E402
+import universe  # noqa: E402
+from validator import check_leverage, check_liquidation_buffer  # noqa: E402
+from llm_override_tracker import OverrideTracker, HybridOverrideGate, OverrideRecord  # noqa: E402
+from datetime import datetime, timezone  # noqa: E402
 
 print("=== okx_futures_bracket smoke test ===")
 print(f"SymbolMeta fields: {list(f.SymbolMeta.__dataclass_fields__.keys())}")
@@ -68,7 +68,6 @@ print(f"  BTC liq=90500 entry=100000: ok={ok7}, msg={msg7}")
 
 print()
 print("=== Universe loader smoke ===")
-import universe
 print(f"  Hardcoded universe: {len(universe.HARDCODED_UNIVERSE)} symbols")
 print(f"  Bases: {[s.base for s in universe.HARDCODED_UNIVERSE]}")
 snap = universe.load_universe(fetcher=lambda url: {"data": []})  # force fallback
@@ -76,11 +75,6 @@ print(f"  Live fetch failed -> source: {snap.source}, count: {len(snap.symbols)}
 
 print()
 print("=== LLM override tracker smoke ===")
-import tempfile, os
-from llm_override_tracker import OverrideTracker, HybridOverrideGate, OverrideRecord
-from datetime import datetime, timezone
-from llm_override_tracker import OverrideTracker, HybridOverrideGate, OverrideRecord
-from datetime import datetime, timezone
 
 with tempfile.TemporaryDirectory() as td:
     tracker = OverrideTracker(path=Path(td) / "log.jsonl")

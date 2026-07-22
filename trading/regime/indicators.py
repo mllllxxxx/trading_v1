@@ -16,13 +16,10 @@ All functions take pandas DataFrame with columns: Open, High, Low, Close, Volume
 from __future__ import annotations
 
 import json
-import math
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
 
 # Path to economic calendar (pre-loaded JSON)
@@ -140,7 +137,6 @@ def vsa_signal(df: pd.DataFrame, lookback: int = 20) -> dict[str, Any]:
         return {"vsa": "unknown", "spread": "?", "volume": "?", "close_position": "?"}
 
     last = df.iloc[-1]
-    prev_close = float(df["Close"].iloc[-2])
     open_p = float(last["Open"])
     high = float(last["High"])
     low = float(last["Low"])
@@ -217,12 +213,12 @@ def detect_candlestick(df: pd.DataFrame) -> dict[str, Any]:
     last = df.iloc[-1]
     o = float(last["Open"])
     h = float(last["High"])
-    l = float(last["Low"])
+    low_price = float(last["Low"])
     c = float(last["Close"])
     body = abs(c - o)
     upper_wick = h - max(c, o)
-    lower_wick = min(c, o) - l
-    total_range = h - l
+    lower_wick = min(c, o) - low_price
+    total_range = h - low_price
 
     if total_range < 1e-9:
         return {"pattern": "doji", "reliability": "low", "direction": "neutral"}
@@ -310,11 +306,11 @@ def detect_candlestick(df: pd.DataFrame) -> dict[str, Any]:
     # Inside/outside bar
     if pattern == "none" and len(df) >= 2:
         prev = df.iloc[-2]
-        if h <= float(prev["High"]) and l >= float(prev["Low"]):
+        if h <= float(prev["High"]) and low_price >= float(prev["Low"]):
             pattern = "inside_bar"
             direction = "neutral"
             reliability = "low"
-        elif h > float(prev["High"]) and l < float(prev["Low"]):
+        elif h > float(prev["High"]) and low_price < float(prev["Low"]):
             pattern = "outside_bar"
             direction = "neutral"
             reliability = "low"

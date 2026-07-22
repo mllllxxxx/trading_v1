@@ -52,28 +52,76 @@ services:
       - VIBE_TRADING_TRUST_DOCKER_LOOPBACK=true
       # Auto-trader settings (multi-symbol) — Tuần 1 (2026-06-23):
       # - DOT swapped for TRX (user confirmed top-10 list, 2026-06-22)
-      # - TRADE_MODE env added for spot/futures fork (default spot for backward compat)
+      # - TRADE_MODE env added for spot/futures fork (OKX demo runs swap futures locally)
       - AUTO_SYMBOLS=BTC-USDT,ETH-USDT,SOL-USDT,BNB-USDT,XRP-USDT,DOGE-USDT,ADA-USDT,AVAX-USDT,LINK-USDT,TRX-USDT
-      - TRADE_MODE=spot
+      - TRADE_MODE=futures
       - AUTO_INTERVAL_S=600                # scheduler: 10 min cycle for 10 symbols (was 5min for 4)
       - AUTO_MONITOR_INTERVAL_S=30         # monitor: poll positions every 30s
       - AUTO_MIN_CONFLUENCE=3              # tightened: only LLM-call when ≥3 TFs aligned (T1B)
-      - AUTO_MAX_POSITIONS=3
+      - AUTO_MAX_POSITIONS=10
       - AUTO_DAILY_LOSS_CAP_PCT=0.03       # halt if -3% daily
-      - AUTO_CAPITAL=73611.68
+      # Small-capital demo study: behave as if this OKX demo account has $200.
+      - TRADING_RISK_PROFILE=demo_team_tournament_200
+      - TRADING_EQUITY_CAP_USD=200
+      - AUTO_CAPITAL=200
+      - FUTURES_RISK_PCT=0.05
+      - FUTURES_MAX_POSITION_PCT=0.60
+      - FUTURES_MAX_MARGIN_PCT=0.20
+      - FUTURES_MAX_LEVERAGE=3
+      - STRATEGY_TEAM_MAX_OPEN_POSITIONS=1
+      - STRATEGY_MAX_CONFIRMED_CANDLE_AGE_S=1080
+      - AUTO_DEMO_FEE_RATE=0.0005
+      - BERKSHIRE_LLM_HOLD_COOLDOWN_MINUTES=60
+      - BERKSHIRE_LLM_ERROR_COOLDOWN_MINUTES=15
+      - STRATEGY_TEAM_IDS=berkshire,momentum,mean_reversion,volatility_breakout
       # C2: Cool-down after a losing trade (gap fill — prevent revenge trading)
       - AUTO_COOLDOWN_MINUTES=30           # 0 = disabled
-      # T3F: Daily LLM cost cap (v4-flash). Auto-throttles to rules-only fallback.
-      - AUTO_DAILY_LLM_COST_CAP_USD=0.10   # $0.10/day = $3/month max
+      # Balanced LLM quota: fail-closed when cost/call caps are reached.
+      - AUTO_DAILY_LLM_COST_CAP_USD=0.20   # $0.20/day = $6/month max
+      - AUTO_DAILY_LLM_CALL_CAP=160
+      - AUTO_HOURLY_LLM_CALL_CAP=16
+      - AUTO_HOURLY_LLM_CALL_CAP_PER_SOURCE=4
+      - AUTO_LLM_OVER_CAP_BEHAVIOR=fail_closed
       - AUTO_LLM_INPUT_PRICE_PER_M=0.14    # v4-flash: $0.14/M input tokens
       - AUTO_LLM_OUTPUT_PRICE_PER_M=0.28   # v4-flash: $0.28/M output tokens (incl. reasoning)
       # LLM brain
       - AUTO_LLM_MODEL=deepseek-v4-flash
       - AUTO_LLM_TIMEOUT_S=30
-      - AUTO_LLM_MAX_TOKENS=4000            # v4-flash is a reasoning model: budget 2-3K reasoning + ~500 JSON
+      - AUTO_LLM_MAX_TOKENS=2400
+      - AUTO_LLM_REVIEW_MAX_TOKENS=500
+      - AUTO_DECISION_POLICY=adaptive_hybrid_v1
+      - AUTO_ADAPTIVE_CONTROLLER_ENABLED=${AUTO_ADAPTIVE_CONTROLLER_ENABLED:-true}
+      - AUTO_SHADOW_EVALUATION_ENABLED=${AUTO_SHADOW_EVALUATION_ENABLED:-true}
+      - AUTO_SHADOW_MAX_HOLD_BARS=${AUTO_SHADOW_MAX_HOLD_BARS:-192}
+      - AUTO_SHADOW_FEE_BPS_PER_LEG=${AUTO_SHADOW_FEE_BPS_PER_LEG:-5}
+      - AUTO_SHADOW_SLIPPAGE_BPS=${AUTO_SHADOW_SLIPPAGE_BPS:-2}
+      - AUTO_SHADOW_MAX_SYMBOLS_PER_CYCLE=${AUTO_SHADOW_MAX_SYMBOLS_PER_CYCLE:-12}
+      - AUTO_SHADOW_MAX_PENDING=${AUTO_SHADOW_MAX_PENDING:-2000}
+      - AUTO_SHADOW_CANDLE_LIMIT=${AUTO_SHADOW_CANDLE_LIMIT:-300}
+      - TRADER_ADAPTIVE_EVALUATION_TTL_S=60
+      - AUTO_LLM_TICKET_PARSE_ATTEMPTS=2
+      - AUTO_LLM_PROMPT_MODE=compact
+      - AUTO_PENDING_ENTRY_TTL_S=3600
       - AUTO_LLM_REASONING_EFFORT=low
       - AUTO_LLM_TEMPERATURE=0.1
       - AUTO_OVERRIDE_ALLOWED=true
+      - AUTO_LEGACY_SCHEDULER_ENABLED=false
+      # Berkshire signal loop: scan -> LLM ticket -> verifier/compiler -> OKX demo adapter.
+      - BERKSHIRE_SIGNAL_SCHEDULER_ENABLED=true
+      - BERKSHIRE_SIGNAL_INTERVAL_S=900
+      - BERKSHIRE_SIGNAL_LIMIT=50
+      - BERKSHIRE_SIGNAL_MAX_PROMOTIONS=10
+      - BERKSHIRE_SIGNAL_MAX_LLM_ATTEMPTS_PER_CYCLE=3
+      - BERKSHIRE_LLM_MIN_CONFIDENCE=0.72
+      - BERKSHIRE_LLM_MIN_SCORE=70
+      - BERKSHIRE_LLM_SYMBOL_COOLDOWN_MINUTES=240
+      - BERKSHIRE_LLM_CACHE_TTL_S=21600
+      - BERKSHIRE_SIGNAL_EQUITY_USD=200
+      - SIGNAL_EXECUTION_ADAPTER=okx_demo
+      - OKX_DEMO_ADAPTER_DRY_RUN=false
+      - REQUIRE_LLM_DECISION=true
+      - ENABLE_RULES_ONLY_FALLBACK=false
+      - PROJECT_FEATURES_DIR=/app/docs/features
     volumes:
       # Persistent data: OKX config, sessions, decision log, journal, OKX cache
       - vt-data:/data

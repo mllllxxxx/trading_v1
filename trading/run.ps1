@@ -16,6 +16,13 @@ if (Test-Path -LiteralPath $envFile) {
             $parts = $line -split "=", 2
             $key = $parts[0].Trim()
             $val = $parts[1].Trim()
+            if ($val.Length -ge 2) {
+                $first = $val.Substring(0, 1)
+                $last = $val.Substring($val.Length - 1, 1)
+                if (($first -eq '"' -and $last -eq '"') -or ($first -eq "'" -and $last -eq "'")) {
+                    $val = $val.Substring(1, $val.Length - 2)
+                }
+            }
             if ($val -and $val -notlike "PASTE_*") {
                 [System.Environment]::SetEnvironmentVariable($key, $val, "Process")
             }

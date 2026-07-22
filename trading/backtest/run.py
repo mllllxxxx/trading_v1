@@ -78,7 +78,7 @@ def print_combined_report(cr: CombinedResult) -> None:
     print(f"Total signals:    {cr.n_signals_total} ({cr.n_filtered_total} filtered)")
     print()
     print("Gates (per design doc):")
-    print(f"  per-symbol Sharpe >= 0.8: ", end="")
+    print("  per-symbol Sharpe >= 0.8: ", end="")
     sym_sharpes = [(s, r.sharpe) for s, r in cr.per_symbol.items() if r.trades]
     passing = [s for s, sh in sym_sharpes if sh >= 0.8]
     print(f"{len(passing)}/{len(sym_sharpes)} pass")
@@ -124,8 +124,6 @@ def main() -> int:
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-    log = logging.getLogger("backtest")
-
     print(f"Fetching {args.days} days of {args.bar} data for {len(args.symbols)} symbols...")
     t0 = time.time()
     data = fetch_all(args.symbols, args.days, bar=args.bar, use_cache=not args.no_cache)

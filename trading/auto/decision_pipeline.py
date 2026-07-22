@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from schemas.models import CompiledOrder, CriticVerdict, TradeDecisionTicket
+from schemas.models import CompiledOrder, CriticVerdict, TradeAction, TradeDecisionTicket
 from verifier.rule_verifier import verify_trade_ticket
 from risk.order_compiler import OrderCompilerError, compile_order
 
@@ -35,6 +35,10 @@ class DecisionPipelineResult:
     critic_review: dict[str, Any] | None = None
     verifier_result: dict[str, Any] | None = None
     compiled_order: dict[str, Any] | None = None
+    decision_policy: str | None = None
+    decision_lane: str | None = None
+    rule_proposal: dict[str, Any] | None = None
+    llm_review: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -47,6 +51,10 @@ class DecisionPipelineResult:
             "critic_review": self.critic_review,
             "verifier_result": self.verifier_result,
             "compiled_order": self.compiled_order,
+            "decision_policy": self.decision_policy,
+            "decision_lane": self.decision_lane,
+            "rule_proposal": self.rule_proposal,
+            "llm_review": self.llm_review,
         }
 
 
@@ -84,6 +92,24 @@ def run_decision_pipeline(
             dossier_payload,
             retrieved_rules=retrieved_payload,
             error=exc,
+        )
+
+    raw_action = ticket_payload.get("action")
+    action = raw_action.value if isinstance(raw_action, TradeAction) else str(raw_action or "").upper()
+    terminal_actions = {
+        TradeAction.HOLD.value: "llm_hold",
+        TradeAction.REQUEST_MORE_DATA.value: "llm_request_more_data",
+        TradeAction.CLOSE_POSITION.value: "llm_close_position_not_applicable",
+        TradeAction.REDUCE_POSITION.value: "llm_reduce_position_not_applicable",
+    }
+    if action in terminal_actions:
+        return DecisionPipelineResult(
+            approved=False,
+            stage="decision",
+            reason=terminal_actions[action],
+            dossier=dossier_payload,
+            retrieved_rules=retrieved_payload,
+            ticket=ticket_payload,
         )
 
     try:

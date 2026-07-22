@@ -2,9 +2,11 @@
 
 from .models import (
     CompiledOrder,
+    ContextReviewDecision,
     CriticReview,
     EntryPlan,
     JournalEvent,
+    LLMContextReview,
     MarketDossier,
     OrderIntent,
     OrderResult,
@@ -12,16 +14,21 @@ from .models import (
     RiskPlan,
     RuleSnippet,
     SchemaValidationError,
+    SignalCandidate,
     TradeDecisionTicket,
     VerifierResult,
+    validate_signal_candidate,
+    validate_llm_context_review,
     validate_trade_decision_ticket,
 )
 
 __all__ = [
     "CompiledOrder",
+    "ContextReviewDecision",
     "CriticReview",
     "EntryPlan",
     "JournalEvent",
+    "LLMContextReview",
     "MarketDossier",
     "OrderIntent",
     "OrderResult",
@@ -29,7 +36,10 @@ __all__ = [
     "RiskPlan",
     "RuleSnippet",
     "SchemaValidationError",
+    "SignalCandidate",
     "TradeDecisionTicket",
     "VerifierResult",
+    "validate_signal_candidate",
+    "validate_llm_context_review",
     "validate_trade_decision_ticket",
 ]

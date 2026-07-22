@@ -13,9 +13,9 @@ Differences from spot (``okx_bracket.py``):
 
 Environment variables (read in ``load_okx_config``):
   OKX_API_KEY, OKX_API_SECRET, OKX_PASSPHRASE, OKX_TESTNET
-  FUTURES_MIN_RR (default 1.5), FUTURES_RISK_PCT (default 0.01),
-  FUTURES_MAX_POSITION_PCT (default 0.30), FUTURES_DAILY_LOSS_CAP (default 0.03),
-  FUTURES_MAX_LEVERAGE (default 10), FUTURES_FUNDING_BLACKOUT_MIN (default 5)
+  FUTURES_MIN_RR (default 1.5), FUTURES_RISK_PCT (default 0.05),
+  FUTURES_MAX_POSITION_PCT (default 0.60), FUTURES_MAX_MARGIN_PCT (default 0.20),
+  FUTURES_MAX_LEVERAGE (default 3), FUTURES_FUNDING_BLACKOUT_MIN (default 5)
 
 Usage:
   python okx_futures_bracket.py --symbol BTC-USDT-SWAP --side buy \\
@@ -27,14 +27,15 @@ Exit codes: 0 success / 1 input error / 2 risk violation / 3 placement error.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import sys
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal, ROUND_DOWN
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -58,13 +59,22 @@ sys.path.insert(1, str(_AUTO_DIR))
 try:
     from auto.validator import check_leverage as _check_leverage  # type: ignore
 except ImportError as _exc:
-    import logging
-    logging.getLogger(__name__).warning(
-        "H5 per-symbol check unavailable: %s. Falling back to global cap only.",
-        _exc,
+    _validator_spec = importlib.util.spec_from_file_location(
+        "trade_v1_auto_validator",
+        _AUTO_DIR / "validator.py",
     )
-    def _check_leverage(symbol: str, leverage: int) -> tuple[bool, str]:  # type: ignore
-        return True, "OK (per-symbol H5 check unavailable)"
+    if _validator_spec is not None and _validator_spec.loader is not None:
+        _validator_mod = importlib.util.module_from_spec(_validator_spec)
+        _validator_spec.loader.exec_module(_validator_mod)  # type: ignore[union-attr]
+        _check_leverage = _validator_mod.check_leverage  # type: ignore[attr-defined]
+    else:
+        import logging
+        logging.getLogger(__name__).warning(
+            "H5 per-symbol check unavailable: %s. Falling back to global cap only.",
+            _exc,
+        )
+        def _check_leverage(symbol: str, leverage: int) -> tuple[bool, str]:  # type: ignore
+            return True, "OK (per-symbol H5 check unavailable)"
 
 ENV_PATH = Path.home() / ".vibe-trading" / ".env"
 load_dotenv(ENV_PATH)
@@ -75,10 +85,11 @@ load_dotenv(ENV_PATH)
 # ---------------------------------------------------------------------------
 
 MIN_RR = float(os.getenv("FUTURES_MIN_RR", "1.5"))
-RISK_PCT = float(os.getenv("FUTURES_RISK_PCT", "0.01"))           # 1% per trade
-MAX_POSITION_PCT = float(os.getenv("FUTURES_MAX_POSITION_PCT", "0.30"))  # 30% capital
+RISK_PCT = float(os.getenv("FUTURES_RISK_PCT", "0.05"))           # 5% hard ceiling
+MAX_POSITION_PCT = float(os.getenv("FUTURES_MAX_POSITION_PCT", "0.60"))  # gross notional
+MAX_MARGIN_PCT = float(os.getenv("FUTURES_MAX_MARGIN_PCT", "0.20"))
 DAILY_LOSS_CAP = float(os.getenv("FUTURES_DAILY_LOSS_CAP", "0.03"))      # 3%
-MAX_LEVERAGE = int(os.getenv("FUTURES_MAX_LEVERAGE", "10"))
+MAX_LEVERAGE = int(os.getenv("FUTURES_MAX_LEVERAGE", "3"))
 FUNDING_BLACKOUT_MIN = int(os.getenv("FUTURES_FUNDING_BLACKOUT_MIN", "5"))
 DEFAULT_MAINT_MARGIN_RATE = float(os.getenv("FUTURES_MMR", "0.005"))     # 0.5%
 
@@ -89,6 +100,7 @@ def load_okx_config() -> dict[str, Any]:
         "api_secret": os.getenv("OKX_API_SECRET", "").strip(),
         "passphrase": os.getenv("OKX_PASSPHRASE", "").strip(),
         "testnet": os.getenv("OKX_TESTNET", "true").lower() in ("true", "1", "yes"),
+        "sandbox": os.getenv("OKX_SANDBOX", "true").lower() in ("true", "1", "yes"),
     }
 
 
@@ -108,7 +120,7 @@ class SymbolMeta:
     swap_symbol: str                   # "BTC-USDT-SWAP"
     spot_symbol: str                   # "BTC-USDT" (for confluence / data)
     leverage: int                      # max OKX leverage to use
-    max_notional_pct: float            # cap this symbol at 30% capital
+    max_notional_pct: float            # cap this symbol at configured % capital
     min_confluence: int                # scheduler min_confluence for this symbol
     liq_buffer_pct: float              # min distance from entry to liq (e.g. 0.10 = 10%)
     min_rr: float                      # override MIN_RR if needed
@@ -125,17 +137,35 @@ class SymbolMeta:
 # trading close to the liquidation edge at 10x (use tighter stop-loss to
 # avoid getting rekt).
 DEFAULT_FUTURES_UNIVERSE: dict[str, SymbolMeta] = {
-    "BTC":  SymbolMeta("BTC",  "BTC-USDT-SWAP",  "BTC-USDT",  leverage=10, max_notional_pct=0.30, min_confluence=4, liq_buffer_pct=0.08, min_rr=1.5, contract_size=0.01, min_qty=0.01, maintenance_margin_rate=0.005),
-    "ETH":  SymbolMeta("ETH",  "ETH-USDT-SWAP",  "ETH-USDT",  leverage=3,  max_notional_pct=0.30, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=0.01, min_qty=0.01, maintenance_margin_rate=0.005),
-    "BNB":  SymbolMeta("BNB",  "BNB-USDT-SWAP",  "BNB-USDT",  leverage=3,  max_notional_pct=0.30, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=0.01, min_qty=0.01, maintenance_margin_rate=0.01),
-    "SOL":  SymbolMeta("SOL",  "SOL-USDT-SWAP",  "SOL-USDT",  leverage=3,  max_notional_pct=0.30, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
-    "XRP":  SymbolMeta("XRP",  "XRP-USDT-SWAP",  "XRP-USDT",  leverage=3,  max_notional_pct=0.30, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
-    "DOGE": SymbolMeta("DOGE", "DOGE-USDT-SWAP", "DOGE-USDT", leverage=3,  max_notional_pct=0.30, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
-    "ADA":  SymbolMeta("ADA",  "ADA-USDT-SWAP",  "ADA-USDT",  leverage=3,  max_notional_pct=0.30, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
-    "AVAX": SymbolMeta("AVAX", "AVAX-USDT-SWAP", "AVAX-USDT", leverage=3,  max_notional_pct=0.30, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
-    "TRX":  SymbolMeta("TRX",  "TRX-USDT-SWAP",  "TRX-USDT",  leverage=3,  max_notional_pct=0.30, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
-    "LINK": SymbolMeta("LINK", "LINK-USDT-SWAP", "LINK-USDT", leverage=3,  max_notional_pct=0.30, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
+    "BTC":  SymbolMeta("BTC",  "BTC-USDT-SWAP",  "BTC-USDT",  leverage=3,  max_notional_pct=MAX_POSITION_PCT, min_confluence=4, liq_buffer_pct=0.08, min_rr=1.5, contract_size=0.01, min_qty=0.01, maintenance_margin_rate=0.005),
+    "ETH":  SymbolMeta("ETH",  "ETH-USDT-SWAP",  "ETH-USDT",  leverage=3,  max_notional_pct=MAX_POSITION_PCT, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=0.01, min_qty=0.01, maintenance_margin_rate=0.005),
+    "BNB":  SymbolMeta("BNB",  "BNB-USDT-SWAP",  "BNB-USDT",  leverage=3,  max_notional_pct=MAX_POSITION_PCT, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=0.01, min_qty=0.01, maintenance_margin_rate=0.01),
+    "SOL":  SymbolMeta("SOL",  "SOL-USDT-SWAP",  "SOL-USDT",  leverage=3,  max_notional_pct=MAX_POSITION_PCT, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
+    "XRP":  SymbolMeta("XRP",  "XRP-USDT-SWAP",  "XRP-USDT",  leverage=3,  max_notional_pct=MAX_POSITION_PCT, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
+    "DOGE": SymbolMeta("DOGE", "DOGE-USDT-SWAP", "DOGE-USDT", leverage=3,  max_notional_pct=MAX_POSITION_PCT, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
+    "ADA":  SymbolMeta("ADA",  "ADA-USDT-SWAP",  "ADA-USDT",  leverage=3,  max_notional_pct=MAX_POSITION_PCT, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
+    "AVAX": SymbolMeta("AVAX", "AVAX-USDT-SWAP", "AVAX-USDT", leverage=3,  max_notional_pct=MAX_POSITION_PCT, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
+    "TRX":  SymbolMeta("TRX",  "TRX-USDT-SWAP",  "TRX-USDT",  leverage=3,  max_notional_pct=MAX_POSITION_PCT, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
+    "LINK": SymbolMeta("LINK", "LINK-USDT-SWAP", "LINK-USDT", leverage=3,  max_notional_pct=MAX_POSITION_PCT, min_confluence=3, liq_buffer_pct=0.25, min_rr=1.5, contract_size=1,    min_qty=1,    maintenance_margin_rate=0.01),
 }
+
+
+def _default_symbol_meta(base: str) -> SymbolMeta:
+    """Return conservative metadata for OKX USDT swap bases not hardcoded yet."""
+    normalized = base.upper().strip()
+    return SymbolMeta(
+        normalized,
+        f"{normalized}-USDT-SWAP",
+        f"{normalized}-USDT",
+        leverage=3,
+        max_notional_pct=MAX_POSITION_PCT,
+        min_confluence=3,
+        liq_buffer_pct=0.25,
+        min_rr=1.5,
+        contract_size=1,
+        min_qty=1,
+        maintenance_margin_rate=0.01,
+    )
 
 
 def get_symbol_meta(symbol: str) -> SymbolMeta:
@@ -146,7 +176,7 @@ def get_symbol_meta(symbol: str) -> SymbolMeta:
     else:
         base = s
     if base not in DEFAULT_FUTURES_UNIVERSE:
-        raise ValueError(f"Unknown symbol base '{base}'. Known: {list(DEFAULT_FUTURES_UNIVERSE)}")
+        return _default_symbol_meta(base)
     return DEFAULT_FUTURES_UNIVERSE[base]
 
 
@@ -216,6 +246,7 @@ def compute_bracket_futures(
     liq_buffer_pct: float | None = None,
     contract_size: float | None = None,
     min_qty: float | None = None,
+    qty_step: float | None = None,
     maintenance_margin_rate: float | None = None,
 ) -> dict[str, Any]:
     """Compute all metrics for a futures bracket. No I/O.
@@ -239,6 +270,7 @@ def compute_bracket_futures(
     buf = liq_buffer_pct if liq_buffer_pct is not None else meta.liq_buffer_pct
     cs = contract_size if contract_size is not None else meta.contract_size
     mq = min_qty if min_qty is not None else meta.min_qty
+    qs = qty_step if qty_step is not None else mq
     mmr = maintenance_margin_rate if maintenance_margin_rate is not None else meta.maintenance_margin_rate
 
     if lev < 1:
@@ -252,6 +284,12 @@ def compute_bracket_futures(
             f"risk_pct {rp:.4f} exceeds default {RISK_PCT:.4f}. "
             "Override must shrink, not enlarge, risk."
         )
+    if cs <= 0:
+        raise ValueError(f"contract_size must be > 0, got {cs}")
+    if mq <= 0:
+        raise ValueError(f"min_qty must be > 0, got {mq}")
+    if qs <= 0:
+        raise ValueError(f"qty_step must be > 0, got {qs}")
 
     e = Decimal(str(entry))
     sl = Decimal(str(stop_loss))
@@ -287,28 +325,32 @@ def compute_bracket_futures(
     pos_notional_by_risk = pos_by_risk * e
 
     # Cap by per-symbol max notional (NOT global MAX_POSITION_PCT — that's for spot)
-    max_notional = cap * Decimal(str(meta.max_notional_pct))
+    max_notional_pct = min(meta.max_notional_pct, MAX_MARGIN_PCT * lev)
+    max_notional = cap * Decimal(str(max_notional_pct))
     scaled = False
     if pos_notional_by_risk > max_notional:
         pos_size = max_notional / e
-        actual_risk_usd = pos_size * stop_distance
-        actual_risk_pct = float(actual_risk_usd / cap) * 100
         scaled = True
     else:
         pos_size = pos_by_risk
-        actual_risk_usd = risk_amount
-        actual_risk_pct = rp * 100
 
     # Convert to contracts
     contracts_raw = pos_size / Decimal(str(cs))
-    contracts = int(contracts_raw)  # round DOWN to whole contracts (can't buy fractional)
-    if contracts < int(mq) if isinstance(mq, int) else contracts < mq:
+    step_dec = Decimal(str(qs))
+    contracts_dec = (contracts_raw / step_dec).to_integral_value(rounding=ROUND_DOWN) * step_dec
+    if contracts_dec < Decimal(str(mq)):
         # Below minimum — flag for caller
         below_min = True
     else:
         below_min = False
 
-    actual_pos_size = Decimal(contracts) * Decimal(str(cs))
+    contracts: int | float
+    if contracts_dec == contracts_dec.to_integral_value():
+        contracts = int(contracts_dec)
+    else:
+        contracts = float(contracts_dec)
+
+    actual_pos_size = contracts_dec * Decimal(str(cs))
     actual_notional = actual_pos_size * e
     actual_margin_required = actual_notional / Decimal(str(lev))
     actual_risk_usd_contracts = actual_pos_size * stop_distance
@@ -339,11 +381,15 @@ def compute_bracket_futures(
         "tp_pct": float(reward / e * 100),
         "leverage": lev,
         "td_mode": "isolated",
+        "capital": float(cap),
         "position_size_base": float(actual_pos_size),
         "contracts": contracts,
         "contract_size": cs,
         "below_min_qty": below_min,
         "min_qty": mq,
+        "qty_step": qs,
+        "max_notional_pct": max_notional_pct,
+        "max_margin_pct": MAX_MARGIN_PCT,
         "position_notional": float(actual_notional),
         "position_pct": float(actual_notional / cap * 100),
         "margin_required": float(actual_margin_required),
@@ -397,6 +443,14 @@ def validate_futures(proposal: dict[str, Any]) -> list[str]:
             f"{proposal.get('max_notional_pct', MAX_POSITION_PCT) * 100:.0f}% (max notional)"
         )
 
+    capital = float(proposal.get("capital", 0.0))
+    max_margin_pct = float(proposal.get("max_margin_pct", MAX_MARGIN_PCT))
+    if capital > 0 and proposal["margin_required"] > capital * max_margin_pct + 1e-6:
+        violations.append(
+            f"margin {proposal['margin_required']:.2f} > "
+            f"{max_margin_pct * 100:.0f}% capital"
+        )
+
     if proposal["liq_distance_pct"] < proposal["liq_buffer_required"]:
         violations.append(
             f"H7 liq buffer: {proposal['liq_distance_pct']:.2%} < "
@@ -427,20 +481,244 @@ def _make_exchange(cfg: dict[str, Any]):
     return exchange
 
 
-def set_leverage(cfg: dict[str, Any], symbol: str, leverage: int, pos_side: str) -> dict[str, Any]:
-    """Set leverage for a swap symbol. Idempotent — OKX returns current if same.
+def fetch_contract_trade_metadata(cfg: dict[str, Any], symbol: str) -> dict[str, float | str]:
+    """Fetch exact-symbol contract facts from CCXT or OKX public instruments.
+
+    OKX quantities are contracts. Dynamic top-50 symbols must use broker
+    metadata here instead of the conservative `contract_size=1` fallback.
+    """
+    meta = get_symbol_meta(symbol)
+    market = None
+    try:
+        exchange = _make_exchange(cfg)
+        markets = exchange.load_markets()
+        for candidate in markets.values():
+            if not isinstance(candidate, dict):
+                continue
+            if candidate.get("id") == meta.swap_symbol:
+                market = candidate
+                break
+        if market is None:
+            ccxt_symbol = _ccxt_swap_symbol(meta.swap_symbol)
+            candidate = markets.get(ccxt_symbol)
+            if isinstance(candidate, dict):
+                market = candidate
+    except Exception:  # noqa: BLE001
+        market = None
+    if market is None:
+        return _fetch_public_contract_trade_metadata(
+            meta.swap_symbol,
+            simulated=bool(cfg.get("testnet") or cfg.get("sandbox")),
+        )
+
+    info = market.get("info") if isinstance(market.get("info"), dict) else {}
+    contract_size = _float_first(
+        market.get("contractSize"),
+        info.get("ctVal"),
+        default=0.0,
+    )
+    limits = market.get("limits") if isinstance(market.get("limits"), dict) else {}
+    amount_limits = limits.get("amount") if isinstance(limits.get("amount"), dict) else {}
+    precision = market.get("precision") if isinstance(market.get("precision"), dict) else {}
+    min_qty = _float_first(
+        amount_limits.get("min"),
+        info.get("minSz"),
+        default=0.0,
+    )
+    qty_step = _float_first(
+        info.get("lotSz"),
+        precision.get("amount"),
+        default=min_qty,
+    )
+    if contract_size <= 0:
+        raise RuntimeError(f"OKX contract_size unavailable for {meta.swap_symbol}")
+    if min_qty <= 0:
+        raise RuntimeError(f"OKX min_qty unavailable for {meta.swap_symbol}")
+    if qty_step <= 0:
+        raise RuntimeError(f"OKX qty_step unavailable for {meta.swap_symbol}")
+    return {
+        "symbol": meta.swap_symbol,
+        "contract_size": contract_size,
+        "min_qty": min_qty,
+        "qty_step": qty_step,
+        "source": "okx_ccxt_markets",
+    }
+
+
+def _fetch_public_contract_trade_metadata(
+    symbol: str,
+    *,
+    simulated: bool = False,
+) -> dict[str, float | str]:
+    """Resolve one exact OKX swap from the public instruments endpoint."""
+
+    import requests  # type: ignore
+
+    response = requests.get(
+        "https://www.okx.com/api/v5/public/instruments",
+        params={"instType": "SWAP", "instId": symbol},
+        headers={"x-simulated-trading": "1"} if simulated else {},
+        timeout=10,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict) or str(payload.get("code")) != "0":
+        raise RuntimeError(f"OKX public instrument lookup failed for {symbol}")
+    rows = payload.get("data")
+    if not isinstance(rows, list):
+        rows = []
+    instrument = next(
+        (
+            row
+            for row in rows
+            if isinstance(row, dict) and str(row.get("instId")) == symbol
+        ),
+        None,
+    )
+    if instrument is None:
+        raise RuntimeError(f"OKX exact instrument metadata unavailable for {symbol}")
+    contract_size = _float_first(instrument.get("ctVal"), default=0.0)
+    min_qty = _float_first(
+        instrument.get("minSz"),
+        instrument.get("lotSz"),
+        default=0.0,
+    )
+    qty_step = _float_first(instrument.get("lotSz"), default=min_qty)
+    if contract_size <= 0 or min_qty <= 0 or qty_step <= 0:
+        raise RuntimeError(f"OKX public contract metadata incomplete for {symbol}")
+    return {
+        "symbol": symbol,
+        "contract_size": contract_size,
+        "min_qty": min_qty,
+        "qty_step": qty_step,
+        "source": "okx_public_instruments",
+    }
+
+
+def _ccxt_swap_symbol(okx_symbol: str) -> str:
+    base, quote = parse_swap_symbol(okx_symbol)
+    return f"{base}/{quote}:{quote}"
+
+
+def _float_first(*values: Any, default: float) -> float:
+    for value in values:
+        try:
+            parsed = float(value)
+        except (TypeError, ValueError):
+            continue
+        if parsed > 0:
+            return parsed
+    return default
+
+
+def set_leverage(
+    cfg: dict[str, Any],
+    symbol: str,
+    leverage: int,
+    pos_side: str | None,
+) -> dict[str, Any]:
+    """Set leverage for an exact native OKX swap instrument.
 
     For isolated margin, must call per posSide (long/short) on OKX v5.
+    The signed endpoint accepts native ``instId`` values directly, avoiding a
+    second CCXT market lookup after dynamic contract metadata is resolved.
     """
-    exchange = _make_exchange(cfg)
+    import requests  # type: ignore
+
+    path = "/api/v5/account/set-leverage"
+    body_payload: dict[str, str] = {
+        "instId": symbol,
+        "lever": str(leverage),
+        "mgnMode": "isolated",
+    }
+    if pos_side:
+        body_payload["posSide"] = pos_side
+    body = json.dumps(body_payload)
+    headers = _signed_headers(cfg, "POST", path, body)
+    if cfg.get("testnet") or cfg.get("sandbox"):
+        headers["x-simulated-trading"] = "1"
+
+    response = requests.post(
+        "https://www.okx.com" + path,
+        data=body,
+        headers=headers,
+        timeout=10,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    rows = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(payload, dict) or str(payload.get("code")) != "0" or not isinstance(rows, list) or not rows:
+        message = str(payload)
+        if "Leverage doesn't change" in message or (
+            "leverage" in message.lower() and "same" in message.lower()
+        ):
+            return {
+                "info": "leverage already at requested level",
+                "symbol": symbol,
+                "leverage": leverage,
+            }
+        raise RuntimeError(f"set leverage failed for {symbol}: {payload}")
+    row = rows[0]
+    return row if isinstance(row, dict) else {"raw": row}
+
+
+def fetch_account_config(cfg: dict[str, Any]) -> dict[str, Any]:
+    """Return OKX account config, including position mode."""
+    import requests  # type: ignore
+
+    path = "/api/v5/account/config"
+    headers = _signed_headers(cfg, "GET", path)
+    if cfg.get("testnet") or cfg.get("sandbox"):
+        headers["x-simulated-trading"] = "1"
+    resp = requests.get("https://www.okx.com" + path, headers=headers, timeout=10)
+    resp.raise_for_status()
+    data = resp.json()
+    if data.get("code") != "0" or not data.get("data"):
+        raise RuntimeError(f"account config fetch failed: {data}")
+    row = data["data"][0]
+    return row if isinstance(row, dict) else {}
+
+
+def _signed_headers(
+    cfg: dict[str, Any],
+    method: str,
+    request_path: str,
+    body: str = "",
+) -> dict[str, str]:
+    import base64
+    import hashlib
+    import hmac
+    from datetime import datetime, timezone
+
+    ts = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    msg = ts + method.upper() + request_path + body
+    sig = base64.b64encode(
+        hmac.new(cfg["api_secret"].encode(), msg.encode(), hashlib.sha256).digest()
+    ).decode()
+    return {
+        "Content-Type": "application/json",
+        "OK-ACCESS-KEY": cfg["api_key"],
+        "OK-ACCESS-SIGN": sig,
+        "OK-ACCESS-TIMESTAMP": ts,
+        "OK-ACCESS-PASSPHRASE": cfg["passphrase"],
+    }
+
+
+def _position_mode(cfg: dict[str, Any]) -> str:
+    override = os.getenv("OKX_POSITION_MODE", "").strip().lower()
+    if override in {"net", "net_mode", "long_short", "long_short_mode"}:
+        return "net_mode" if override in {"net", "net_mode"} else "long_short_mode"
     try:
-        return exchange.set_leverage(leverage, symbol, params={"mgnMode": "isolated", "posSide": pos_side})
-    except Exception as exc:  # noqa: BLE001
-        # OKX returns error if leverage is already at requested level — treat as success
-        msg = str(exc)
-        if "Leverage doesn't change" in msg or "leverage" in msg.lower() and "same" in msg.lower():
-            return {"info": "leverage already at requested level", "symbol": symbol, "leverage": leverage}
-        raise
+        raw = str(fetch_account_config(cfg).get("posMode", "")).strip().lower()
+    except Exception:
+        return "long_short_mode"
+    return "net_mode" if raw in {"net", "net_mode"} else "long_short_mode"
+
+
+def _order_pos_side(proposal_pos_side: str, position_mode: str) -> str | None:
+    if position_mode == "net_mode":
+        return None
+    return proposal_pos_side
 
 
 def fetch_funding_rate(cfg: dict[str, Any], symbol: str) -> dict[str, Any]:
@@ -531,7 +809,7 @@ def is_funding_blackout(
 
 
 # ---------------------------------------------------------------------------
-# Order placement (algo order with TP + SL = native OCO)
+# Order placement (entry order with attached TP + SL)
 # ---------------------------------------------------------------------------
 
 def place_orders_futures(
@@ -539,40 +817,49 @@ def place_orders_futures(
     cfg: dict[str, Any],
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    """Place a futures position with TP+SL via OKX algo order (native OCO).
+    """Place a futures position with attached TP+SL protection.
 
     Order flow:
       1. set_leverage (idempotent)
-      2. create algo order with side=open + tpTriggerPx + slTriggerPx
-         (OKX algo order supports both TP and SL on the same order)
+      2. create a limit entry order with ``attachAlgoOrds`` for native TP/SL
     """
-    meta = get_symbol_meta(proposal["symbol"])
+    position_mode = _position_mode(cfg)
+    order_pos_side = _order_pos_side(proposal["pos_side"], position_mode)
+    attached_tp_sl: list[dict[str, str]] = [
+        {
+            "tpTriggerPx": str(proposal["take_profit"]),
+            "tpOrdPx": "-1",
+            "tpTriggerPxType": "mark",
+            "slTriggerPx": str(proposal["stop_loss"]),
+            "slOrdPx": "-1",
+            "slTriggerPxType": "mark",
+        }
+    ]
 
     if dry_run:
+        algo_order = {
+            "dry_run": True,
+            "instId": proposal["symbol"],
+            "tdMode": proposal["td_mode"],
+            "side": "buy" if proposal["is_long"] else "sell",
+            "ordType": "limit",
+            "px": str(proposal["entry"]),
+            "sz": str(proposal["contracts"]),
+            "attachAlgoOrds": attached_tp_sl,
+            "leverage": proposal["leverage"],
+            "positionMode": position_mode,
+        }
+        if order_pos_side:
+            algo_order["posSide"] = order_pos_side
         return {
-            "algo_order": {
-                "dry_run": True,
-                "instId": proposal["symbol"],
-                "tdMode": proposal["td_mode"],
-                "side": "buy" if proposal["is_long"] else "sell",
-                "posSide": proposal["pos_side"],
-                "ordType": "conditional",
-                "sz": str(proposal["contracts"]),
-                "tpTriggerPx": str(proposal["take_profit"]),
-                "tpOrdPx": "-1",  # market
-                "slTriggerPx": str(proposal["stop_loss"]),
-                "slOrdPx": "-1",
-                "leverage": proposal["leverage"],
-            },
+            "algo_order": algo_order,
             "liq_price": proposal["liq_price"],
             "margin_required": proposal["margin_required"],
         }
 
-    exchange = _make_exchange(cfg)
-
     # 1. Set leverage first (idempotent — OKX returns current if same)
     try:
-        set_leverage(cfg, proposal["symbol"], proposal["leverage"], proposal["pos_side"])
+        set_leverage(cfg, proposal["symbol"], proposal["leverage"], order_pos_side)
     except Exception as exc:  # noqa: BLE001
         return {
             "ok": False,
@@ -580,43 +867,26 @@ def place_orders_futures(
             "error": str(exc),
         }
 
-    # 2. Place algo order via raw API (ccxt OKX support for algo orders is limited)
+    # 2. Place entry order via raw API so TP/SL can be attached atomically.
     import requests  # type: ignore
-    import hmac
-    import hashlib
-    import base64
-    from datetime import datetime, timezone
-
     base_url = "https://www.okx.com" if not cfg["testnet"] else "https://www.okx.com"
-    path = "/api/v5/trade/order-algo"
-    body = json.dumps({
+    path = "/api/v5/trade/order"
+    body_payload = {
         "instId": proposal["symbol"],
         "tdMode": proposal["td_mode"],
         "side": "buy" if proposal["is_long"] else "sell",
-        "posSide": proposal["pos_side"],
-        "ordType": "conditional",
+        "ordType": "limit",
+        "px": str(proposal["entry"]),
         "sz": str(proposal["contracts"]),
-        "tgtCcy": "base_ccy",
-        "tpTriggerPx": str(proposal["take_profit"]),
-        "tpOrdPx": "-1",
-        "tpOrdKind": "condition",
-        "slTriggerPx": str(proposal["stop_loss"]),
-        "slOrdPx": "-1",
-        "slTriggerPxType": "mark",
-    })
-
-    ts = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
-    msg = ts + "POST" + path + body
-    sig = base64.b64encode(
-        hmac.new(cfg["api_secret"].encode(), msg.encode(), hashlib.sha256).digest()
-    ).decode()
-    headers = {
-        "Content-Type": "application/json",
-        "OK-ACCESS-KEY": cfg["api_key"],
-        "OK-ACCESS-SIGN": sig,
-        "OK-ACCESS-TIMESTAMP": ts,
-        "OK-ACCESS-PASSPHRASE": cfg["passphrase"],
+        "attachAlgoOrds": attached_tp_sl,
     }
+    if order_pos_side:
+        body_payload["posSide"] = order_pos_side
+    body = json.dumps(body_payload)
+
+    headers = _signed_headers(cfg, "POST", path, body)
+    if cfg.get("testnet") or cfg.get("sandbox"):
+        headers["x-simulated-trading"] = "1"
 
     try:
         resp = requests.post(base_url + path, data=body, headers=headers, timeout=10)
@@ -625,13 +895,22 @@ def place_orders_futures(
         if data.get("code") != "0" or not data.get("data"):
             return {
                 "ok": False,
-                "stage": "place_algo",
+                "stage": "place_entry",
                 "error": f"OKX error: {data}",
             }
-        algo_id = data["data"][0]["algoClOrdId"]
+        order_row = data["data"][0]
+        order_id = (
+            order_row.get("ordId")
+            or order_row.get("algoId")
+            or order_row.get("algoClOrdId")
+            or order_row.get("clOrdId")
+            or ""
+        )
         return {
             "ok": True,
-            "algo_order_id": algo_id,
+            "order_id": order_id,
+            "algo_order_id": order_id,
+            "raw": order_row,
             "symbol": proposal["symbol"],
             "leverage": proposal["leverage"],
             "liq_price": proposal["liq_price"],
@@ -640,7 +919,7 @@ def place_orders_futures(
     except Exception as exc:  # noqa: BLE001
         return {
             "ok": False,
-            "stage": "place_algo",
+            "stage": "place_entry",
             "error": str(exc),
         }
 

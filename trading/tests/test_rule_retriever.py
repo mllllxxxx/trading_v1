@@ -9,7 +9,12 @@ from market_dossier import build_market_dossier
 from rule_retriever import RuleRetrievalError, retrieve_rules
 
 
-def _crypto_dossier(score: float = 4, regime: str = "TRENDING_UP", timeframe: str = "1h") -> dict:
+def _crypto_dossier(
+    score: float = 4,
+    regime: str = "TRENDING_UP",
+    timeframe: str = "1h",
+    portfolio_exposure: dict | None = None,
+) -> dict:
     return build_market_dossier(
         symbol="BTC-USDT-SWAP",
         market="crypto",
@@ -19,6 +24,7 @@ def _crypto_dossier(score: float = 4, regime: str = "TRENDING_UP", timeframe: st
         regime=regime,
         data_source="okx",
         data_age_s=5,
+        portfolio_exposure=portfolio_exposure,
     ).to_dict()
 
 
@@ -49,6 +55,36 @@ def test_short_trend_retrieves_short_capable_playbook() -> None:
 def test_ranging_dossier_retrieves_mean_reversion_playbook() -> None:
     context = retrieve_rules(_crypto_dossier(score=-3, regime="RANGING", timeframe="15m")).to_dict()
     assert "PB_CRYPTO_MEAN_REVERSION_001" in _ids(context["candidate_playbooks"])
+
+
+def test_strategy_profile_prioritizes_matching_preferred_playbook() -> None:
+    context = retrieve_rules(
+        _crypto_dossier(
+            score=-3,
+            regime="RANGING",
+            timeframe="15m",
+            portfolio_exposure={
+                "preferred_playbook_ids": ["PB_CRYPTO_MEAN_REVERSION_001"],
+                "required_soft_policy_ids": ["SOFT_STRATEGY_TEAM_001"],
+            },
+        )
+    ).to_dict()
+
+    assert context["candidate_playbooks"][0]["id"] == "PB_CRYPTO_MEAN_REVERSION_001"
+    assert "SOFT_STRATEGY_TEAM_001" in _ids(context["soft_policies"])
+
+
+def test_strategy_profile_does_not_force_mismatched_playbook() -> None:
+    context = retrieve_rules(
+        _crypto_dossier(
+            score=4,
+            regime="TRENDING_UP",
+            timeframe="1h",
+            portfolio_exposure={"preferred_playbook_ids": ["PB_CRYPTO_MEAN_REVERSION_001"]},
+        )
+    ).to_dict()
+
+    assert "PB_CRYPTO_MEAN_REVERSION_001" not in _ids(context["candidate_playbooks"])
 
 
 def test_weak_candidate_returns_hard_rules_but_no_playbooks() -> None:

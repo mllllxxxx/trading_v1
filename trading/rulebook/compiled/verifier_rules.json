@@ -2,12 +2,15 @@
   "_generated_notice": "DO NOT EDIT - generated from trading/rulebook/source by compile_rulebook.py",
   "hard_rules": [
     {
-      "description": "If required market data is missing, stale, or has invalid current price, the system must not open a new order.",
+      "description": "If required market data is missing, stale, or has invalid current price, the system must not open a new order. For the 15m strategy trigger, freshness is measured from the latest confirmed candle close with a default maximum age of 1080 seconds.",
       "enforcement": {
         "applies_to": [
           "OPEN_LONG",
           "OPEN_SHORT"
         ],
+        "fields": {
+          "max_confirmed_trigger_candle_age_seconds": 1080
+        },
         "required_inputs": [
           "market_dossier.current_price",
           "market_dossier.data_quality"
@@ -44,7 +47,7 @@
       "title": "No execution before verifier pass"
     },
     {
-      "description": "Any non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID.",
+      "description": "Any non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID. Team-profile OPEN_LONG and OPEN_SHORT tickets must also prove profile compliance.",
       "enforcement": {
         "applies_to": [
           "OPEN_LONG",
@@ -53,8 +56,11 @@
           "REDUCE_POSITION"
         ],
         "fields": {
+          "min_profile_compliance_score": 0.6,
           "min_rule_citations_for_non_hold": 1,
-          "require_playbook_for_non_hold": true
+          "require_playbook_for_non_hold": true,
+          "require_preferred_playbook_for_team_open": true,
+          "require_profile_compliance_for_team_open": true
         },
         "severity": "reject"
       },
@@ -63,7 +69,7 @@
         "crypto",
         "forex"
       ],
-      "title": "Non-HOLD LLM decisions must cite real rule IDs"
+      "title": "Non-HOLD LLM decisions must cite real rule IDs and fit team profiles"
     },
     {
       "description": "Invalid LLM output must not reach execution after bounded repair attempts fail.",
@@ -108,16 +114,18 @@
       "title": "Paper and live-like modes fail closed"
     },
     {
-      "description": "A single position must not exceed the configured max risk percentage or max notional percentage of capital. Legacy validator compatibility also keeps the generic max leverage value.",
+      "description": "A team risk percentage is a target capped by market structure and execution limits. A single position must not exceed the hard risk, margin, gross-notional, or leverage limits.",
       "enforcement": {
         "applies_to": [
           "OPEN_LONG",
           "OPEN_SHORT"
         ],
         "fields": {
+          "max_gross_notional_pct": 0.6,
           "max_leverage": 3.0,
-          "max_position_pct": 0.2,
-          "max_risk_pct_equity": 0.01
+          "max_margin_pct": 0.2,
+          "max_position_pct": 0.6,
+          "max_risk_pct_equity": 0.05
         },
         "severity": "reject"
       },
@@ -125,7 +133,7 @@
       "markets": [
         "crypto"
       ],
-      "title": "Maximum risk, position, and legacy leverage policy"
+      "title": "Maximum risk, margin, notional, and leverage policy"
     },
     {
       "description": "Any new non-HOLD trade must include both stop-loss and take-profit planning.",
@@ -165,5 +173,5 @@
       "title": "Minimum reward-to-risk requirement"
     }
   ],
-  "source_hash": "92e746abff99848ba0fffcb103a43399290ce02c87c9abbda3ecdcb0b561edb4"
+  "source_hash": "b95ba7e36a150ce293a5a577970a1ec3f65a825cf5630da088976babaf6874e4"
 }

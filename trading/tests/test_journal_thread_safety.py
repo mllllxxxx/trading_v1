@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -102,7 +101,7 @@ class TestJournalThreadSafety:
             list(ex.map(append_one, range(100)))
 
         with journal.DECISIONS_LOG.open(encoding="utf-8") as f:
-            lines = [l for l in f if l.strip()]
+            lines = [line for line in f if line.strip()]
         assert len(lines) == 100
         # Every line must parse
         for line in lines:
@@ -135,6 +134,43 @@ class TestJournalCorruption:
         assert len(backups) == 1
         assert backups[0].read_text(encoding="utf-8") == "garbage"
 
+    def test_repeated_corrupt_reads_reuse_content_backup(
+        self, isolated_journal, tmp_data_dir
+    ):
+        """Dashboard polling must not create one backup per failed read."""
+        journal = isolated_journal
+        journal.ensure_dirs()
+        journal.POSITIONS_FILE.write_text("garbage", encoding="utf-8")
+
+        for _ in range(5):
+            with pytest.raises(journal.JournalCorruptError):
+                journal.read_positions()
+
+        backups = list(tmp_data_dir.glob("journal/positions.corrupt.*.bak"))
+        assert len(backups) == 1
+        assert "sha256-" in backups[0].name
+
+    def test_write_positions_uses_atomic_replace(self, isolated_journal, monkeypatch):
+        journal = isolated_journal
+        journal.ensure_dirs()
+        replacements: list[tuple[object, object]] = []
+        original_replace = journal.os.replace
+
+        def capture_replace(source, target):
+            replacements.append((source, target))
+            return original_replace(source, target)
+
+        monkeypatch.setattr(journal.os, "replace", capture_replace)
+        journal.write_positions([_make_position("BTC-USDT")])
+
+        assert len(replacements) == 1
+        source, target = replacements[0]
+        assert target == journal.POSITIONS_FILE
+        assert source.parent == journal.POSITIONS_FILE.parent
+        assert source.name.startswith("positions.json.tmp.")
+        assert journal.read_positions()[0]["symbol"] == "BTC-USDT"
+        assert not list(journal.JOURNAL_DIR.glob("positions.json.tmp.*"))
+
     def test_empty_positions_returns_list(self, isolated_journal):
         """Backward compat: first run with empty file returns []."""
         journal = isolated_journal
@@ -146,6 +182,17 @@ class TestJournalCorruption:
         journal = isolated_journal
         journal.ensure_dirs()
         journal.add_position(_make_position("BTC-USDT"))
+        result = journal.read_positions()
+        assert len(result) == 1
+        assert result[0]["symbol"] == "BTC-USDT"
+
+    def test_ensure_dirs_preserves_existing_positions(self, isolated_journal):
+        journal = isolated_journal
+        journal.ensure_dirs()
+        journal.add_position(_make_position("BTC-USDT"))
+
+        journal.ensure_dirs()
+
         result = journal.read_positions()
         assert len(result) == 1
         assert result[0]["symbol"] == "BTC-USDT"

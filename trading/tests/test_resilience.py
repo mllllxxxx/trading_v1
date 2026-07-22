@@ -282,7 +282,7 @@ class TestRegimeErrorHandling:
     def test_detect_regime_with_bad_data_falls_back(self, isolated_b2):
         """When compute_choppiness raises, regime still returns valid dict."""
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "regime"))
-        from regime import detect_regime, compute_choppiness
+        from regime import detect_regime
 
         # Build mock df
         import pandas as pd

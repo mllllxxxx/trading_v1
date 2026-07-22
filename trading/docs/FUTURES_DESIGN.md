@@ -84,9 +84,9 @@ class SymbolConfig:
     swap_symbol: str        # "BTC-USDT-SWAP" (OKX futures format)
     spot_symbol: str        # "BTC-USDT" (cho confluence + data)
     leverage: int           # 10 (BTC), 2-3 (alts)
-    max_notional_pct: float # 0.30 = 30% capital
+    max_notional_pct: float # 0.20 = 20% capital
     min_confluence: int     # 4 (BTC), 3 (alts)
-    liq_buffer_pct: float   # 0.30 = entry cách liq >= 30%
+    liq_buffer_pct: float   # per-symbol liquidation buffer
     min_rr: float           # 1.5 (futures: account for funding cost)
     contract_size: float    # 0.01 (BTC), 1 (altcoin) - from OKX
     min_qty: float          # min order qty
@@ -127,7 +127,7 @@ class LLMOverrideLog:
 | Mục đích | Method | Path | Auth |
 |---|---|---|---|
 | Fetch universe | GET | `/api/v5/market/tickers?instType=SWAP&uly=USDT` | no |
-| Place algo order (TP/SL) | POST | `/api/v5/trade/order-algo` | yes |
+| Place entry order with attached TP/SL | POST | `/api/v5/trade/order` | yes |
 | Set leverage | POST | `/api/v5/account/set-leverage` | yes |
 | Funding rate | GET | `/api/v5/public/funding-rate?instId=...` | no |
 | Funding rate history | GET | `/api/v5/public/funding-rate-history?instId=...` | no |
@@ -135,6 +135,12 @@ class LLMOverrideLog:
 | Position info | GET | `/api/v5/account/positions?instType=SWAP&instId=...` | yes |
 | Algo order history | GET | `/api/v5/trade/orders-algo-pending?instType=SWAP&instId=...` | yes |
 | Cancel algo order | POST | `/api/v5/trade/cancel-algo-order` | yes |
+
+Runtime note: for opening demo futures positions, Trade_V1 submits
+`/api/v5/trade/order` with `ordType=limit`, `px`, and `attachAlgoOrds` for TP/SL.
+Do not submit new entries through `/api/v5/trade/order-algo`; standalone SL
+triggers can be rejected before the position exists. When the OKX account is in
+net mode, omit `posSide`.
 
 ### 3.2 Algo order format (TP/SL futures)
 
@@ -187,7 +193,7 @@ Request shape:
 | ID | Rule | Implementation |
 |---|---|---|
 | **H5** | Per-symbol leverage cap (BTC=10, alts=2-3) | `validator.check_leverage(symbol, lev)` |
-| **H7** | Liquidation buffer: `|entry - liq| / entry ≥ SYMBOL_CFG.liq_buffer_pct` (default 30%) | `okx_futures_bracket.compute_liquidation_price()` + check |
+| **H7** | Liquidation buffer: `|entry - liq| / entry ≥ SYMBOL_CFG.liq_buffer_pct` (per-symbol) | `okx_futures_bracket.compute_liquidation_price()` + check |
 | **H8** | Funding blackout: refuse new position 5 min before/after funding time | `validator.check_funding_blackout(symbol, now)` |
 
 ### 4.3 Liquidation math (isolated, linear USDT-margined)
@@ -286,16 +292,16 @@ def load_universe() -> UniverseSnapshot:
 ```python
 HARDCODED_FALLBACK = UniverseSnapshot(
     symbols=[
-        SymbolConfig("BTC", "BTC-USDT-SWAP", "BTC-USDT", 10, 0.30, 4, 0.30, 1.5, 0.01, 0.01),
-        SymbolConfig("ETH", "ETH-USDT-SWAP", "ETH-USDT", 3, 0.30, 3, 0.30, 1.5, 0.01, 0.01),
-        SymbolConfig("BNB", "BNB-USDT-SWAP", "BNB-USDT", 3, 0.30, 3, 0.30, 1.5, 0.01, 0.01),
-        SymbolConfig("SOL", "SOL-USDT-SWAP", "SOL-USDT", 3, 0.30, 3, 0.30, 1.5, 1, 1),
-        SymbolConfig("XRP", "XRP-USDT-SWAP", "XRP-USDT", 3, 0.30, 3, 0.30, 1.5, 1, 1),
-        SymbolConfig("DOGE", "DOGE-USDT-SWAP", "DOGE-USDT", 3, 0.30, 3, 0.30, 1.5, 1, 1),
-        SymbolConfig("ADA", "ADA-USDT-SWAP", "ADA-USDT", 3, 0.30, 3, 0.30, 1.5, 1, 1),
-        SymbolConfig("AVAX", "AVAX-USDT-SWAP", "AVAX-USDT", 3, 0.30, 3, 0.30, 1.5, 1, 1),
-        SymbolConfig("TRX", "TRX-USDT-SWAP", "TRX-USDT", 3, 0.30, 3, 0.30, 1.5, 1, 1),
-        SymbolConfig("LINK", "LINK-USDT-SWAP", "LINK-USDT", 3, 0.30, 3, 0.30, 1.5, 1, 1),
+        SymbolConfig("BTC", "BTC-USDT-SWAP", "BTC-USDT", 10, 0.20, 4, 0.08, 1.5, 0.01, 0.01),
+        SymbolConfig("ETH", "ETH-USDT-SWAP", "ETH-USDT", 3, 0.20, 3, 0.25, 1.5, 0.01, 0.01),
+        SymbolConfig("BNB", "BNB-USDT-SWAP", "BNB-USDT", 3, 0.20, 3, 0.25, 1.5, 0.01, 0.01),
+        SymbolConfig("SOL", "SOL-USDT-SWAP", "SOL-USDT", 3, 0.20, 3, 0.25, 1.5, 1, 1),
+        SymbolConfig("XRP", "XRP-USDT-SWAP", "XRP-USDT", 3, 0.20, 3, 0.25, 1.5, 1, 1),
+        SymbolConfig("DOGE", "DOGE-USDT-SWAP", "DOGE-USDT", 3, 0.20, 3, 0.25, 1.5, 1, 1),
+        SymbolConfig("ADA", "ADA-USDT-SWAP", "ADA-USDT", 3, 0.20, 3, 0.25, 1.5, 1, 1),
+        SymbolConfig("AVAX", "AVAX-USDT-SWAP", "AVAX-USDT", 3, 0.20, 3, 0.25, 1.5, 1, 1),
+        SymbolConfig("TRX", "TRX-USDT-SWAP", "TRX-USDT", 3, 0.20, 3, 0.25, 1.5, 1, 1),
+        SymbolConfig("LINK", "LINK-USDT-SWAP", "LINK-USDT", 3, 0.20, 3, 0.25, 1.5, 1, 1),
     ],
     source="fallback_hardcoded",
     ...

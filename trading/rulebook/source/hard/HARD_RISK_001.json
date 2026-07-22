@@ -1,25 +1,29 @@
 {
   "id": "HARD_RISK_001",
-  "title": "Maximum risk, position, and legacy leverage policy",
+  "title": "Maximum risk, margin, notional, and leverage policy",
   "type": "hard_rule",
   "status": "active",
   "markets": ["crypto"],
-  "description": "A single position must not exceed the configured max risk percentage or max notional percentage of capital. Legacy validator compatibility also keeps the generic max leverage value.",
+  "description": "A team risk percentage is a target capped by market structure and execution limits. A single position must not exceed the hard risk, margin, gross-notional, or leverage limits.",
   "enforcement": {
     "severity": "reject",
     "applies_to": ["OPEN_LONG", "OPEN_SHORT"],
     "fields": {
-      "max_risk_pct_equity": 0.01,
-      "max_position_pct": 0.2,
+      "max_risk_pct_equity": 0.05,
+      "max_position_pct": 0.6,
+      "max_margin_pct": 0.2,
+      "max_gross_notional_pct": 0.6,
       "max_leverage": 3.0
     }
   },
   "legacy_skills": {
     "hard": {
-      "max_risk_pct_equity": 0.01,
-      "max_position_pct": 0.2,
+      "max_risk_pct_equity": 0.05,
+      "max_position_pct": 0.6,
+      "max_margin_pct": 0.2,
+      "max_gross_notional_pct": 0.6,
       "max_leverage": 3.0
     }
   },
-  "llm_guidance": "Do not propose trades that exceed the maximum notional cap. If the setup needs too much size, return HOLD or reduce risk."
+  "llm_guidance": "Treat team risk as a target and never force it. The compiler may reduce actual risk to satisfy the 20% margin, 60% gross-notional, 3x leverage, contract-size, and 5% risk ceilings."
 }

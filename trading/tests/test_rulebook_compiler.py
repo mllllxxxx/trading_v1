@@ -82,11 +82,21 @@ def test_retriever_manifest_contains_filter_metadata_and_markdown() -> None:
     assert trend["markdown"].startswith("## PB_CRYPTO_TREND_CONTINUATION_001")
 
 
+def test_strategy_profile_compliance_is_rendered_for_retrieval() -> None:
+    manifest = json.loads((COMPILED_DIR / "retriever_manifest.json").read_text(encoding="utf-8"))
+    profile_policy = manifest["rules"]["SOFT_STRATEGY_TEAM_001"]
+
+    assert profile_policy["profile_compliance"]["min_profile_compliance_score"] == 0.6
+    assert "profile_compliance_score" in profile_policy["markdown"]
+
+
 def test_auto_skills_is_generated_from_rulebook() -> None:
     compiled = json.loads((COMPILED_DIR / "skills.json").read_text(encoding="utf-8"))
     auto = json.loads(Path(AUTO_SKILLS_PATH).read_text(encoding="utf-8"))
     assert auto == compiled
     assert auto["_do_not_edit"] is True
     assert auto["hard"]["rr_minimum"] == 1.2
-    assert auto["hard"]["max_position_pct"] == 0.2
+    assert auto["hard"]["max_position_pct"] == 0.6
+    assert auto["hard"]["max_margin_pct"] == 0.2
+    assert auto["hard"]["max_leverage"] == 3
     assert "avoid_overbought_long" in auto["soft"]

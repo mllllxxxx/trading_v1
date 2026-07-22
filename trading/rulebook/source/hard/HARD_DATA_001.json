@@ -4,11 +4,14 @@
   "type": "hard_rule",
   "status": "active",
   "markets": ["crypto", "forex"],
-  "description": "If required market data is missing, stale, or has invalid current price, the system must not open a new order.",
+  "description": "If required market data is missing, stale, or has invalid current price, the system must not open a new order. For the 15m strategy trigger, freshness is measured from the latest confirmed candle close with a default maximum age of 1080 seconds.",
   "enforcement": {
     "severity": "reject",
     "applies_to": ["OPEN_LONG", "OPEN_SHORT"],
-    "required_inputs": ["market_dossier.current_price", "market_dossier.data_quality"]
+    "required_inputs": ["market_dossier.current_price", "market_dossier.data_quality"],
+    "fields": {
+      "max_confirmed_trigger_candle_age_seconds": 1080
+    }
   },
   "llm_guidance": "When data quality is poor or unknown, return HOLD or REQUEST_MORE_DATA."
 }

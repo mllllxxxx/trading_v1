@@ -1,0 +1,115 @@
+{
+  "schema_version": "decision_policy.v1",
+  "profile": "adaptive_hybrid_v1",
+  "zones": {
+    "strong_min_score": 80.0,
+    "gray_min_score": 60.0
+  },
+  "lanes": {
+    "strong": "rules_baseline",
+    "gray": "rules_plus_llm",
+    "reject": "no_trade"
+  },
+  "gray_requires_llm": true,
+  "review_risk_multipliers": [0.0, 0.5, 1.0],
+  "llm_review_health": {
+    "enforcement": "observe_only",
+    "minimum_reviewed": 30,
+    "minimum_approved": 10,
+    "minimum_declined": 10,
+    "minimum_multiplier_coverage": 0.9,
+    "minimum_segment_reviewed": 10,
+    "confidence_level": 0.9
+  },
+  "adaptive_controller": {
+    "mode": "demo_auto",
+    "minimum_new_eligible_outcomes": 20,
+    "minimum_strategy_eligible_outcomes": 20,
+    "strategy_diagnostics": {
+      "mode": "observe_only",
+      "minimum_total": 80,
+      "minimum_zone": 20,
+      "minimum_conflict_samples": 10
+    },
+    "required_confirmations": 2,
+    "max_threshold_step": 5,
+    "minimum_zone_gap": 10,
+    "zone_bounds": {
+      "gray_min": 50,
+      "gray_max": 75,
+      "strong_min": 70,
+      "strong_max": 90
+    },
+    "rollback": {
+      "minimum_new_eligible_outcomes": 20,
+      "validation_strong_minimum_samples": 8,
+      "validation_average_r_lower_bound_floor": 0,
+      "validation_profit_factor_floor": 1.0
+    }
+  },
+  "shadow_scoring_experiments": {
+    "continuous_conflict_v2": {
+      "mode": "shadow_only",
+      "score_version": "continuous_base_and_severity_v2",
+      "active_for_routing": false,
+      "max_total_penalty": 48.0,
+      "max_penalty_per_conflict": 12.0,
+      "severity_scales": {
+        "momentum_adx_below_25": 10.0,
+        "momentum_late_chase_over_0_5_atr": 1.0,
+        "mean_reversion_adx_above_20": 15.0,
+        "breakout_prior_compression_missing": 0.5,
+        "breakout_volume_z_below_1": 1.0,
+        "breakout_retest_distance_over_0_5_atr": 1.0
+      },
+      "threshold_calibration": {
+        "mode": "shadow_only",
+        "strong_candidates": [70, 75, 80, 85, 90],
+        "gray_candidates": [50, 55, 60, 65, 70, 75],
+        "minimum_total": 120,
+        "minimum_complete_zone": 30,
+        "minimum_validation_zone": 8,
+        "require_full_counterfactual_capture": true,
+        "max_candidates_reported": 5
+      },
+      "review_staging": {
+        "mode": "review_only",
+        "required_confirmations": 2,
+        "minimum_new_eligible_outcomes": 20,
+        "allowed_execution_adapters": ["paper", "okx_demo"],
+        "requires_operator_approval": true
+      },
+      "canary": {
+        "mode": "manual_demo",
+        "allowed_execution_adapters": ["paper", "okx_demo"],
+        "allocation_rate": 0.2,
+        "risk_multiplier": 0.5,
+        "max_concurrent_positions": 1,
+        "disagreement_only": true,
+        "rollback": {
+          "minimum_closed_trades": 12,
+          "average_r_lower_bound_floor": 0.0,
+          "profit_factor_floor": 1.0,
+          "cumulative_r_floor": -3.0
+        }
+      },
+      "readiness": {
+        "minimum_valid_scores": 120,
+        "minimum_score_coverage": 0.9,
+        "minimum_strategy_count": 4,
+        "minimum_per_strategy": 30,
+        "minimum_strategy_validation_records": 8,
+        "minimum_strategy_validation_objective_gain": -0.05,
+        "minimum_calibration_zone": 20,
+        "minimum_validation_zone": 8,
+        "minimum_calibration_objective_gain": 0.02,
+        "minimum_validation_objective_gain": 0.0,
+        "validation_average_r_lower_bound_floor": 0.0,
+        "validation_profit_factor_floor": 1.0,
+        "minimum_segment_samples": 8
+      }
+    }
+  },
+  "confidence_calibrated": false,
+  "live_enabled": false
+}

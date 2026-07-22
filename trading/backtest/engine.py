@@ -20,15 +20,16 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
 log = logging.getLogger(__name__)
+MAX_NOTIONAL_PCT = float(os.getenv("FUTURES_MAX_POSITION_PCT", "0.20"))
 
 
 # ---------------------------------------------------------------------------
@@ -236,8 +237,8 @@ def backtest_symbol(
         if stop_distance <= 0:
             continue
         qty = risk_usd / stop_distance
-        # Cap by 30% notional
-        max_notional = equity * 0.30
+        # Cap by canonical max notional policy.
+        max_notional = equity * MAX_NOTIONAL_PCT
         if qty * entry > max_notional:
             qty = max_notional / entry
 
@@ -344,8 +345,6 @@ def backtest_combined(
     indicators = {s: {"atr": _atr(df, 14)} for s, df in data.items()}
     # Common index (union of timestamps, sorted)
     all_idx = sorted(set().union(*[df.index for df in data.values()]))
-    all_idx_set = set(all_idx)
-
     # Equity tracking
     equity = starting_capital
     peak_equity = starting_capital
@@ -366,7 +365,6 @@ def backtest_combined(
             ts_to_idx[ts][sym] = i
 
     fee_pct = kwargs.get("fee_pct", 0.0005)
-    decision_every_n_bars = kwargs.get("decision_every_n_bars", 6)
     sl_atr_mult = kwargs.get("sl_atr_mult", 1.5)
     sl_min_pct = kwargs.get("sl_min_pct", 1.5)
     tp_rr = kwargs.get("tp_rr", 2.0)
@@ -463,7 +461,7 @@ def backtest_combined(
             if stop_distance <= 0:
                 continue
             qty = risk_usd / stop_distance
-            max_notional = equity * 0.30
+            max_notional = equity * MAX_NOTIONAL_PCT
             if qty * entry > max_notional:
                 qty = max_notional / entry
             trade = Trade(

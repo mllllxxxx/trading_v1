@@ -126,7 +126,7 @@ def test_compile_order_rejects_reward_to_risk_below_hard_minimum() -> None:
         )
 
 
-def test_compile_order_clamps_notional_to_hard_position_cap() -> None:
+def test_compile_order_clamps_notional_to_margin_and_leverage_cap() -> None:
     order = compile_order(
         _ticket(),
         _dossier(),
@@ -135,10 +135,48 @@ def test_compile_order_clamps_notional_to_hard_position_cap() -> None:
         verifier_result=_passed(),
     )
 
-    assert order.position_notional_usd == 2000.0
-    assert order.position_size_units == 20.0
-    assert order.risk_amount_usd == 20.0
-    assert order.risk_pct_equity == 0.002
+    assert order.position_notional_usd == 6000.0
+    assert order.position_size_units == 60.0
+    assert order.risk_amount_usd == 60.0
+    assert order.risk_pct_equity == 0.006
+    assert order.margin_used_usd == 2000.0
+    assert order.leverage == 3.0
+
+
+def test_compile_order_with_200_usd_equity_caps_margin_to_40_usd() -> None:
+    order = compile_order(
+        _ticket(),
+        _dossier(),
+        equity=200,
+        price_levels={"entry": 100, "stop_loss": 99, "take_profit": 103},
+        verifier_result=_passed(),
+    )
+
+    assert order.position_notional_usd == 120.0
+    assert order.position_size_units == 1.2
+    assert order.risk_amount_usd == 1.2
+    assert order.risk_pct_equity == 0.006
+    assert order.margin_used_usd == 40.0
+    assert order.leverage == 3.0
+
+
+def test_compile_order_preserves_sub_dollar_price_precision() -> None:
+    order = compile_order(
+        _ticket(),
+        _dossier(),
+        equity=200,
+        price_levels={
+            "entry": 0.3906,
+            "stop_loss": 0.38683997895154454,
+            "take_profit": 0.3984200420969109,
+        },
+        verifier_result=_passed(),
+    )
+
+    assert order.entry == pytest.approx(0.3906)
+    assert order.stop_loss == pytest.approx(0.38683998)
+    assert order.take_profit == pytest.approx(0.39842004)
+    assert order.stop_loss < order.entry < order.take_profit
 
 
 def test_compile_order_ignores_llm_raw_quantity_fields() -> None:

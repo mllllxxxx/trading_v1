@@ -15,7 +15,11 @@ def _records() -> list[dict]:
             "rule_citations_valid": True,
             "action": "OPEN_LONG",
             "playbook_id": "PB_CRYPTO_TREND_CONTINUATION_001",
+            "strategy_id": "crypto_momentum_breakout",
             "regime": "TRENDING_UP",
+            "profile_compliance_score": 0.74,
+            "decision_lane": "rules_baseline",
+            "rule_score": 85,
             "verifier_passed": True,
             "pnl_usd": 120.0,
             "r_multiple": 1.5,
@@ -37,7 +41,11 @@ def _records() -> list[dict]:
             "hallucinated_rule_ids": ["HARD_FAKE_999"],
             "action": "OPEN_SHORT",
             "playbook_id": "PB_CRYPTO_BREAKOUT_PULLBACK_001",
+            "strategy_id": "crypto_volatility_breakout",
             "regime": "TRENDING_DOWN",
+            "profile_compliance_score": 0.42,
+            "decision_lane": "rules_plus_llm",
+            "rule_score": 72,
             "verifier_passed": False,
             "verifier_violations": [{"rule_id": "HARD_LLM_001"}],
             "pnl_usd": -40.0,
@@ -64,6 +72,13 @@ def test_compute_replay_metrics_covers_quality_and_performance() -> None:
     assert metrics["decision_stability"] == 0.6667
     assert metrics["performance_by_playbook"]["PB_CRYPTO_TREND_CONTINUATION_001"]["pnl_usd"] == 120.0
     assert metrics["performance_by_regime"]["TRENDING_DOWN"]["losses"] == 1
+    assert metrics["performance_by_strategy_profile"]["crypto_momentum_breakout"]["wins"] == 1
+    assert metrics["performance_by_profile_regime"]["crypto_volatility_breakout|TRENDING_DOWN"]["losses"] == 1
+    assert metrics["performance_by_decision_lane"]["rules_baseline"]["wins"] == 1
+    assert metrics["performance_by_rule_score_bucket"]["80-89"]["pnl_usd"] == 120.0
+    assert metrics["performance_by_rule_score_bucket"]["70-79"]["losses"] == 1
+    assert metrics["average_profile_compliance_score"] == 0.58
+    assert metrics["average_profile_compliance_by_strategy_profile"]["crypto_momentum_breakout"] == 0.74
 
 
 def test_write_replay_report_outputs_json_and_markdown(tmp_path) -> None:

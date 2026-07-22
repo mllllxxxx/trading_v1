@@ -435,6 +435,9 @@ The LLM Trader and critic may only retrieve from approved trading context source
 - `docs/templates/`
 - `scripts/`
 - `.hermes/`
+- `trading/docs/features/`
+- `docs/prompts/`
+- `docs/development/`
 - generic repository-harness files
 
 ## Rule

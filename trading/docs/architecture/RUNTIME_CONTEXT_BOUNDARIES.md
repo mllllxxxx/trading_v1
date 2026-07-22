@@ -15,6 +15,7 @@ docs as policy or prompt context.
 - `trading/docs/product/`
 - `trading/docs/architecture/SOURCE_OF_TRUTH_MAP.md`
 - `trading/docs/architecture/DECISION_FLOW.md`
+- `trading/docs/architecture/SIGNAL_CONTRACTS.md`
 - `trading/docs/architecture/RUNTIME_CONTEXT_BOUNDARIES.md`
 - `trading/docs/architecture/RAG_INDEXING_POLICY.md`
 
@@ -26,6 +27,10 @@ docs as policy or prompt context.
 - generic templates
 - repository-harness scripts
 - old or legacy architecture docs unless explicitly whitelisted
+- `.hermes/`
+- `trading/docs/features/`
+- `docs/prompts/`
+- `docs/development/`
 
 ## Enforcement Rule
 

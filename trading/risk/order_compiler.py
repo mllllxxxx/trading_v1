@@ -53,6 +53,14 @@ def compile_order(
     rules = dict(hard_rules or load_verifier_rules())
     max_risk_pct = _rule_field(rules, "HARD_RISK_001", "max_risk_pct_equity", default=0.01)
     max_position_pct = _rule_field(rules, "HARD_RISK_001", "max_position_pct", default=0.2)
+    max_margin_pct = _rule_field(rules, "HARD_RISK_001", "max_margin_pct", default=0.2)
+    max_gross_notional_pct = _rule_field(
+        rules,
+        "HARD_RISK_001",
+        "max_gross_notional_pct",
+        default=max_position_pct,
+    )
+    max_leverage = _rule_field(rules, "HARD_RISK_001", "max_leverage", default=3.0)
     rr_minimum = _rule_field(rules, "HARD_RISK_003", "rr_minimum", default=1.2)
 
     equity_dec = _positive_decimal(equity, "equity")
@@ -75,12 +83,21 @@ def compile_order(
         )
 
     requested_risk_pct = _positive_decimal(ticket_obj.risk_plan.risk_pct_equity, "risk_pct_equity")
-    effective_risk_pct = min(requested_risk_pct, Decimal(str(max_risk_pct)))
+    target_risk_pct = _target_risk_pct(dossier_map, requested_risk_pct)
+    cap_reasons: list[str] = []
+    effective_risk_pct = min(requested_risk_pct, target_risk_pct, Decimal(str(max_risk_pct)))
+    if effective_risk_pct < requested_risk_pct:
+        cap_reasons.append("risk_target_or_hard_ceiling")
     risk_amount = equity_dec * effective_risk_pct
     units = risk_amount / stop_distance
     notional = units * entry
 
-    max_notional = equity_dec * Decimal(str(max_position_pct))
+    max_notional_pct = min(
+        Decimal(str(max_position_pct)),
+        Decimal(str(max_gross_notional_pct)),
+        Decimal(str(max_margin_pct)) * Decimal(str(max_leverage)),
+    )
+    max_notional = equity_dec * max_notional_pct
     if max_notional <= 0:
         raise OrderCompilerError("max position notional must be positive")
     if notional > max_notional:
@@ -88,19 +105,43 @@ def compile_order(
         notional = max_notional
         risk_amount = units * stop_distance
         effective_risk_pct = risk_amount / equity_dec
+        cap_reasons.append("margin_or_gross_notional_cap")
+
+    margin_used = notional / Decimal(str(max_leverage))
 
     return CompiledOrder(
         symbol=ticket_obj.symbol,
         side=side,
-        entry=_money_float(entry),
-        stop_loss=_money_float(stop_loss),
-        take_profit=_money_float(take_profit),
+        entry=_price_float(entry),
+        stop_loss=_price_float(stop_loss),
+        take_profit=_price_float(take_profit),
         risk_pct_equity=_ratio_float(effective_risk_pct),
         risk_amount_usd=_money_float(risk_amount),
         position_size_units=_unit_float(units),
         position_notional_usd=_money_float(notional),
         source=source,
+        requested_risk_pct_equity=_ratio_float(requested_risk_pct),
+        target_risk_pct_equity=_ratio_float(target_risk_pct),
+        actual_risk_pct_equity=_ratio_float(effective_risk_pct),
+        risk_cap_reason=",".join(cap_reasons) or None,
+        margin_used_usd=_money_float(margin_used),
+        gross_notional_usd=_money_float(notional),
+        leverage=_ratio_float(Decimal(str(max_leverage))),
     )
+
+
+def _target_risk_pct(dossier: Mapping[str, Any], fallback: Decimal) -> Decimal:
+    exposure = dossier.get("portfolio_exposure")
+    if isinstance(exposure, Mapping):
+        raw = exposure.get("target_risk_pct_equity")
+        if raw is not None:
+            try:
+                parsed = Decimal(str(raw))
+            except (InvalidOperation, ValueError):
+                return fallback
+            if parsed > 0:
+                return parsed
+    return fallback
 
 
 def _coerce_ticket(ticket: Mapping[str, Any] | TradeDecisionTicket) -> TradeDecisionTicket:
@@ -201,6 +242,10 @@ def _positive_decimal(value: Any, label: str) -> Decimal:
 
 def _money_float(value: Decimal) -> float:
     return float(value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
+
+def _price_float(value: Decimal) -> float:
+    return float(value.quantize(Decimal("0.00000001"), rounding=ROUND_HALF_UP))
 
 
 def _unit_float(value: Decimal) -> float:

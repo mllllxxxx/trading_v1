@@ -9,7 +9,9 @@ from schemas.export_json_schemas import build_artifacts, check_artifacts
 from schemas.json_schema import GENERATED_NOTICE
 from schemas.models import (
     SchemaValidationError,
+    SignalDirection,
     TradeAction,
+    validate_signal_candidate,
     validate_trade_decision_ticket,
 )
 
@@ -53,6 +55,81 @@ def _valid_open_ticket() -> dict:
     }
 
 
+def _valid_signal_candidate() -> dict:
+    return {
+        "signal_id": "sig-001",
+        "generated_at": "2026-06-30T00:00:00Z",
+        "source": "berkshire_crypto_scanner",
+        "market": "crypto",
+        "symbol": "BTC-USDT",
+        "timeframe": "24h_ticker",
+        "direction": "long",
+        "status": "strong_candidate",
+        "confidence": 0.82,
+        "score": 82,
+        "grade": "A",
+        "action_hint": "OPEN_LONG",
+        "mode": "signal_only",
+        "time_horizon": "swing_2d_7d",
+        "promotion_gate": "eligible_for_draft_ticket",
+        "confidence_components": {
+            "momentum": 0.8,
+            "liquidity": 1.0,
+            "spread": 0.9,
+            "range": 0.7,
+            "evidence": 1.0,
+            "final": 0.82,
+        },
+        "reasons": ["Momentum and liquidity pass the first screen."],
+        "blockers": [],
+        "entry_zone": "100.0000 - 101.0000",
+        "invalidation": "98.0000",
+        "target_zone": "106.0000",
+        "risk_reward": "2.0000",
+        "last_price": "100.5000",
+        "llm_context": {"role": "advisory_signal_context"},
+        "evidence": {"provider_source": "okx_public_tickers"},
+    }
+
+
+def test_valid_signal_candidate_passes() -> None:
+    signal = validate_signal_candidate(_valid_signal_candidate())
+
+    assert signal.direction is SignalDirection.LONG
+    assert signal.action_hint is TradeAction.OPEN_LONG
+    assert signal.promotion_gate == "eligible_for_draft_ticket"
+    assert signal.confidence_components["final"] == 0.82
+
+
+def test_candidate_signal_requires_directional_action_hint() -> None:
+    payload = _valid_signal_candidate()
+    payload["action_hint"] = "HOLD"
+
+    with pytest.raises(SchemaValidationError, match="action_hint"):
+        validate_signal_candidate(payload)
+
+
+def test_blocked_signal_may_request_more_data() -> None:
+    payload = _valid_signal_candidate()
+    payload.update(
+        {
+            "direction": "neutral",
+            "status": "blocked",
+            "grade": "D",
+            "confidence": 0.0,
+            "score": 0,
+            "action_hint": "REQUEST_MORE_DATA",
+            "promotion_gate": "blocked_missing_evidence",
+            "blockers": ["ticker_missing"],
+            "reasons": ["Provider evidence is missing."],
+        }
+    )
+
+    signal = validate_signal_candidate(payload)
+
+    assert signal.action_hint is TradeAction.REQUEST_MORE_DATA
+
+
 def test_valid_open_long_ticket_passes_with_known_ids() -> None:
     known_rules, known_playbooks = _rulebook_ids()
     ticket = validate_trade_decision_ticket(
@@ -64,6 +141,23 @@ def test_valid_open_long_ticket_passes_with_known_ids() -> None:
     assert ticket.playbook_id == "PB_CRYPTO_TREND_CONTINUATION_001"
     assert ticket.risk_plan is not None
     assert ticket.entry_plan is not None
+
+
+def test_trade_decision_ticket_profile_compliance_fields_are_optional() -> None:
+    old_style = validate_trade_decision_ticket(_valid_open_ticket())
+    assert old_style.profile_compliance_score is None
+    assert old_style.profile_compliance_flags == []
+
+    payload = _valid_open_ticket()
+    payload["profile_compliance_score"] = 0.67
+    payload["profile_compliance_summary"] = "Setup fits the team skill profile."
+    payload["profile_compliance_flags"] = ["no_late_chase"]
+
+    ticket = validate_trade_decision_ticket(payload)
+
+    assert ticket.profile_compliance_score == 0.67
+    assert ticket.profile_compliance_summary == "Setup fits the team skill profile."
+    assert ticket.profile_compliance_flags == ["no_late_chase"]
 
 
 def test_hold_ticket_may_omit_playbook_and_risk_plan() -> None:

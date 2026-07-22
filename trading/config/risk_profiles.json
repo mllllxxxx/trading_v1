@@ -1,0 +1,79 @@
+{
+  "schema_version": "risk_profiles.v1",
+  "profiles": {
+    "demo_small_200": {
+      "description": "Demo/testnet profile for evaluating system behavior with only $200 simulated equity.",
+      "account_equity_usd": 200,
+      "max_risk_pct_equity": 0.01,
+      "max_position_pct": 0.2,
+      "max_margin_pct": 0.2,
+      "max_gross_notional_pct": 0.2,
+      "daily_loss_cap_pct": 0.03,
+      "max_open_positions": 10,
+      "derived": {
+        "max_risk_usd_per_trade": 2,
+        "max_notional_usd_per_trade": 40,
+        "daily_loss_cap_usd": 6
+      },
+      "runtime_env": {
+        "TRADING_RISK_PROFILE": "demo_small_200",
+        "TRADING_EQUITY_CAP_USD": "200",
+        "AUTO_CAPITAL": "200",
+        "BERKSHIRE_SIGNAL_EQUITY_USD": "200",
+        "FUTURES_MAX_POSITION_PCT": "0.20"
+      },
+      "notes": [
+        "Applies to new runtime decisions and dashboard equity display.",
+        "Existing open exchange positions must be closed or archived out of the performance window for a clean study."
+      ]
+    },
+    "demo_team_tournament_200": {
+      "description": "Demo-only strategy-team tournament profile: four teams, $200 reporting capital per team, 3-5% risk band.",
+      "account_equity_usd": 200,
+      "team_capital_usd": 200,
+      "min_risk_pct_equity": 0.03,
+      "max_risk_pct_equity": 0.05,
+      "max_position_pct": 0.6,
+      "max_margin_pct": 0.2,
+      "max_gross_notional_pct": 0.6,
+      "max_leverage": 3,
+      "daily_loss_cap_pct": 0.05,
+      "max_open_positions_per_team": 1,
+      "teams": {
+        "berkshire": {
+          "target_risk_pct_equity": 0.03
+        },
+        "momentum": {
+          "target_risk_pct_equity": 0.04
+        },
+        "mean_reversion": {
+          "target_risk_pct_equity": 0.03
+        },
+        "volatility_breakout": {
+          "target_risk_pct_equity": 0.05
+        }
+      },
+      "derived": {
+        "min_risk_usd_per_trade": 6,
+        "max_risk_usd_per_trade": 10,
+        "max_margin_usd_per_trade": 40,
+        "max_gross_notional_usd_per_trade": 120,
+        "daily_loss_cap_usd": 10
+      },
+      "runtime_env": {
+        "TRADING_RISK_PROFILE": "demo_team_tournament_200",
+        "TRADING_EQUITY_CAP_USD": "200",
+        "AUTO_CAPITAL": "200",
+        "BERKSHIRE_SIGNAL_EQUITY_USD": "200",
+        "STRATEGY_TEAM_IDS": "berkshire,momentum,mean_reversion,volatility_breakout",
+        "FUTURES_MAX_POSITION_PCT": "0.60",
+        "FUTURES_MAX_MARGIN_PCT": "0.20"
+      },
+      "notes": [
+        "Risk targets are reduced when margin, leverage, notional, or stop-distance caps bind.",
+        "Demo-only profile for comparing sample-adjusted winrate, expectancy, profit factor, PnL, and drawdown.",
+        "Live trading remains blocked by live readiness and explicit user approval."
+      ]
+    }
+  }
+}

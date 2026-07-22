@@ -24,8 +24,11 @@ def test_execution_and_journal_contracts_are_in_source_map() -> None:
 
     assert "EXECUTION_CONTRACTS.md" in source_map
     assert "JOURNAL_CONTRACTS.md" in source_map
+    assert "SIGNAL_CONTRACTS.md" in source_map
+    assert "LIVE_READINESS.md" in source_map
     assert "compiled_order.schema.json" in source_map
     assert "journal_event.schema.json" in source_map
+    assert "signal_candidate.schema.json" in source_map
 
 
 def test_generated_artifacts_remain_generated() -> None:
@@ -70,9 +73,23 @@ def test_execution_interface_is_broker_free_in_this_batch() -> None:
     forbidden = ["ccxt", "OKX_API_KEY", "OANDA_API_KEY", "MT5_LOGIN", "place_orders_spot"]
     offenders: list[str] = []
     for path in execution_files:
+        if path.name == "okx_demo_adapter.py":
+            continue
         content = path.read_text(encoding="utf-8")
         for token in forbidden:
             if token in content:
                 offenders.append(f"{path.name} contains {token}")
 
     assert offenders == []
+
+
+def test_okx_demo_adapter_is_documented_as_demo_only() -> None:
+    contract = (TRADING_ROOT / "docs" / "architecture" / "EXECUTION_CONTRACTS.md").read_text(
+        encoding="utf-8"
+    )
+    adapter = (TRADING_ROOT / "execution" / "okx_demo_adapter.py").read_text(encoding="utf-8")
+
+    assert "OKX demo" in contract
+    assert "OKX_TESTNET=true" in contract
+    assert "OKX_SANDBOX=true" in contract
+    assert "OKXDemoExecutionAdapter only supports demo/testnet mode" in adapter

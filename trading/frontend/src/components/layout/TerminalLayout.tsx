@@ -16,7 +16,7 @@ import type { MiniTrade } from "@/components/terminal/MiniHistory";
 
 // ============= Types (mirrors backend /api/trader/status) =============
 
-type Stats = {
+export type Stats = {
   total_trades?: number;
   wins?: number;
   losses?: number;
@@ -35,29 +35,149 @@ type Stats = {
     remaining_usd: number;
     pct_of_cap: number;
     cap_reached: boolean;
+    cap_reason?: string;
+    call_cap?: number;
+    remaining_calls?: number | null;
+    hourly_calls?: number;
+    hourly_call_cap?: number;
+    remaining_hourly_calls?: number | null;
+    budget_skips?: number;
+    last_budget_skip?: {
+      ts?: string;
+      source?: string;
+      reason?: string;
+      behavior?: string;
+      calls?: number;
+      call_cap?: number;
+      hourly_calls?: number;
+      hourly_call_cap?: number;
+    } | null;
     monthly_cost_usd: number;
     monthly_date: string;
   };
 };
 
+export type AccountState = {
+  source?: string;
+  mode?: string;
+  risk_profile?: string;
+  synced_at?: string;
+  starting_capital_usd?: number;
+  current_capital_usd?: number;
+  total_pnl_usd?: number;
+  unrealized_pnl_usd?: number;
+  journal_realized_pnl_usd?: number;
+  available_balance_usd?: number | null;
+  margin_used_usd?: number | null;
+  simulation_equity_cap_usd?: number | null;
+  equity_cap_pnl_baseline_usd?: number | null;
+  pre_cap_total_pnl_usd?: number | null;
+  actual_current_capital_usd?: number | null;
+  actual_available_balance_usd?: number | null;
+  actual_total_pnl_usd?: number | null;
+  errors?: string[];
+};
+
 type StatusPayload = {
+  error?: string;
   timestamp?: string;
   running?: boolean;
   started_at?: string | null;
   symbols?: string[];
   stats?: Stats;
+  account_state?: AccountState;
   positions?: unknown[];
+  exchange_positions?: unknown[];
+  sync_status?: {
+    status?: string;
+    positions_on_exchange?: number;
+    positions_in_journal?: number;
+    missing_in_journal?: string[];
+    missing_on_exchange?: string[];
+    errors?: string[];
+  };
   closed_trades?: MiniTrade[];
   decisions?: BrainDecision[];
   llm_decisions?: BrainDecision[];
   kill_switch_active?: boolean;
+  trading_blocked?: boolean;
+  trading_block_reason?: string;
+  startup_sync_guard_active?: boolean;
+  startup_sync_guard?: Record<string, unknown> | null;
+  adaptive_policy_controller?: {
+    status?: string;
+    mode?: string;
+    revision?: number;
+    active_zones?: {
+      strong_min_score?: number;
+      gray_min_score?: number;
+    };
+    effective_source?: string;
+    last_action?: string | null;
+    last_reason?: string | null;
+    state_error?: string | null;
+    strategy_coverage_failures?: Array<Record<string, unknown>>;
+  };
 };
+
+export function statusPayloadError(payload: { error?: unknown }): string | null {
+  const message = typeof payload.error === "string" ? payload.error.trim() : "";
+  return message || null;
+}
 
 const STATUS_REFRESH_MS = 5_000;
 const TICKER_REFRESH_MS = 10_000;
 const TICKER_SYMBOLS = ["BTC-USDT", "ETH-USDT", "SOL-USDT", "BNB-USDT"];
 const SCAN_INTERVAL_S = 600; // default; backend reports its own cycle
-const MAX_POSITIONS = 3;
+const MAX_POSITIONS = 10;
+
+export function deriveAccountMetrics(
+  stats: Stats = {},
+  accountState?: AccountState | null,
+) {
+  const statStarting = finiteNumber(stats.starting_capital, 10_000);
+  const stateStarting = finiteNumber(accountState?.starting_capital_usd, statStarting);
+  const accountCurrent = finiteNumberOrNull(accountState?.current_capital_usd);
+  const accountTotalPnl = finiteNumberOrNull(accountState?.total_pnl_usd);
+  const source = accountState?.source || "journal_fallback";
+  const useExchange = source !== "journal_fallback" && accountCurrent !== null;
+  const currentCapital = useExchange
+    ? accountCurrent
+    : finiteNumber(stats.current_capital, stateStarting);
+  const totalPnl = useExchange
+    ? accountTotalPnl ?? currentCapital - stateStarting
+    : finiteNumber(stats.total_pnl_usd, currentCapital - stateStarting);
+
+  return {
+    totalPnl,
+    currentCapital,
+    startingCapital: stateStarting,
+    source,
+    sourceLabel: accountSourceLabel(source),
+    syncedAt: accountState?.synced_at ?? null,
+    unrealizedPnl: finiteNumber(accountState?.unrealized_pnl_usd, 0),
+    availableBalance: finiteNumberOrNull(accountState?.available_balance_usd),
+    marginUsed: finiteNumberOrNull(accountState?.margin_used_usd),
+    errors: accountState?.errors ?? [],
+  };
+}
+
+function accountSourceLabel(source: string): string {
+  if (source === "okx_demo") return "exchange synced";
+  if (source === "okx_demo_capped") return "exchange capped";
+  if (source.endsWith("_capped")) return "equity capped";
+  return "journal fallback";
+}
+
+function finiteNumber(value: unknown, fallback: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function finiteNumberOrNull(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
 
 // ============= Minimal fetch helper =============
 
@@ -152,6 +272,7 @@ export function TerminalLayout() {
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [tickers, setTickers] = useState<TickerEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [refreshAgeMs, setRefreshAgeMs] = useState(0);
   const [confirmKill, setConfirmKill] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -164,6 +285,13 @@ export function TerminalLayout() {
   const loadStatus = useCallback(async () => {
     try {
       const next = await request<StatusPayload>("/api/trader/status");
+      const nextError = statusPayloadError(next);
+      if (nextError) {
+        setStatusError(nextError);
+        setLoading(false);
+        return;
+      }
+      setStatusError(null);
       setStatus((_prev) => {
         const newTrades: MiniTrade[] = [];
         for (const tr of next.closed_trades ?? []) {
@@ -195,8 +323,9 @@ export function TerminalLayout() {
       });
       setRefreshAgeMs(0);
       setLoading(false);
-    } catch {
-      /* silent — keep last state */
+    } catch (error) {
+      setStatusError(error instanceof Error ? error.message : "Trader status unavailable");
+      setLoading(false);
     }
   }, []);
 
@@ -236,10 +365,13 @@ export function TerminalLayout() {
   // ============= Derived metrics =============
 
   const stats = status?.stats ?? {};
-  const totalPnl = stats.total_pnl_usd ?? 0;
-  const currentCapital = stats.current_capital ?? 10000;
-  const startingCapital = stats.starting_capital ?? 10000;
-  const openPositions = stats.open_count ?? (status?.positions?.length ?? 0);
+  const accountMetrics = deriveAccountMetrics(stats, status?.account_state ?? null);
+  const totalPnl = accountMetrics.totalPnl;
+  const currentCapital = accountMetrics.currentCapital;
+  const startingCapital = accountMetrics.startingCapital;
+  const journalOpenCount = status?.positions?.length ?? 0;
+  const exchangeOpenCount = status?.exchange_positions?.length ?? 0;
+  const openPositions = Math.max(stats.open_count ?? journalOpenCount, journalOpenCount, exchangeOpenCount);
   const winrate = stats.winrate ?? 0;
   const wins = stats.wins ?? 0;
   const losses = stats.losses ?? 0;
@@ -255,6 +387,10 @@ export function TerminalLayout() {
   const llmDecisions = useMemo(() => {
     return (status?.llm_decisions ?? []).slice(-30).reverse();
   }, [status?.llm_decisions]);
+  const outletContext = useMemo(
+    () => ({ status, tickers, loading }),
+    [status, tickers, loading]
+  );
 
   const modelName = useMemo(() => {
     const last = (status?.llm_decisions ?? []).slice(-1)[0] as Record<string, unknown> | undefined;
@@ -308,6 +444,8 @@ export function TerminalLayout() {
         modelName={modelName}
         capitalUsd={currentCapital}
         pnlTodayUsd={totalPnl}
+        accountSourceLabel={accountMetrics.sourceLabel}
+        accountSyncedAt={accountMetrics.syncedAt}
         onKillToggle={() => setConfirmKill(true)}
       />
 
@@ -334,6 +472,10 @@ export function TerminalLayout() {
               lastUpdate={status?.timestamp ?? null}
               running={running}
               killActive={killActive}
+              accountSourceLabel={accountMetrics.sourceLabel}
+              accountSyncedAt={accountMetrics.syncedAt}
+              accountAvailableBalance={accountMetrics.availableBalance}
+              accountMarginUsed={accountMetrics.marginUsed}
               cost={stats.daily_llm_cost ?? null}
               onKillToggle={() => setConfirmKill(true)}
             />
@@ -356,7 +498,17 @@ export function TerminalLayout() {
 
         {/* Center = route content */}
         <main className="flex-1 min-w-0 overflow-y-auto bg-ttcc-bg relative">
-          <Outlet />
+          {statusError ? (
+            <div
+              role="alert"
+              className="absolute inset-x-3 top-3 z-40 rounded border border-ttcc-red/50 bg-ttcc-bg/95 px-3 py-2 text-[11px] text-ttcc-red shadow-lg backdrop-blur"
+              title={statusError}
+            >
+              <span className="font-semibold uppercase tracking-wider">Trader data unavailable:</span>{" "}
+              <span className="break-words">{statusError}</span>
+            </div>
+          ) : null}
+          <Outlet context={outletContext} />
 
           {loading && !status ? (
             <div className="flex h-full items-center justify-center text-[11px] text-ttcc-text-secondary">

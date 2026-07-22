@@ -1,10 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { BerkshireDesk } from "../BerkshireDesk";
-import type { BerkshireResearchRun, BerkshireState } from "@/lib/api";
+import type { BerkshireCryptoScan, BerkshireResearchRun, BerkshireState } from "@/lib/api";
 
 const apiMock = vi.hoisted(() => ({
   getBerkshireState: vi.fn(),
   createBerkshireResearch: vi.fn(),
+  createBerkshireCryptoScan: vi.fn(),
 }));
 
 vi.mock("@/lib/api", async (importOriginal) => {
@@ -59,8 +60,73 @@ function makeRun(overrides: Partial<BerkshireResearchRun> = {}): BerkshireResear
   };
 }
 
+function makeScan(overrides: Partial<BerkshireCryptoScan> = {}): BerkshireCryptoScan {
+  return {
+    id: "bscan_test",
+    created_at: "2026-06-27T03:22:00Z",
+    market: "crypto",
+    mode: "signal_only",
+    source: "okx_public_tickers",
+    provider_error: null,
+    universe_count: 2,
+    signal_count: 1,
+    top_symbol: "BTC-USDT",
+    top_signal: "strong_candidate",
+    signals: [
+      {
+        signal_id: "sig_test",
+        generated_at: "2026-06-27T03:22:00Z",
+        source: "berkshire_crypto_scanner",
+        symbol: "BTC-USDT",
+        market: "crypto",
+        timeframe: "24h_ticker",
+        direction: "long",
+        status: "strong_candidate",
+        signal: "strong_candidate",
+        score: 88,
+        grade: "A",
+        confidence: 0.88,
+        action_hint: "OPEN_LONG",
+        mode: "signal_only",
+        time_horizon: "swing_2d_7d",
+        promotion_gate: "eligible_for_draft_ticket",
+        last_price: "105.0000",
+        change_pct_24h: "5.00",
+        range_pct_24h: "8.57",
+        volume_usd_24h: "2000000000.0000",
+        spread_bps: "1.90",
+        entry_zone: "104.7375 - 105.2625",
+        invalidation: "102.4286",
+        target_zone: "110.1428",
+        risk_reward: "2.0000",
+        reasons: ["24h momentum points long at 5.00%."],
+        why: ["24h momentum points long at 5.00%."],
+        blockers: [],
+        llm_context: {
+          role: "advisory_signal_context",
+          candidate_action: "OPEN_LONG",
+          ticket_gate: "eligible_for_draft_ticket",
+          instruction: "Use this Berkshire signal as advisory evidence only.",
+          prompt_context: "BTC-USDT advisory context",
+        },
+        evidence: {
+          provider_source: "okx_public_tickers",
+          last_price: "105.0000",
+          change_pct_24h: "5.00",
+          range_pct_24h: "8.57",
+          volume_usd_24h: "2000000000.0000",
+          spread_bps: "1.90",
+        },
+      },
+    ],
+    audit: [{ time: "03:22", label: "Crypto scan guard", value: "signal_only, no order payload generated", tone: "success" }],
+    ...overrides,
+  };
+}
+
 function makeState(overrides: Partial<BerkshireState> = {}): BerkshireState {
   const run = makeRun();
+  const scan = makeScan();
   return {
     status: "ok",
     ts: "2026-06-27T03:20:00Z",
@@ -117,11 +183,13 @@ function makeState(overrides: Partial<BerkshireState> = {}): BerkshireState {
     requirements: [
       { label: "LLM multi-agent workers", status: "needed", tone: "warning", detail: "Use existing LLM/swarm layer." },
     ],
+    crypto_scans: [scan],
+    latest_crypto_scan: scan,
     runs: [run],
     active_run: run,
     audit_events: [
       { time: "03:20", label: "AI Berkshire source mapped", value: "skills plus tools", tone: "info" },
-      { time: "03:21", label: "Research contract active", value: "state and research endpoints registered", tone: "success" },
+      { time: "03:21", label: "Signal contract active", value: "Berkshire emits SignalCandidate records", tone: "success" },
     ],
     ...overrides,
   };
@@ -134,6 +202,11 @@ describe("BerkshireDesk page", () => {
     apiMock.createBerkshireResearch.mockResolvedValue({
       status: "ok",
       run: makeRun(),
+      state: makeState(),
+    });
+    apiMock.createBerkshireCryptoScan.mockResolvedValue({
+      status: "ok",
+      scan: makeScan(),
       state: makeState(),
     });
   });
@@ -171,7 +244,23 @@ describe("BerkshireDesk page", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Audit/ }));
     expect(screen.getByText("AI Berkshire source mapped")).toBeInTheDocument();
-    expect(screen.getByText("Research contract active")).toBeInTheDocument();
+    expect(screen.getByText("Signal contract active")).toBeInTheDocument();
+  });
+
+  it("scans crypto signals and keeps them signal-only for LLM context", async () => {
+    render(<BerkshireDesk />);
+
+    await screen.findByText("AI Berkshire Desk");
+    fireEvent.click(screen.getByRole("button", { name: /Scan top 50/ }));
+
+    await waitFor(() => expect(apiMock.createBerkshireCryptoScan).toHaveBeenCalledTimes(1));
+    expect(apiMock.createBerkshireCryptoScan).toHaveBeenCalledWith({
+      limit: 50,
+    });
+    expect(await screen.findByText("latest crypto scan")).toBeInTheDocument();
+    expect(screen.getAllByText("strong_candidate").length).toBeGreaterThan(0);
+    expect(screen.getByText(/conf 88%/i)).toBeInTheDocument();
+    expect(screen.getByText(/advisory evidence only/)).toBeInTheDocument();
   });
 
   it("creates a research run and opens the report tab", async () => {

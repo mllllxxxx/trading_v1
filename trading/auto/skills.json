@@ -4,9 +4,11 @@
   "_generated_notice": "DO NOT EDIT - generated from trading/rulebook/source by compile_rulebook.py",
   "_source": "trading/rulebook/source",
   "hard": {
+    "max_gross_notional_pct": 0.6,
     "max_leverage": 3.0,
-    "max_position_pct": 0.2,
-    "max_risk_pct_equity": 0.01,
+    "max_margin_pct": 0.2,
+    "max_position_pct": 0.6,
+    "max_risk_pct_equity": 0.05,
     "rr_minimum": 1.2,
     "stop_loss_required": true,
     "take_profit_required": true
@@ -22,9 +24,12 @@
     "high_vol_caution": "ATR ratio > 1.5 thi giam position size 50%",
     "low_cap_caution": "SOL/BNB co volatility cao hon BTC 1.5-2x. Tang R:R toi thieu 1:1.5",
     "major_news_avoid": "Tranh mo position 30 phut truoc/sau FOMC, CPI, NFP",
+    "mean_reversion_range_only": "Mean Reversion chi fade stretched move khi co range/regime phu hop; khong fade strong trend.",
+    "momentum_no_late_chase": "Momentum chi uu tien trend continuation sau impulse co liquidity va spread sach; khong chase candle da qua xa.",
     "position_correlation": "Toi da 2 positions cung chieu (long hoac short) de giam correlation risk",
     "range_mean_reversion": "Chi mean-revert khi regime la ranging va co support/resistance ro",
-    "trend_persistence": "Trong trending regime, doi pullback de entry tot hon"
+    "trend_persistence": "Trong trending regime, doi pullback de entry tot hon",
+    "volatility_breakout_pullback": "Volatility Breakout uu tien range expansion kem retest/pullback; khong chase breakout qua tre hoac spread rong."
   },
-  "source_hash": "92e746abff99848ba0fffcb103a43399290ce02c87c9abbda3ecdcb0b561edb4"
+  "source_hash": "b95ba7e36a150ce293a5a577970a1ec3f65a825cf5630da088976babaf6874e4"
 }

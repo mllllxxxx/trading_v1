@@ -104,6 +104,79 @@ def test_decision_pipeline_fails_closed_on_llm_error() -> None:
     assert "llm_failed" in result.reason
 
 
+def test_decision_pipeline_stops_hold_before_critic_verifier_and_compiler() -> None:
+    hold = _ticket()
+    hold.update(
+        {
+            "action": "HOLD",
+            "playbook_id": None,
+            "rule_citations": [],
+            "entry_plan": None,
+            "risk_plan": None,
+            "invalidation_conditions": [],
+            "confidence": 0.2,
+        }
+    )
+    called = {"critic": False, "verifier": False, "compiler": False}
+
+    def critic_spy(*_args):  # type: ignore[no-untyped-def]
+        called["critic"] = True
+        raise AssertionError("critic should not run for HOLD")
+
+    def verifier_spy(*_args):  # type: ignore[no-untyped-def]
+        called["verifier"] = True
+        raise AssertionError("verifier should not run for HOLD")
+
+    def compiler_spy(*_args, **_kwargs):  # type: ignore[no-untyped-def]
+        called["compiler"] = True
+        raise AssertionError("compiler should not run for HOLD")
+
+    result = run_decision_pipeline(
+        _dossier(),
+        ticket_provider=lambda _dossier, _rules: hold,
+        equity=10_000,
+        price_levels=None,
+        critic_fn=critic_spy,
+        verifier_fn=verifier_spy,
+        compiler_fn=compiler_spy,
+    )
+
+    assert result.approved is False
+    assert result.stage == "decision"
+    assert result.reason == "llm_hold"
+    assert result.ticket is not None
+    assert called == {"critic": False, "verifier": False, "compiler": False}
+
+
+def test_decision_pipeline_stops_request_more_data_before_compiler() -> None:
+    request = _ticket()
+    request.update(
+        {
+            "action": "REQUEST_MORE_DATA",
+            "playbook_id": None,
+            "rule_citations": [],
+            "entry_plan": None,
+            "risk_plan": None,
+            "invalidation_conditions": [],
+            "confidence": 0.1,
+        }
+    )
+
+    result = run_decision_pipeline(
+        _dossier(),
+        ticket_provider=lambda _dossier, _rules: request,
+        equity=10_000,
+        price_levels=None,
+        compiler_fn=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("compiler should not run for REQUEST_MORE_DATA")
+        ),
+    )
+
+    assert result.approved is False
+    assert result.stage == "decision"
+    assert result.reason == "llm_request_more_data"
+
+
 def test_decision_pipeline_stops_on_critic_reject() -> None:
     bad = _ticket()
     bad["risk_plan"]["risk_pct_equity"] = 0.5

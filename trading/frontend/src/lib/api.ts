@@ -76,9 +76,9 @@ export interface TraderAlertsResponse {
   error?: string;
 }
 
-// ============= Hermes feature pipeline =============
+// ============= Project feature pipeline =============
 
-export interface HermesFeature {
+export interface ProjectFeature {
   id: string;
   name: string;
   status: string;
@@ -87,8 +87,8 @@ export interface HermesFeature {
   summary: string;
 }
 
-export interface HermesFeaturesResponse {
-  features: HermesFeature[];
+export interface ProjectFeaturesResponse {
+  features: ProjectFeature[];
   count: number;
   dir: string | null;
   ts: string;
@@ -189,6 +189,91 @@ export interface BerkshireResearchRun {
   report_markdown: string;
 }
 
+export interface BerkshireSignal {
+  signal_id: string;
+  generated_at: string;
+  source: "berkshire_crypto_scanner" | string;
+  team_id?: string | null;
+  team_name?: string | null;
+  strategy_id?: string | null;
+  strategy_name?: string | null;
+  team_capital_usd?: number | null;
+  risk_min_pct_equity?: number | null;
+  risk_max_pct_equity?: number | null;
+  target_risk_pct_equity?: number | null;
+  preferred_playbook_ids?: string[];
+  required_soft_policy_ids?: string[];
+  entry_style?: string | null;
+  avoid_conditions?: string[];
+  llm_guidance?: string | null;
+  risk_personality?: string | null;
+  symbol: string;
+  market: "crypto";
+  timeframe: string;
+  direction: "long" | "short" | "neutral";
+  status: "strong_candidate" | "candidate" | "watchlist" | "blocked";
+  signal: "strong_candidate" | "candidate" | "watchlist" | "blocked";
+  score: number;
+  grade: "A" | "B" | "C" | "D" | string;
+  confidence: number;
+  confidence_components?: Record<string, number>;
+  action_hint: "HOLD" | "OPEN_LONG" | "OPEN_SHORT" | "REQUEST_MORE_DATA";
+  mode: "signal_only";
+  time_horizon: string;
+  promotion_gate: string;
+  last_price: string | null;
+  change_pct_24h: string | null;
+  range_pct_24h: string | null;
+  volume_usd_24h: string | null;
+  spread_bps: string | null;
+  entry_zone: string;
+  invalidation: string;
+  target_zone: string;
+  risk_reward: string | null;
+  reasons: string[];
+  why: string[];
+  blockers: string[];
+  llm_context: {
+    role: "advisory_signal_context";
+    candidate_action: string;
+    ticket_gate: string;
+    instruction: string;
+    prompt_context: string;
+  };
+  evidence: Record<string, string | null>;
+}
+
+export interface SignalDemoExecutionResult {
+  signal_id: string | null;
+  promoted: boolean;
+  executed: boolean;
+  stage: string;
+  reason: string;
+  decision_id: string;
+  signal?: Record<string, unknown> | null;
+  dossier?: Record<string, unknown> | null;
+  price_levels?: Record<string, number> | null;
+  open_rationale?: Record<string, unknown> | null;
+  pipeline_result?: Record<string, unknown> | null;
+  order_result?: Record<string, unknown> | null;
+}
+
+export interface BerkshireCryptoScan {
+  id: string;
+  created_at: string;
+  market: "crypto";
+  mode: "signal_only";
+  source: string;
+  provider_error: string | null;
+  universe_count: number;
+  signal_count: number;
+  top_symbol: string | null;
+  top_signal: string | null;
+  signals: BerkshireSignal[];
+  demo_promotions?: SignalDemoExecutionResult[];
+  audit: Array<{ time: string; label: string; value: string; tone: BerkshireTone }>;
+}
+
 export interface BerkshireState {
   status: string;
   ts: string;
@@ -199,6 +284,8 @@ export interface BerkshireState {
   roadmap: Array<{ stage: string; title: string; state: string; tone: BerkshireTone; detail: string }>;
   capabilities: Array<{ label: string; value: string; tone: BerkshireTone }>;
   requirements: Array<{ label: string; status: string; tone: BerkshireTone; detail: string }>;
+  crypto_scans: BerkshireCryptoScan[];
+  latest_crypto_scan: BerkshireCryptoScan | null;
   runs: BerkshireResearchRun[];
   active_run: BerkshireResearchRun | null;
   audit_events: Array<{ time: string; label: string; value: string; tone: BerkshireTone }>;
@@ -219,6 +306,21 @@ export interface BerkshireResearchRequest {
 export interface BerkshireResearchResponse {
   status: string;
   run: BerkshireResearchRun;
+  state: BerkshireState;
+}
+
+export interface BerkshireCryptoScanRequest {
+  symbols?: string[] | null;
+  limit?: number;
+  team_id?: string;
+  auto_promote_demo?: boolean;
+  max_promotions?: number;
+  equity_usd?: number;
+}
+
+export interface BerkshireCryptoScanResponse {
+  status: string;
+  scan: BerkshireCryptoScan;
   state: BerkshireState;
 }
 
@@ -357,13 +459,18 @@ export const api = {
   getTraderAlerts: (limit = 100) =>
     request<TraderAlertsResponse>(`/api/trader/alerts?limit=${Math.max(1, Math.min(limit, 1000))}`),
 
-  // Hermes feature pipeline — list features tracked in .hermes/features/.
-  listHermesFeatures: () => request<HermesFeaturesResponse>("/api/hermes/features"),
+  // Project feature pipeline — list designs tracked in trading/docs/features/.
+  listProjectFeatures: () => request<ProjectFeaturesResponse>("/api/project/features"),
 
   // AI Berkshire research desk — persisted research-only workflow.
   getBerkshireState: () => request<BerkshireState>("/api/berkshire/state"),
   createBerkshireResearch: (body: BerkshireResearchRequest) =>
     request<BerkshireResearchResponse>("/api/berkshire/research", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  createBerkshireCryptoScan: (body: BerkshireCryptoScanRequest = {}) =>
+    request<BerkshireCryptoScanResponse>("/api/berkshire/crypto/scan", {
       method: "POST",
       body: JSON.stringify(body),
     }),

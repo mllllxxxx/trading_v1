@@ -6,7 +6,7 @@ import journal
 
 journal.ensure_dirs()
 with journal.DECISIONS_LOG.open() as f:
-    decisions = [json.loads(l) for l in f if l.strip()]
+    decisions = [json.loads(line) for line in f if line.strip()]
 
 # Count per symbol
 by_symbol = {}

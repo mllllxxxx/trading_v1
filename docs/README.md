@@ -29,6 +29,14 @@ docs live under `trading/docs/`.
 - `decisions/`: durable decisions and tradeoffs.
 - `templates/`: reusable spec-intake, story, plan, decision, and validation
   formats.
+- `prompts/`: archived development and UI prompt references; not runtime
+  trading context.
+- `development/`: development workflow notes; not trading policy.
+
+Feature implementation designs live under `trading/docs/features/` so they are
+visible beside the trading project. They describe delivery intent and history;
+canonical product policy, architecture contracts, config, rulebook, and schemas
+remain authoritative when a feature design disagrees with them.
 
 ## Current State
 

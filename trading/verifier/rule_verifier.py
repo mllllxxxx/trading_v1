@@ -77,9 +77,11 @@ def verify_trade_ticket(
                 checked_rule_ids=checked_rule_ids,
             )
 
+        _check_context_binding(ticket_obj, dossier, violations)
         _check_market_data(ticket_obj, dossier, violations)
         _check_playbook_scope(ticket_obj, dossier, retrieved_rules, manifest, violations)
         _check_required_hard_citations(ticket_obj, manifest, violations)
+        _check_profile_compliance(ticket_obj, dossier, hard_rules, violations)
         _check_risk_plan(ticket_obj, hard_rules, violations)
 
         return VerifierResult(
@@ -150,6 +152,38 @@ def _check_market_data(
         )
 
 
+def _check_context_binding(
+    ticket: TradeDecisionTicket,
+    dossier: Mapping[str, Any],
+    violations: list[dict[str, Any]],
+) -> None:
+    """Bind order identity and direction to the trusted market dossier."""
+    comparisons = (
+        ("symbol", ticket.symbol, dossier.get("symbol")),
+        ("market", ticket.market, dossier.get("market")),
+        ("timeframe", ticket.timeframe, dossier.get("timeframe")),
+    )
+    for label, ticket_value, dossier_value in comparisons:
+        if str(ticket_value).strip().lower() != str(dossier_value or "").strip().lower():
+            violations.append(
+                _violation(
+                    "HARD_LLM_002",
+                    "reject_order",
+                    f"ticket {label} does not match market dossier",
+                )
+            )
+    ticket_direction = _ticket_direction(ticket)
+    dossier_direction = str(dossier.get("candidate_direction") or "").strip().lower()
+    if ticket_direction and ticket_direction != dossier_direction:
+        violations.append(
+            _violation(
+                "HARD_LLM_002",
+                "reject_order",
+                "ticket opening direction does not match market dossier",
+            )
+        )
+
+
 def _check_playbook_scope(
     ticket: TradeDecisionTicket,
     dossier: Mapping[str, Any],
@@ -217,6 +251,72 @@ def _check_required_hard_citations(
         )
 
 
+def _check_profile_compliance(
+    ticket: TradeDecisionTicket,
+    dossier: Mapping[str, Any],
+    hard_rules: Mapping[str, Mapping[str, Any]],
+    violations: list[dict[str, Any]],
+) -> None:
+    if ticket.action not in {TradeAction.OPEN_LONG, TradeAction.OPEN_SHORT}:
+        return
+
+    exposure = dossier.get("portfolio_exposure", {})
+    exposure_map = exposure if isinstance(exposure, Mapping) else {}
+    preferred_playbooks = _string_set(exposure_map.get("preferred_playbook_ids"))
+    if not preferred_playbooks:
+        return
+
+    if not ticket.playbook_id or ticket.playbook_id not in preferred_playbooks:
+        violations.append(
+            _violation(
+                "HARD_LLM_001",
+                "reject_order",
+                "team-profile open ticket must use a preferred playbook_id",
+            )
+        )
+
+    min_score = _field(
+        hard_rules,
+        "HARD_LLM_001",
+        "min_profile_compliance_score",
+        default=0.6,
+    )
+    score = ticket.profile_compliance_score
+    if score is None:
+        violations.append(
+            _violation(
+                "HARD_LLM_001",
+                "reject_order",
+                "team-profile open ticket requires profile_compliance_score",
+            )
+        )
+    elif not 0.0 <= float(score) <= 1.0:
+        violations.append(
+            _violation(
+                "HARD_LLM_001",
+                "reject_order",
+                "profile_compliance_score must be between 0.0 and 1.0",
+            )
+        )
+    elif float(score) < min_score:
+        violations.append(
+            _violation(
+                "HARD_LLM_001",
+                "reject_order",
+                f"profile_compliance_score {float(score):.2f} is below minimum {min_score:.2f}",
+            )
+        )
+
+    if not (ticket.profile_compliance_summary or "").strip():
+        violations.append(
+            _violation(
+                "HARD_LLM_001",
+                "reject_order",
+                "team-profile open ticket requires profile_compliance_summary",
+            )
+        )
+
+
 def _check_risk_plan(
     ticket: TradeDecisionTicket,
     hard_rules: Mapping[str, Mapping[str, Any]],
@@ -260,6 +360,14 @@ def _ticket_direction(ticket: TradeDecisionTicket) -> str | None:
     if ticket.action is TradeAction.OPEN_SHORT:
         return "short"
     return None
+
+
+def _string_set(value: Any) -> set[str]:
+    if isinstance(value, list):
+        return {str(item) for item in value if isinstance(item, str) and item.strip()}
+    if isinstance(value, str) and value.strip():
+        return {value.strip()}
+    return set()
 
 
 def _field(

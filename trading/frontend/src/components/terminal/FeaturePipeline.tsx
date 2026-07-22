@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
 import { GitBranch, ListChecks } from "lucide-react";
-import { api, type HermesFeature } from "@/lib/api";
+import { api, type ProjectFeature } from "@/lib/api";
 import { PanelLabel, PillBadge, Skeleton } from "@/components/terminal/primitives";
 
 /**
- * FeaturePipeline — Hermes feature tracker.
- * Lists features tracked under `.hermes/features/` with their status,
+ * FeaturePipeline — project feature design tracker.
+ * Lists features tracked under `trading/docs/features/` with their status,
  * branch, and a one-line summary.
  */
 export function FeaturePipeline() {
-  const [features, setFeatures] = useState<HermesFeature[] | null>(null);
+  const [features, setFeatures] = useState<ProjectFeature[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    api.listHermesFeatures()
+    api.listProjectFeatures()
       .then((res) => {
         if (!alive) return;
         setFeatures(res.features);
@@ -56,7 +56,7 @@ export function FeaturePipeline() {
         <div className="px-2.5 py-3 text-[11px] text-ttcc-red">{error}</div>
       ) : !features || features.length === 0 ? (
         <div className="px-2.5 py-3 text-[11px] text-ttcc-text-secondary">
-          No features tracked. Add one under <code className="font-mono text-ttcc-text">.hermes/features/</code>.
+          No features tracked. Add one under <code className="font-mono text-ttcc-text">trading/docs/features/</code>.
         </div>
       ) : (
         <ul>

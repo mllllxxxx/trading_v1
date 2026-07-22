@@ -1,18 +1,21 @@
 {
   "id": "HARD_LLM_001",
-  "title": "Non-HOLD LLM decisions must cite real rule IDs",
+  "title": "Non-HOLD LLM decisions must cite real rule IDs and fit team profiles",
   "type": "hard_rule",
   "status": "active",
   "markets": ["crypto", "forex"],
-  "description": "Any non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID.",
+  "description": "Any non-HOLD decision must cite valid rulebook IDs and an applicable playbook ID. Team-profile OPEN_LONG and OPEN_SHORT tickets must also prove profile compliance.",
   "enforcement": {
     "severity": "reject",
     "applies_to": ["OPEN_LONG", "OPEN_SHORT", "CLOSE_POSITION", "REDUCE_POSITION"],
     "fields": {
       "require_playbook_for_non_hold": true,
-      "min_rule_citations_for_non_hold": 1
+      "min_rule_citations_for_non_hold": 1,
+      "min_profile_compliance_score": 0.6,
+      "require_profile_compliance_for_team_open": true,
+      "require_preferred_playbook_for_team_open": true
     }
   },
-  "llm_guidance": "If no retrieved playbook fits, return HOLD. Never invent rule IDs."
+  "llm_guidance": "If no retrieved playbook fits, return HOLD. Never invent rule IDs. If a team profile is present, OPEN_LONG and OPEN_SHORT tickets must include profile_compliance_score, profile_compliance_summary, and profile_compliance_flags, and must use one of the team's preferred playbooks."
 }
 

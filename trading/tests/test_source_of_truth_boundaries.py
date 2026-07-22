@@ -57,6 +57,28 @@ def test_runtime_context_docs_deny_process_sources() -> None:
         assert "`docs/harness/`" in content
         assert "`AGENTS.md`" in content
         assert "`README.md`" in content
+        assert "`trading/docs/features/`" in content
+        assert "`docs/prompts/`" in content
+        assert "`docs/development/`" in content
+
+
+def test_feature_designs_use_project_docs_and_hermes_is_compatibility_only() -> None:
+    """Feature designs are project docs; Hermes remains a compatibility marker."""
+    feature_root = TRADING_ROOT / "docs" / "features"
+    assert feature_root.is_dir()
+    assert (feature_root / "README.md").is_file()
+    assert (REPO_ROOT / ".hermes" / "README.md").is_file()
+
+    agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    source_map = (
+        TRADING_ROOT / "docs" / "architecture" / "SOURCE_OF_TRUTH_MAP.md"
+    ).read_text(encoding="utf-8")
+    api_server = (TRADING_ROOT / "api_server.py").read_text(encoding="utf-8")
+
+    assert "trading/docs/features/{name}/design.md" in agents
+    assert "## Feature Design Boundary" in source_map
+    assert '"/api/project/features"' in api_server
+    assert "/api/hermes/features" not in api_server
 
 
 def test_rulebook_compiler_uses_allowlisted_source_root_only() -> None:

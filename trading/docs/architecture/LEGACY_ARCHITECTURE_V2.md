@@ -435,7 +435,7 @@ Step 4: REVIEW
 ### File Layout
 
 ```
-.hermes/
+trading/docs/features/
 â”œâ”€â”€ features/
 â”‚   â”œâ”€â”€ pending.md         # Danh sÃ¡ch feature cáº§n lÃ m
 â”‚   â”œâ”€â”€ in_progress.md     # Feature Ä‘ang implement
@@ -522,7 +522,7 @@ ThÃªm Arkham signal vÃ o confluence scoring (category #9 â€” weight 0.8
 
 ```
 Trade_V1/
-â”œâ”€â”€ .hermes/
+â”œâ”€â”€ trading/docs/features/
 â”‚   â””â”€â”€ features/                  # [NEW] Feature pipeline
 â”œâ”€â”€ docs/
 â”‚   â”œâ”€â”€ ARCHITECTURE_V2.md         # [NEW] File nÃ y
@@ -558,7 +558,7 @@ Trade_V1/
 
 1. **Test before commit** â€” Cháº¡y `pytest -x` sau má»—i láº§n sá»­a code
 2. **One feature = one branch** â€” Branch name: `dev-autopilot/{feature-name}`
-3. **Design before code** â€” Design doc trong `.hermes/features/{feature}/design.md`
+3. **Design before code** â€” Design doc trong `trading/docs/features/{feature}/design.md`
 4. **Max 3 retries** â€” Náº¿u test fail 3 láº§n â†’ stop + log + notify
 5. **No scope creep** â€” KhÃ´ng sá»­a file ko liÃªn quan Ä‘áº¿n feature
 6. **Backward compatible** â€” Ko break existing JSON format

@@ -186,6 +186,30 @@ def _render_markdown(title: str, records: list[SourceRecord]) -> str:
         llm_guidance = data.get("llm_guidance")
         if llm_guidance:
             lines.extend(["LLM guidance:", "", str(llm_guidance).strip(), ""])
+        profile_compliance = data.get("profile_compliance")
+        if profile_compliance:
+            lines.extend(
+                [
+                    "Profile compliance:",
+                    "",
+                    "```json",
+                    json.dumps(profile_compliance, indent=2, sort_keys=True, ensure_ascii=False),
+                    "```",
+                    "",
+                ]
+            )
+        strategy_profiles = data.get("strategy_skill_profiles")
+        if strategy_profiles:
+            lines.extend(
+                [
+                    "Strategy skill profiles:",
+                    "",
+                    "```json",
+                    json.dumps(strategy_profiles, indent=2, sort_keys=True, ensure_ascii=False),
+                    "```",
+                    "",
+                ]
+            )
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -220,6 +244,8 @@ def _retriever_record(record: SourceRecord) -> dict[str, Any]:
         "playbook_id": data.get("playbook_id"),
         "rule_citations": data.get("rule_citations", []),
         "llm_guidance": data.get("llm_guidance", ""),
+        "profile_compliance": data.get("profile_compliance", {}),
+        "strategy_skill_profiles": data.get("strategy_skill_profiles", {}),
         "markdown": _render_record_snippet(record),
     }
 
@@ -243,6 +269,28 @@ def _render_record_snippet(record: SourceRecord) -> str:
     lines.extend(["", str(data["description"]).strip()])
     if data.get("llm_guidance"):
         lines.extend(["", "LLM guidance:", "", str(data["llm_guidance"]).strip()])
+    if data.get("profile_compliance"):
+        lines.extend(
+            [
+                "",
+                "Profile compliance:",
+                "",
+                "```json",
+                json.dumps(data["profile_compliance"], indent=2, sort_keys=True, ensure_ascii=False),
+                "```",
+            ]
+        )
+    if data.get("strategy_skill_profiles"):
+        lines.extend(
+            [
+                "",
+                "Strategy skill profiles:",
+                "",
+                "```json",
+                json.dumps(data["strategy_skill_profiles"], indent=2, sort_keys=True, ensure_ascii=False),
+                "```",
+            ]
+        )
     return "\n".join(lines).rstrip()
 
 

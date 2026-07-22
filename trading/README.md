@@ -17,6 +17,27 @@ For future refactor work, read these first:
 Current README sections below describe the existing runtime. If they conflict
 with the governance plan, the governance plan wins.
 
+## Current system direction
+
+Trade_V1 is now a demo-first signal learning system. The active target is:
+
+```text
+scan market -> RuleProposal -> strong/gray/reject -> optional LLM review -> verifier/risk compiler
+-> OKX demo/paper execution -> journal outcome -> review/optimize -> live readiness gate
+```
+
+Berkshire is one signal/research source inside this loop, not a separate
+executor. Confluence, regime, alpha-zoo, and future forex scanners should feed
+the same signal contract. Live money remains blocked until
+`docs/product/LIVE_READINESS.md` is satisfied and explicitly approved.
+
+Every promoted demo order now records `trade_open_rationale` before execution:
+why the order was opened, the source signal reasons, market context, LLM thesis,
+rule/playbook citations, and compiled risk. The Berkshire scheduler can run
+periodic scans with `BERKSHIRE_SIGNAL_SCHEDULER_ENABLED=true`; by default the
+compose profile routes approved signals to the `okx_demo` adapter with
+`OKX_TESTNET=true` and `OKX_SANDBOX=true`.
+
 # Vibe-Trading workspace
 
 Personal AI trading assistant. Paper-trades on **OKX** (crypto) using **DeepSeek**
@@ -120,7 +141,7 @@ Analyze BTC-USDT on the 4h timeframe.
 - Run academic momentum + reversal alphas
 - Show Sharpe / max drawdown for the last 2 years
 - What is the current signal?
-- Recommend position size given my 30% per-position mandate
+- Recommend position size given my 20% per-position mandate
 - DO NOT place any orders automatically
 ```
 
@@ -302,7 +323,7 @@ Container `auto` chạy 100% tự động:
 
 **Auto-trade điều kiện** (TẤT CẢ phải pass):
 1. Kill switch KHÔNG active (`/data/STOP` không tồn tại)
-2. Số open positions < 3
+2. Số open positions < 10
 3. Chưa có open position cho symbol
 4. Daily loss chưa chạm -3% vốn
 5. `abs(confluence score) >= AUTO_MIN_CONFLUENCE`; score dương → long, score âm → short
@@ -318,10 +339,44 @@ AUTO_SYMBOL=BTC-USDT
 AUTO_INTERVAL_S=300          # 5 min
 AUTO_MONITOR_INTERVAL_S=30   # 30s
 AUTO_MIN_CONFLUENCE=2
-AUTO_MAX_POSITIONS=3
+AUTO_MAX_POSITIONS=10
 AUTO_DAILY_LOSS_CAP_PCT=0.03
-AUTO_CAPITAL=10000
+TRADING_RISK_PROFILE=demo_small_200
+TRADING_EQUITY_CAP_USD=200
+AUTO_CAPITAL=200
+AUTO_DAILY_LLM_COST_CAP_USD=0.20
+AUTO_DAILY_LLM_CALL_CAP=160
+AUTO_HOURLY_LLM_CALL_CAP=16
+AUTO_HOURLY_LLM_CALL_CAP_PER_SOURCE=4
+AUTO_LLM_PROMPT_MODE=compact
+AUTO_LLM_MAX_TOKENS=2400
+AUTO_LLM_REVIEW_MAX_TOKENS=500
+AUTO_DECISION_POLICY=adaptive_hybrid_v1
+AUTO_ADAPTIVE_CONTROLLER_ENABLED=true
+AUTO_PENDING_ENTRY_TTL_S=3600
+AUTO_LEGACY_SCHEDULER_ENABLED=false
+BERKSHIRE_SIGNAL_EQUITY_USD=200
+BERKSHIRE_SIGNAL_MAX_LLM_ATTEMPTS_PER_CYCLE=3
+FUTURES_MAX_POSITION_PCT=0.20
 ```
+
+**Small-capital demo profile (`demo_small_200`)**:
+- Runtime behaves as if capped equity is `$200`, even if OKX demo reports a
+  larger paper balance.
+- New orders are sized at max `$2` risk and `$40` notional before exchange min
+  order constraints.
+- Start or reset the local performance window with:
+  `docker compose exec vt python /app/scripts/start_equity_study.py --equity 200 --profile demo_small_200 --force`
+- Existing large-cap demo positions are still reconciled; close or resolve them
+  before treating performance as a clean `$200` study.
+
+**Strategy-team tournament profile (`demo_team_tournament_200`)**:
+- Runs Berkshire plus Momentum, Mean Reversion, and Volatility Breakout as
+  separate demo teams.
+- Each team has `$200` reporting capital.
+- Team target risk is 3% to 5% per trade, with a hard demo ceiling of 5%.
+- Cockpit ranks teams by winrate, then realized PnL, then drawdown.
+- Still demo/paper/testnet only; live readiness remains blocked.
 
 **Kill switch** (dừng tự động ngay lập tức):
 ```powershell
@@ -350,29 +405,113 @@ Mở http://localhost:8001 để xem UI.
 
 **Sau khi rotate keys**: container tự pick up qua env_file, chỉ cần `docker compose restart auto`.
 
-## Hybrid Rules + LLM (Phase 2-4)
+## Telegram private cockpit
 
-Từ Phase 2, scheduler tích hợp **LLM brain** (deepseek-v4-flash) vào workflow:
-1. Pre-filter (rules-only): confluence + regime check
-2. **STRONG signal** (`abs(confluence) >= threshold` + direction-aware regime OK) → gọi LLM
-3. LLM đọc: stats + open positions + recent PnL + **skills** (từ `auto/skills.json`)
-4. LLM output JSON: action (long/short/hold), entry, SL, TP, size, reasoning
-5. Validator kiểm tra hard rules (R:R >= 1.2, position <= 20%, SL/TP set)
-6. Conflict handling: LLM có thể override rules (vd: rules nói "long" nhưng LLM thấy RSI overbought → "hold")
-7. Reasoning quality check: text > 50 chars + mention ≥1 soft skill
-8. Execute bracket order, log everything
+Telegram is a read-only observability surface backed by the same trader-status
+read model as the web cockpit. It pins one message and provides Overview,
+Positions, Decisions, Performance, Teams, and System views. Critical execution,
+TP/SL, reconciliation, kill-switch, and LLM-budget events remain separate
+alerts. Inline buttons never place, close, reduce, or cancel orders.
 
-**Skills** (user-editable trong `auto/skills.json`):
-- Hard: R:R minimum, max position %, max leverage, SL/TP required
-- Soft: avoid_overbought_long, avoid_oversold_short, high_vol_caution, major_news_avoid, btc_dominance_rule, trend_persistence
+Configure only in `~/.vibe-trading/.env`:
 
-**Cost**: ~$1-2/tháng (chỉ gọi LLM khi STRONG signal = ~28 calls/day × deepseek-v4-flash)
+```env
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+TELEGRAM_USER_ID=...
+TELEGRAM_DASHBOARD_ENABLED=true
+TELEGRAM_DASHBOARD_REFRESH_S=60
+TELEGRAM_DASHBOARD_HEARTBEAT_S=300
+```
 
-**Files mới**:
-- `auto/skills.json` — 5 hard + 6 soft skills
-- `auto/skills.py` — load + validate
-- `auto/validator.py` — hard rule check + reasoning quality
-- `auto/prompts.py` — system + user prompt templates
-- `auto/brain.py` — LLM call (OpenAI-compatible) + JSON parse
+Commands: `/dashboard`, `/positions`, `/decisions`, `/stats`, `/history`,
+`/teams`, `/system`, and `/refresh`. Typed `/pause` and `/resume` remain
+available to the private operator; resume reconciles OKX demo before clearing
+the manual guard. The canonical behavior is documented in
+`docs/architecture/TELEGRAM_OBSERVABILITY_CONTRACT.md`.
 
-**Xem LLM decisions trên dashboard**: section "LLM brain — recent decisions" hiển thị action + reasoning mỗi lần LLM được gọi.
+Typed dashboard commands refresh the pinned view immediately and reply with a
+short success/failure acknowledgement. Inline buttons use Telegram callback
+toasts instead, so navigation does not spam duplicate dashboard messages.
+
+## Adaptive Hybrid Rules + LLM
+
+Continuous-conflict V2 remains non-operational by default. A bounded demo
+canary requires a `review_ready` candidate plus explicit CLI approval of its
+exact fingerprint. Approval never enables live trading: only deterministic
+zone disagreements may enter the 20% canary bucket, risk is multiplied by
+`0.5`, and at most one canary position may be open. Use
+`python -m auto.shadow_score_canary status` to inspect state; `approve` requires
+an operator name and `--ack-demo-only`, while `revoke` is explicit and one-way
+for that approval id.
+
+Runtime `adaptive_hybrid_v1` dùng workflow:
+
+1. Scanner tạo `RuleProposal` với active score, components, conflicts và hard blockers.
+2. **STRONG** (`score >= 80`) chạy lane deterministic, không gọi LLM.
+3. **GRAY** (`60 <= score < 80`) gọi LLM review ngắn: `APPROVE`, `VETO`, hoặc `WAIT`; risk chỉ có `0`, `0.5`, `1`.
+4. **REJECT** (`score < 60` hoặc có hard blocker) không trade và không gọi LLM.
+5. Code giữ symbol, side, entry/SL/TP, leverage, quantity và timestamp; mọi lệnh vẫn qua critic, verifier và risk compiler.
+6. Gray-zone LLM lỗi hoặc hết budget thì fail closed, tuyệt đối không đổi sang strong lane.
+
+LLM cost được tập trung vào gray zone; strong/reject không tiêu provider call.
+Các event `rule_proposal`, `hybrid_route`, và `llm_context_review` giữ baseline
+để replay có thể đo riêng hiệu quả rules lane và phần đóng góp của LLM.
+
+Threshold report broker-free:
+
+```powershell
+python -m replay.run_adaptive_evaluation replay/records.jsonl --output-dir replay/reports
+```
+
+The demo adaptive controller persists its effective zone revision at
+`/data/journal/adaptive_policy_state.json`. A changed recommendation must be
+confirmed again after at least 20 new eligible outcomes, moves at most 5 score
+points per revision, and can roll back when post-activation validation
+degrades. `AUTO_ADAPTIVE_CONTROLLER_ENABLED=false` is a tightening-only
+operational stop; it cannot enable live trading or rules-only gray fallback.
+
+Replay/status also reports observe-only threshold diagnostics per strategy and
+within-strategy associations for the fixed conflict penalty. These diagnostics
+never auto-apply; they are evidence for a later reviewed scoring revision, not
+permission to tune rules from a small sample.
+
+`continuous_conflict_v2` is that next scoring experiment in shadow-only mode.
+It records a continuous base score and distance-based numeric conflict
+penalties beside V1, then replay compares both scores on identical outcomes.
+The V2 object is excluded from signal ranking and shadow identity and must keep
+`active_for_routing=false`; V1 remains the only score that can select a route.
+V2 also calibrates its own strong/gray grid on the same 70/30 chronological
+holdout when full counterfactual capture is available. The selected candidate,
+holdout delta, and per-strategy checks remain shadow-only and `auto_apply=false`.
+The scheduler may persist evidence-separated review staging at
+`/data/journal/continuous_conflict_v2_review_state.json`. Even a
+`review_ready` candidate remains operator-unapproved, canary-disabled, and
+excluded from routing.
+
+The evaluator also accepts a strategy-backtest JSON result containing `trades`
+or a multi-result envelope containing `results[].trades`.
+
+Chỉ records `shadow`/`backtest` có `counterfactual_eligible=true` mới được dùng
+đề xuất ngưỡng. Report luôn `auto_apply=false`; closed trades observational
+không tự sửa `config/decision_policy.json`.
+
+Evaluator sắp xếp evidence theo timestamp/entry index rồi dùng 70% đầu để
+calibrate và 30% cuối để validate. Một candidate chỉ đạt `ready` khi strong và
+gray đủ mẫu ở cả holdout, strong expectancy có lower confidence bound dương,
+profit factor và source/strategy/regime stability đều pass. Report cũng tách
+LLM `APPROVE/VETO/WAIT` để thấy loss đã tránh và profitable setup bị bỏ lỡ;
+phần này chỉ là observed subset, không được giả định LLM chọn đúng cho những
+setup chưa từng review.
+
+`/api/trader/status.llm_review_health` trả bản compact gồm sample gates,
+selection contribution/CI, loss tránh được, win bỏ lỡ và operator
+recommendation. Canonical mode hiện là `observe_only`, nên field này không tự
+đổi route hoặc bật rules-only fallback.
+
+Runtime cũng lưu các setup directional không có hard blocker vào
+`journal/shadow_positions.json` trước khi áp dụng threshold, LLM budget,
+cooldown hoặc portfolio cap. Nến OKX public `15m` đã đóng sẽ resolve TP/SL hoặc
+timeout vào `journal/shadow_outcomes.jsonl`; các candle chạm cả TP lẫn SL bị
+loại khỏi calibration. Shadow records không phải vị thế, không gọi broker và
+không thay đổi capital/PnL/winrate.

@@ -35,8 +35,13 @@ def build_market_dossier(
     spread_state: str | None = None,
     funding_state: str | None = None,
     open_positions: list[dict[str, Any]] | None = None,
+    recent_trades: list[dict[str, Any]] | None = None,
     portfolio_exposure: dict[str, Any] | None = None,
+    feature_snapshot: dict[str, Any] | None = None,
+    regime_evidence: dict[str, Any] | None = None,
+    setup_quality: dict[str, Any] | None = None,
     open_positions_reader: Callable[[], list[dict[str, Any]]] | None = None,
+    recent_trades_reader: Callable[[], list[dict[str, Any]]] | None = None,
 ) -> MarketDossier:
     """Return a JSON-serializable dossier or raise on unsafe core data."""
     price = _positive_number(current_price, "current_price")
@@ -55,6 +60,15 @@ def build_market_dossier(
         open_positions = []
     if not isinstance(open_positions, list):
         raise MarketDossierBuildError("open_positions must be a list")
+    if recent_trades is None and recent_trades_reader is not None:
+        try:
+            recent_trades = recent_trades_reader()
+        except Exception as exc:  # noqa: BLE001
+            raise MarketDossierBuildError("journal recent trades could not be read") from exc
+    if recent_trades is None:
+        recent_trades = []
+    if not isinstance(recent_trades, list):
+        raise MarketDossierBuildError("recent_trades must be a list")
 
     if age_s > max_data_age_s:
         warnings.append("stale_market_data")
@@ -86,7 +100,12 @@ def build_market_dossier(
         spread_state=spread_state,
         funding_state=funding_state,
         open_positions=open_positions,
+        recent_trades=recent_trades[-3:],
         portfolio_exposure=exposure,
+        data_timestamp_utc=data_timestamp_utc,
+        feature_snapshot=dict(feature_snapshot or {}),
+        regime_evidence=dict(regime_evidence or {}),
+        setup_quality=dict(setup_quality or {}),
     )
 
 

@@ -8,7 +8,6 @@ Both are deterministic functions of inputs. No LLM magic in prompt building.
 """
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import skills as _skills
@@ -94,7 +93,6 @@ def build_user_prompt(
                 bullish_count += 1
             elif tf.get("trend") == "DOWN" and tf.get("momentum") == "DOWN":
                 bearish_count += 1
-    aligned_tfs = max(bullish_count, bearish_count)
     direction = "LONG" if bullish_count > bearish_count else (
                  "SHORT" if bearish_count > bullish_count else "NEUTRAL")
 

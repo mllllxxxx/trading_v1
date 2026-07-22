@@ -23,6 +23,10 @@ import {
   colorClass,
   Pill,
 } from "@/pages/Trader";
+import type {
+  PositionDecisionContext,
+  PositionMarketContext,
+} from "@/components/terminal/PositionCard";
 
 // ============= Types =============
 type HistoryStats = {
@@ -41,6 +45,9 @@ type HistoryStats = {
   by_symbol: Record<string, { wins: number; losses: number; pnl: number; n: number; winrate_pct: number }>;
   by_regime: Record<string, { wins: number; losses: number; pnl: number; n: number; winrate_pct: number }>;
   by_exit_reason: Record<string, { n: number; pnl: number }>;
+  by_strategy_profile: Record<string, { wins: number; losses: number; pnl: number; n: number; winrate_pct: number; avg_profile_compliance_score?: number | null }>;
+  by_profile_regime: Record<string, { wins: number; losses: number; pnl: number; n: number; winrate_pct: number; avg_profile_compliance_score?: number | null }>;
+  avg_profile_compliance_score?: number | null;
 };
 
 type Trade = {
@@ -56,6 +63,14 @@ type Trade = {
   opened_at: string;
   regime: string;
   confluence_score: number;
+  source_signal_id?: string;
+  decision_id?: string;
+  open_reason?: string;
+  market_context?: PositionMarketContext;
+  decision_context?: PositionDecisionContext;
+  profile_compliance_score?: number | null;
+  profile_compliance_summary?: string | null;
+  profile_compliance_flags?: string[];
 };
 
 type HistoryResponse = {
@@ -74,6 +89,11 @@ const fmtDuration = (s: number): string => {
   if (s < 3600) return Math.round(s / 60) + "m";
   if (s < 86400) return (s / 3600).toFixed(1) + "h";
   return (s / 86400).toFixed(1) + "d";
+};
+
+const fmtCompliance = (score?: number | null): string => {
+  if (score === null || score === undefined || Number.isNaN(score)) return "—";
+  return score.toFixed(2);
 };
 
 // ============= Helpers =============
@@ -253,6 +273,14 @@ export function TraderHistory() {
   );
   const byReason = useMemo(
     () => Object.entries(stats?.by_exit_reason || {}) as [string, { n: number; pnl: number }][],
+    [stats],
+  );
+  const byProfile = useMemo(
+    () => Object.entries(stats?.by_strategy_profile || {}) as [string, { wins: number; losses: number; pnl: number; n: number; winrate_pct: number; avg_profile_compliance_score?: number | null }][],
+    [stats],
+  );
+  const byProfileRegime = useMemo(
+    () => Object.entries(stats?.by_profile_regime || {}) as [string, { wins: number; losses: number; pnl: number; n: number; winrate_pct: number; avg_profile_compliance_score?: number | null }][],
     [stats],
   );
 
@@ -478,7 +506,11 @@ export function TraderHistory() {
               {t("common.loading", "Loading…")}
             </div>
           ) : (
-            <ClosedTradesTableFull trades={page?.trades || []} />
+            <ClosedTradesTableFull
+              trades={page?.trades || []}
+              startIndex={page?.offset ?? 0}
+              totalTrades={page?.total ?? 0}
+            />
           )}
 
           {/* Pagination */}
@@ -517,7 +549,7 @@ export function TraderHistory() {
             <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
               {t("traderHistory.breakdownTitle", "Performance breakdown")}
             </h2>
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
               <BreakdownCard
                 title={t("traderHistory.bySymbol", "By symbol")}
                 rows={bySym}
@@ -536,6 +568,20 @@ export function TraderHistory() {
                 colHeaders={["Reason", "n", "PnL"]}
                 pnlCol={2}
                 simple
+              />
+              <BreakdownCard
+                title={t("traderHistory.byProfile", "By profile")}
+                rows={byProfile}
+                colHeaders={["Profile", "W/L", "Win%", "Score", "PnL"]}
+                pnlCol={4}
+                showCompliance
+              />
+              <BreakdownCard
+                title={t("traderHistory.byProfileRegime", "By profile/regime")}
+                rows={byProfileRegime}
+                colHeaders={["Profile/regime", "W/L", "Win%", "Score", "PnL"]}
+                pnlCol={4}
+                showCompliance
               />
             </div>
           </section>
@@ -569,13 +615,14 @@ function SmallStat({
 
 // ============= Breakdown card =============
 function BreakdownCard({
-  title, rows, colHeaders, pnlCol, simple,
+  title, rows, colHeaders, pnlCol, simple, showCompliance,
 }: {
   title: string;
   rows: [string, any][];
   colHeaders: string[];
   pnlCol: number;
   simple?: boolean;
+  showCompliance?: boolean;
 }) {
   const sorted = [...rows].sort((a, b) => (b[1].pnl ?? 0) - (a[1].pnl ?? 0));
   return (
@@ -605,6 +652,9 @@ function BreakdownCard({
                   <>
                     <td className="tabular-nums">{v.wins}W/{v.losses}L</td>
                     <td className="tabular-nums">{v.winrate_pct}%</td>
+                    {showCompliance ? (
+                      <td className="tabular-nums">{fmtCompliance(v.avg_profile_compliance_score)}</td>
+                    ) : null}
                     <td className={cn("text-right tabular-nums", colorClass(v.pnl))}>{fmtUsd(v.pnl)}</td>
                   </>
                 )}
@@ -618,7 +668,15 @@ function BreakdownCard({
 }
 
 // ============= Closed trades table =============
-function ClosedTradesTableFull({ trades }: { trades: Trade[] }) {
+function ClosedTradesTableFull({
+  trades,
+  startIndex = 0,
+  totalTrades,
+}: {
+  trades: Trade[];
+  startIndex?: number;
+  totalTrades?: number;
+}) {
   if (trades.length === 0) {
     return (
       <div className="rounded-md border bg-card px-3 py-6 text-center text-sm text-muted-foreground">
@@ -631,6 +689,7 @@ function ClosedTradesTableFull({ trades }: { trades: Trade[] }) {
       <table className="w-full text-sm">
         <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
+            <th className="px-3 py-2 text-left font-medium">#</th>
             <th className="px-3 py-2 text-left font-medium">Closed</th>
             <th className="px-3 py-2 text-left font-medium">Symbol</th>
             <th className="px-3 py-2 text-left font-medium">Side</th>
@@ -649,10 +708,18 @@ function ClosedTradesTableFull({ trades }: { trades: Trade[] }) {
           {trades.map((t, i) => {
             const pnl = parseFloat(String(t.pnl_usd));
             const reason = t.exit_reason || "";
+            const tradeNumber = startIndex + i + 1;
+            const openReason = t.open_reason || t.decision_context?.thesis || t.decision_context?.reasoning_summary || "";
             const tone = reason.includes("profit") || reason.includes("tp") ? "tp"
               : reason.includes("stop") || reason.includes("sl") ? "sl" : "neutral";
             return (
               <tr key={i} className="border-t hover:bg-muted/30">
+                <td
+                  className="px-3 py-2 font-mono text-xs font-bold tabular text-primary"
+                  title={`Trade ${tradeNumber}${totalTrades ? ` of ${totalTrades}` : ""}`}
+                >
+                  #{tradeNumber}
+                </td>
                 <td className="px-3 py-2 text-muted-foreground">{fmtTime(t.closed_at)}</td>
                 <td className="px-3 py-2 font-medium">{t.symbol}</td>
                 <td className="px-3 py-2"><Pill tone={t.side === "buy" ? "long" : "short"}>{t.side.toUpperCase()}</Pill></td>
@@ -664,7 +731,17 @@ function ClosedTradesTableFull({ trades }: { trades: Trade[] }) {
                   {fmtUsd(pnl)}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{t.rr_ratio ? "1:" + parseFloat(String(t.rr_ratio)).toFixed(2) : "—"}</td>
-                <td className="px-3 py-2"><Pill tone={tone}>{reason}</Pill></td>
+                <td className="px-3 py-2">
+                  <Pill tone={tone}>{reason}</Pill>
+                  {openReason ? (
+                    <div
+                      className="mt-1 max-w-[340px] truncate text-[11px] text-muted-foreground"
+                      title={openReason}
+                    >
+                      {openReason}
+                    </div>
+                  ) : null}
+                </td>
                 <td className="px-3 py-2 text-muted-foreground">
                   {(() => {
                     try {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
 import {
   Brain,
   ChevronLeft,
@@ -11,8 +11,13 @@ import { cn } from "@/components/terminal/primitives";
 import { BrainLog, type BrainDecision } from "@/components/terminal/BrainLog";
 import { AlphaZooMini } from "@/components/terminal/AlphaZooMini";
 import { FeaturePipeline } from "@/components/terminal/FeaturePipeline";
-import { AgentChatConsole } from "@/components/terminal/AgentChatConsole";
 import type { AlphaBenchTopRow } from "@/lib/api";
+
+const AgentChatConsole = lazy(() =>
+  import("@/components/terminal/AgentChatConsole").then((module) => ({
+    default: module.AgentChatConsole,
+  })),
+);
 
 type Tab = "chat" | "brain" | "alpha" | "pipeline";
 
@@ -21,7 +26,7 @@ type Tab = "chat" | "brain" | "alpha" | "pipeline";
  *   - Co-pilot Chat (interactive AI Agent console)
  *   - Brain Log (real-time LLM trading decisions logs)
  *   - Alpha Zoo (top formulaic alpha strategies list)
- *   - Feature Pipeline (Hermes development status tracker)
+ *   - Feature Pipeline (project development status tracker)
  */
 export function RightPanel({
   decisions,
@@ -103,7 +108,17 @@ export function RightPanel({
 
       {/* Tab Panels */}
       <div className="flex-1 min-h-0 overflow-y-auto relative">
-        {activeTab === "chat" && <AgentChatConsole />}
+        {activeTab === "chat" && (
+          <Suspense
+            fallback={(
+              <div className="flex h-full items-center justify-center text-[11px] text-ttcc-text-muted">
+                Loading chat console…
+              </div>
+            )}
+          >
+            <AgentChatConsole />
+          </Suspense>
+        )}
 
         {activeTab === "brain" && (
           <div className="p-2 h-full overflow-y-auto">
@@ -126,7 +141,7 @@ export function RightPanel({
         {activeTab === "pipeline" && (
           <div className="p-2 h-full overflow-y-auto">
             <div className="mb-2 text-[10px] uppercase font-bold text-ttcc-text-secondary tracking-wider px-1">
-              Hermes Tracked Features
+              Project Feature Designs
             </div>
             <FeaturePipeline />
           </div>

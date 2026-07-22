@@ -93,6 +93,12 @@ function BrainRow({ d }: { d: BrainDecision }) {
   } else if (d.type === "llm_decision_used") {
     action = ((d.action as string) || "—").toUpperCase();
     reasoning = `SL=${d.stop_loss} · TP=${d.take_profit}`;
+  } else if (d.type === "llm_draft_ticket") {
+    action = ((d.action as string) || "TICKET").toUpperCase();
+    const symbol = (d.symbol as string) || "";
+    const playbook = (d.playbook_id as string) || "";
+    const text = ((d.reasoning as string) || (d.thesis as string) || "TradeDecisionTicket drafted");
+    reasoning = [symbol, playbook, text].filter(Boolean).join(" · ");
   } else if (d.type === "llm_error") {
     action = "ERROR";
     reasoning = ((d.error as string) || "—");
@@ -101,8 +107,8 @@ function BrainRow({ d }: { d: BrainDecision }) {
     action = d.type;
   }
 
-  if (action.startsWith("LONG")) tone = "long";
-  else if (action.startsWith("SHORT")) tone = "short";
+  if (action.includes("LONG")) tone = "long";
+  else if (action.includes("SHORT")) tone = "short";
   else if (action === "HOLD" || action === "NO TRADE") tone = "warn";
 
   const confidence = typeof d.confidence === "number" ? d.confidence : null;

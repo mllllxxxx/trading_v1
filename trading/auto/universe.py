@@ -14,13 +14,13 @@ from __future__ import annotations
 import json
 import logging
 import os
-import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
+MAX_NOTIONAL_PCT = float(os.getenv("FUTURES_MAX_POSITION_PCT", "0.20"))
 
 
 # ---------------------------------------------------------------------------
@@ -56,18 +56,42 @@ class UniverseSnapshot:
 
 # Hardcoded fallback — locked top 10 as of 2026-06-23. Mirrors
 # ``okx_futures_bracket.DEFAULT_FUTURES_UNIVERSE``.
-HARDCODED_UNIVERSE: list[SymbolMeta] = [
-    SymbolMeta("BTC",  "BTC-USDT-SWAP",  "BTC-USDT",  10, 0.30, 4, 0.08, 1.5, 0.01, 0.01, 0.005),
-    SymbolMeta("ETH",  "ETH-USDT-SWAP",  "ETH-USDT",  3,  0.30, 3, 0.25, 1.5, 0.01, 0.01, 0.005),
-    SymbolMeta("BNB",  "BNB-USDT-SWAP",  "BNB-USDT",  3,  0.30, 3, 0.25, 1.5, 0.01, 0.01, 0.01),
-    SymbolMeta("SOL",  "SOL-USDT-SWAP",  "SOL-USDT",  3,  0.30, 3, 0.25, 1.5, 1,    1,    0.01),
-    SymbolMeta("XRP",  "XRP-USDT-SWAP",  "XRP-USDT",  3,  0.30, 3, 0.25, 1.5, 1,    1,    0.01),
-    SymbolMeta("DOGE", "DOGE-USDT-SWAP", "DOGE-USDT", 3,  0.30, 3, 0.25, 1.5, 1,    1,    0.01),
-    SymbolMeta("ADA",  "ADA-USDT-SWAP",  "ADA-USDT",  3,  0.30, 3, 0.25, 1.5, 1,    1,    0.01),
-    SymbolMeta("AVAX", "AVAX-USDT-SWAP", "AVAX-USDT", 3,  0.30, 3, 0.25, 1.5, 1,    1,    0.01),
-    SymbolMeta("TRX",  "TRX-USDT-SWAP",  "TRX-USDT",  3,  0.30, 3, 0.25, 1.5, 1,    1,    0.01),
-    SymbolMeta("LINK", "LINK-USDT-SWAP", "LINK-USDT", 3,  0.30, 3, 0.25, 1.5, 1,    1,    0.01),
+FALLBACK_BASES: list[str] = [
+    "BTC", "ETH", "BNB", "SOL", "XRP", "DOGE", "ADA", "AVAX", "TRX", "LINK",
+    "BCH", "DOT", "SUI", "LTC", "HBAR", "XLM", "SHIB", "UNI", "APT", "NEAR",
+    "ICP", "ETC", "FIL", "ARB", "OP", "ATOM", "INJ", "AAVE", "MKR", "RENDER",
+    "WLD", "PEPE", "FLOKI", "BONK", "SEI", "TIA", "LDO", "JUP", "ONDO",
+    "PENDLE", "ALGO", "VET", "EOS", "SAND", "MANA", "GALA", "IMX", "STX",
+    "FET", "RUNE",
 ]
+
+_KNOWN_OVERRIDES: dict[str, dict[str, float | int]] = {
+    "BTC": {"leverage": 10, "min_confluence": 4, "liq_buffer_pct": 0.08, "contract_size": 0.01, "min_qty": 0.01, "maintenance_margin_rate": 0.005},
+    "ETH": {"leverage": 3, "min_confluence": 3, "liq_buffer_pct": 0.25, "contract_size": 0.01, "min_qty": 0.01, "maintenance_margin_rate": 0.005},
+    "BNB": {"leverage": 3, "min_confluence": 3, "liq_buffer_pct": 0.25, "contract_size": 0.01, "min_qty": 0.01, "maintenance_margin_rate": 0.01},
+}
+
+
+def _default_meta(base: str) -> SymbolMeta:
+    """Return conservative futures metadata for any OKX USDT swap base."""
+    normalized = base.strip().upper()
+    overrides = _KNOWN_OVERRIDES.get(normalized, {})
+    return SymbolMeta(
+        normalized,
+        f"{normalized}-USDT-SWAP",
+        f"{normalized}-USDT",
+        int(overrides.get("leverage", 3)),
+        MAX_NOTIONAL_PCT,
+        int(overrides.get("min_confluence", 3)),
+        float(overrides.get("liq_buffer_pct", 0.25)),
+        1.5,
+        float(overrides.get("contract_size", 1.0)),
+        float(overrides.get("min_qty", 1.0)),
+        float(overrides.get("maintenance_margin_rate", 0.01)),
+    )
+
+
+HARDCODED_UNIVERSE: list[SymbolMeta] = [_default_meta(base) for base in FALLBACK_BASES]
 
 
 # Stablecoins to exclude (lowercase bases)
@@ -137,13 +161,16 @@ def fetch_okx_swap_tickers(
     import urllib.request
     import urllib.error
 
-    path = "/api/v5/market/tickers?instType=SWAP&uly=USDT"
+    path = "/api/v5/market/tickers?instType=SWAP"
     url = base_url + path
 
     if fetcher is not None:
         return fetcher(url).get("data", [])
 
-    req = urllib.request.Request(url, headers={"User-Agent": "trade-v1/1.0"})
+    headers = {"User-Agent": "trade-v1/1.0"}
+    if _env_flag_true("OKX_TESTNET") and _env_flag_true("OKX_SANDBOX"):
+        headers["x-simulated-trading"] = "1"
+    req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=15) as resp:
         payload = json.loads(resp.read().decode("utf-8"))
     if payload.get("code") != "0":
@@ -152,10 +179,7 @@ def fetch_okx_swap_tickers(
 
 
 def _ticker_to_meta(ticker: dict[str, Any]) -> SymbolMeta | None:
-    """Map an OKX SWAP ticker to SymbolMeta. Returns None if base is stablecoin
-    or not in our hardcoded fallback config (so we never trade unknown symbols
-    without explicit per-symbol config like leverage, liq_buffer, etc).
-    """
+    """Map an OKX USDT SWAP ticker to conservative SymbolMeta."""
     inst_id = ticker.get("instId", "")
     if not inst_id.endswith("-USDT-SWAP"):
         return None
@@ -165,12 +189,7 @@ def _ticker_to_meta(ticker: dict[str, Any]) -> SymbolMeta | None:
     base = parts[0]
     if base.lower() in STABLECOIN_BASES:
         return None
-    # Only allow bases that have explicit config in HARDCODED_UNIVERSE.
-    known = {s.base for s in HARDCODED_UNIVERSE}
-    if base not in known:
-        return None
-    meta = next(s for s in HARDCODED_UNIVERSE if s.base == base)
-    return meta
+    return _default_meta(base)
 
 
 # ---------------------------------------------------------------------------
@@ -178,7 +197,7 @@ def _ticker_to_meta(ticker: dict[str, Any]) -> SymbolMeta | None:
 # ---------------------------------------------------------------------------
 
 def load_universe(
-    top_n: int = 10,
+    top_n: int = 50,
     fetcher: Callable[[str], dict[str, Any]] | None = None,
     use_cache_if_api_fails: bool = True,
 ) -> UniverseSnapshot:
@@ -205,15 +224,14 @@ def load_universe(
     # 2. Live API
     try:
         tickers = fetch_okx_swap_tickers(fetcher=fetcher)
-        # Filter: USDT-margined, non-stablecoin, in known config
+        # Filter: USDT-margined, non-stablecoin.
         candidates: list[tuple[dict[str, Any], SymbolMeta]] = []
         for t in tickers:
             meta = _ticker_to_meta(t)
             if meta is None:
                 continue
             candidates.append((t, meta))
-        # Sort by 24h volume in quote ccy (volCcy24h is already USDT for our pairs)
-        candidates.sort(key=lambda c: float(c[0].get("volCcy24h", 0)), reverse=True)
+        candidates.sort(key=lambda c: _ticker_quote_volume(c[0]), reverse=True)
         top = [meta for _, meta in candidates[:top_n]]
         if top:
             snap = UniverseSnapshot(
@@ -240,7 +258,7 @@ def load_universe(
     return UniverseSnapshot(
         fetched_at=datetime.now(timezone.utc).isoformat(),
         source="fallback_hardcoded",
-        symbols=list(HARDCODED_UNIVERSE),
+        symbols=list(HARDCODED_UNIVERSE[:top_n]),
         raw_count=0,
     )
 
@@ -261,12 +279,27 @@ def _parse_override(value: str) -> list[SymbolMeta]:
             base = token.split("-")[0]
         if base in seen_bases:
             continue
-        if base not in known:
-            logger.warning("UNIVERSE_OVERRIDE: skipping unknown base '%s'", base)
+        if base.lower() in STABLECOIN_BASES:
+            logger.warning("UNIVERSE_OVERRIDE: skipping stablecoin base '%s'", base)
             continue
-        out.append(known[base])
+        out.append(known.get(base) or _default_meta(base))
         seen_bases.add(base)
     return out
+
+
+def _ticker_quote_volume(ticker: dict[str, Any]) -> float:
+    """Return best-effort USDT quote volume for top-universe ranking."""
+    for key in ("volCcyQuote24h", "volUsd24h"):
+        raw = ticker.get(key)
+        if raw not in (None, ""):
+            try:
+                return float(raw)
+            except (TypeError, ValueError):
+                pass
+    try:
+        return float(ticker.get("volCcy24h", 0) or 0) * float(ticker.get("last", 0) or 0)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -295,6 +328,10 @@ def swap_symbols(snap: UniverseSnapshot) -> list[str]:
 def spot_symbols(snap: UniverseSnapshot) -> list[str]:
     """Convenience: list spot symbols for confluence + data."""
     return [s.spot_symbol for s in snap.symbols]
+
+
+def _env_flag_true(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 # ---------------------------------------------------------------------------

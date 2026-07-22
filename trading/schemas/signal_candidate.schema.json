@@ -1,0 +1,361 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_generated_notice": "DO NOT EDIT - generated from trading/schemas/models.py",
+  "additionalProperties": false,
+  "properties": {
+    "action_hint": {
+      "enum": [
+        "HOLD",
+        "OPEN_LONG",
+        "OPEN_SHORT",
+        "REQUEST_MORE_DATA"
+      ],
+      "type": "string"
+    },
+    "actual_risk_pct_equity": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "avoid_conditions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "blockers": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "change_pct_24h": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "confidence": {
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "confidence_calibrated": {
+      "type": "boolean"
+    },
+    "confidence_components": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "type": "object"
+    },
+    "conflicts": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "decision_zone": {
+      "enum": [
+        "strong",
+        "gray",
+        "reject",
+        null
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "direction": {
+      "enum": [
+        "long",
+        "short",
+        "neutral"
+      ],
+      "type": "string"
+    },
+    "entry_style": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "entry_zone": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "experimental_scores": {
+      "additionalProperties": {
+        "type": "object"
+      },
+      "type": "object"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "grade": {
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "type": "string"
+    },
+    "gross_notional_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "hard_blockers": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "invalidation": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "last_price": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "leverage": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "llm_context": {
+      "type": "object"
+    },
+    "llm_guidance": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "margin_used_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "market": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string"
+    },
+    "preferred_playbook_ids": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "promotion_gate": {
+      "type": "string"
+    },
+    "range_pct_24h": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reasons": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "requested_risk_pct_equity": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "required_soft_policy_ids": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "risk_cap_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "risk_max_pct_equity": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "risk_min_pct_equity": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "risk_personality": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "risk_reward": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rule_score": {
+      "maximum": 100,
+      "minimum": 0,
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "score": {
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "score_components": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "type": "object"
+    },
+    "signal": {
+      "enum": [
+        "strong_candidate",
+        "candidate",
+        "watchlist",
+        "blocked"
+      ],
+      "type": "string"
+    },
+    "signal_id": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "spread_bps": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "enum": [
+        "strong_candidate",
+        "candidate",
+        "watchlist",
+        "blocked"
+      ],
+      "type": "string"
+    },
+    "strategy_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "strategy_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "symbol": {
+      "type": "string"
+    },
+    "target_risk_pct_equity": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "target_zone": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "team_capital_usd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "team_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "team_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "time_horizon": {
+      "type": "string"
+    },
+    "timeframe": {
+      "type": "string"
+    },
+    "volume_usd_24h": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "why": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "signal_id",
+    "generated_at",
+    "source",
+    "market",
+    "symbol",
+    "timeframe",
+    "direction",
+    "status",
+    "confidence",
+    "score",
+    "grade",
+    "action_hint",
+    "mode",
+    "time_horizon",
+    "promotion_gate",
+    "reasons",
+    "blockers"
+  ],
+  "title": "SignalCandidate",
+  "type": "object"
+}

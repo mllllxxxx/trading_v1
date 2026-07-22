@@ -5,7 +5,7 @@ Uses env vars:
   DEEPSEEK_BASE_URL             - default https://api.deepseek.com/v1
   AUTO_LLM_MODEL                - default "deepseek-chat"
   AUTO_LLM_TIMEOUT_S            - default 30
-  AUTO_LLM_MAX_TOKENS           - default 500
+  AUTO_LLM_MAX_TOKENS           - default 2400
   AUTO_LLM_REASONING_EFFORT     - default "low" (low | medium | high)
                                   Caps reasoning tokens so JSON output always has
                                   budget. v4-flash / v4-pro are reasoning models
@@ -27,24 +27,37 @@ from collections.abc import Callable
 from typing import Any
 
 from schemas.models import (
+    LLMContextReview,
     SchemaValidationError,
     TradeDecisionTicket,
+    validate_llm_context_review,
     validate_trade_decision_ticket,
 )
+from llm.prompt_builder import trade_ticket_shape_contract
 
 log = logging.getLogger(__name__)
 
 DEFAULT_BASE_URL = "https://api.deepseek.com/v1"
 DEFAULT_MODEL = os.getenv("AUTO_LLM_MODEL", "deepseek-chat")
 DEFAULT_TIMEOUT_S = int(os.getenv("AUTO_LLM_TIMEOUT_S", "30"))
-DEFAULT_MAX_TOKENS = int(os.getenv("AUTO_LLM_MAX_TOKENS", "4000"))
+DEFAULT_MAX_TOKENS = int(os.getenv("AUTO_LLM_MAX_TOKENS", "2400"))
 DEFAULT_TEMPERATURE = float(os.getenv("AUTO_LLM_TEMPERATURE", "0.2"))
+DEFAULT_TICKET_PARSE_ATTEMPTS = int(os.getenv("AUTO_LLM_TICKET_PARSE_ATTEMPTS", "2"))
+DEFAULT_REVIEW_MAX_TOKENS = int(os.getenv("AUTO_LLM_REVIEW_MAX_TOKENS", "500"))
 LLMMessage = dict[str, str]
 TicketClient = Callable[[list[LLMMessage]], str | dict[str, Any]]
 
 
 class BrainError(Exception):
     pass
+
+
+class BrainBudgetError(BrainError):
+    """Raised when the central LLM budget gate denies a provider call."""
+
+    def __init__(self, message: str, *, status: dict[str, Any] | None = None) -> None:
+        super().__init__(message)
+        self.status = status or {}
 
 
 REQUIRED_KEYS = {"action", "symbol", "reasoning", "confidence"}
@@ -129,7 +142,102 @@ def parse_trade_decision_ticket(
             known_playbook_ids=known_playbook_ids,
         )
     except SchemaValidationError as exc:
-        raise BrainError(f"TradeDecisionTicket validation failed: {exc}") from exc
+        response_shape = json.dumps(
+            _ticket_response_shape(payload),
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        raise BrainError(
+            f"TradeDecisionTicket validation failed: {exc}; response_shape={response_shape}"
+        ) from exc
+
+
+def parse_llm_context_review(raw: str | dict[str, Any]) -> LLMContextReview:
+    """Parse and validate a narrow adaptive gray-zone review."""
+    if isinstance(raw, str):
+        payload = _parse_json_response(raw)
+    elif isinstance(raw, dict):
+        payload = dict(raw)
+    else:
+        raise BrainError("LLMContextReview response must be JSON text or object")
+    try:
+        return validate_llm_context_review(payload)
+    except SchemaValidationError as exc:
+        raise BrainError(f"LLMContextReview validation failed: {exc}") from exc
+
+
+def call_llm_context_review(
+    messages: list[LLMMessage],
+    *,
+    client: TicketClient | None = None,
+    model: str | None = None,
+    timeout_s: int | None = None,
+    max_tokens: int | None = None,
+    temperature: float | None = None,
+    budget_source: str = "adaptive_hybrid",
+) -> LLMContextReview:
+    """Call the LLM for a bounded context review and fail closed on errors."""
+    if not messages:
+        raise BrainError("LLMContextReview call requires prompt messages")
+    attempts = max(1, DEFAULT_TICKET_PARSE_ATTEMPTS)
+    prompt_messages = list(messages)
+    last_error: BrainError | None = None
+    for attempt in range(attempts):
+        raw: str | dict[str, Any] | None = None
+        try:
+            raw = (
+                client(prompt_messages)
+                if client is not None
+                else _call_messages_for_json(
+                    prompt_messages,
+                    model=model,
+                    timeout_s=timeout_s,
+                    max_tokens=max_tokens or DEFAULT_REVIEW_MAX_TOKENS,
+                    temperature=temperature,
+                    budget_source=budget_source,
+                )
+            )
+            return parse_llm_context_review(raw)
+        except BrainBudgetError:
+            raise
+        except BrainError as exc:
+            last_error = exc
+            if attempt + 1 >= attempts:
+                raise
+            preview = json.dumps(raw, ensure_ascii=False)[:600] if isinstance(raw, dict) else str(raw or "")[:600]
+            prompt_messages = [
+                *messages,
+                {
+                    "role": "user",
+                    "content": (
+                        f"Previous LLMContextReview was invalid: {exc}. Preview: {preview}. "
+                        "Return concise JSON only. APPROVE requires risk_multiplier 0.5 or 1; "
+                        "VETO/WAIT require 0."
+                    ),
+                },
+            ]
+    raise last_error or BrainError("LLMContextReview call failed")
+
+
+def _ticket_response_shape(payload: dict[str, Any]) -> dict[str, str]:
+    """Return safe field-type diagnostics without journaling raw model text."""
+
+    fields = (
+        "action",
+        "playbook_id",
+        "rule_citations",
+        "entry_plan",
+        "risk_plan",
+        "invalidation_conditions",
+        "profile_compliance_score",
+        "profile_compliance_summary",
+        "profile_compliance_flags",
+    )
+    return {
+        field: type(payload[field]).__name__ if field in payload else "missing"
+        for field in fields
+    }
 
 
 def call_trade_decision_ticket(
@@ -142,26 +250,69 @@ def call_trade_decision_ticket(
     timeout_s: int | None = None,
     max_tokens: int | None = None,
     temperature: float | None = None,
+    budget_source: str = "trade_decision_ticket",
 ) -> TradeDecisionTicket:
     """Call an LLM client and validate its TradeDecisionTicket response."""
     if not messages:
         raise BrainError("TradeDecisionTicket call requires prompt messages")
-    raw = (
-        client(messages)
-        if client is not None
-        else _call_messages_for_json(
-            messages,
-            model=model,
-            timeout_s=timeout_s,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
-    )
-    return parse_trade_decision_ticket(
-        raw,
-        known_rule_ids=known_rule_ids,
-        known_playbook_ids=known_playbook_ids,
-    )
+    attempts = max(1, DEFAULT_TICKET_PARSE_ATTEMPTS)
+    prompt_messages = list(messages)
+    last_error: BrainError | None = None
+    for attempt in range(attempts):
+        raw: str | dict[str, Any] | None = None
+        try:
+            raw = (
+                client(prompt_messages)
+                if client is not None
+                else _call_messages_for_json(
+                    prompt_messages,
+                    model=model,
+                    timeout_s=timeout_s,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    budget_source=budget_source,
+                )
+            )
+            return parse_trade_decision_ticket(
+                raw,
+                known_rule_ids=known_rule_ids,
+                known_playbook_ids=known_playbook_ids,
+            )
+        except BrainBudgetError:
+            raise
+        except BrainError as exc:
+            last_error = exc
+            if attempt + 1 >= attempts:
+                raise
+            prompt_messages = _ticket_repair_messages(messages, raw, exc)
+    raise last_error or BrainError("TradeDecisionTicket call failed")
+
+
+def _ticket_repair_messages(
+    original_messages: list[LLMMessage],
+    raw_response: str | dict[str, Any] | None,
+    error: BrainError,
+) -> list[LLMMessage]:
+    """Build a retry prompt after invalid ticket JSON without changing policy."""
+
+    if isinstance(raw_response, dict):
+        preview = json.dumps(raw_response, ensure_ascii=False)[:600]
+    else:
+        preview = str(raw_response or "")[:600]
+    return [
+        *original_messages,
+        {
+            "role": "user",
+            "content": (
+                "Your previous TradeDecisionTicket response was rejected by the local schema validator.\n"
+                f"Validation error: {error}\n"
+                f"Previous response preview: {preview}\n"
+                "Return exactly one complete, concise JSON object matching the TradeDecisionTicket schema. "
+                "Keep text fields short. Do not include prose, markdown fences, comments, or partial JSON.\n"
+                f"{trade_ticket_shape_contract()}"
+            ),
+        },
+    ]
 
 
 def _call_messages_for_json(
@@ -171,8 +322,10 @@ def _call_messages_for_json(
     timeout_s: int | None,
     max_tokens: int | None,
     temperature: float | None,
+    budget_source: str = "trade_decision_ticket",
 ) -> str:
     """Call the configured chat provider and return raw JSON text content."""
+    _check_budget_before_call(budget_source)
     client = _get_client()
     used_model = model or os.getenv("AUTO_LLM_MODEL", DEFAULT_MODEL)
     used_timeout = timeout_s or DEFAULT_TIMEOUT_S
@@ -192,13 +345,25 @@ def _call_messages_for_json(
 
     try:
         resp = _call_with_retry(client, api_kwargs)
+        _record_llm_usage(resp, source=budget_source)
         content = resp.choices[0].message.content or ""
     except BrainError:
         raise
     except Exception as exc:  # noqa: BLE001
         raise BrainError(f"LLM TradeDecisionTicket call failed: {exc}") from exc
-    if not content.strip():
-        raise BrainError("Empty TradeDecisionTicket response")
+    if not str(content).strip():
+        choice = resp.choices[0]
+        finish_reason = str(getattr(choice, "finish_reason", "unknown") or "unknown")
+        usage = getattr(resp, "usage", None)
+        completion_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+        details = getattr(usage, "completion_tokens_details", None)
+        reasoning_tokens = int(getattr(details, "reasoning_tokens", 0) or 0)
+        raise BrainError(
+            "Empty TradeDecisionTicket response "
+            f"(model={used_model}, finish_reason={finish_reason}, "
+            f"completion_tokens={completion_tokens}, reasoning_tokens={reasoning_tokens}, "
+            f"max_tokens={used_max_tokens})"
+        )
     return content
 
 
@@ -210,6 +375,59 @@ def _extract_tokens(usage_obj: Any) -> tuple[int, int]:
         return inp, out
     except Exception:
         return 0, 0
+
+
+def _check_budget_before_call(source: str) -> dict[str, Any]:
+    """Fail closed before provider I/O when the LLM budget is exhausted."""
+    try:
+        _journal = _load_journal_module()
+
+        status = _journal.check_llm_budget(source=source)
+        if bool(status.get("allowed", False)):
+            return status
+        reason = str(status.get("reason") or "llm_budget_cap")
+        _journal.record_llm_budget_skip(source=source, reason=reason, status=status)
+        raise BrainBudgetError(
+            f"LLM budget exhausted: {reason}",
+            status=status,
+        )
+    except BrainBudgetError:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise BrainBudgetError(
+            f"LLM budget gate unavailable: {exc}",
+            status={"source": source, "reason": "budget_gate_unavailable"},
+        ) from exc
+
+
+def _record_llm_usage(resp: Any, *, source: str = "unknown") -> dict[str, Any]:
+    """Best-effort token/cost accounting for any successful LLM response."""
+    usage_obj = getattr(resp, "usage", None)
+    if usage_obj is None:
+        return {}
+    try:
+        _journal = _load_journal_module()
+
+        inp, out = _extract_tokens(usage_obj)
+        cost, state = _journal.add_llm_cost(inp, out, source=source)
+        return {
+            "_input_tokens": inp,
+            "_output_tokens": out,
+            "_cost_usd": round(cost, 6),
+            "_daily_cost_usd": round(float(state.get("cost_usd", 0.0)), 6),
+        }
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _load_journal_module() -> Any:
+    """Load the shared journal in top-level and package import topologies."""
+
+    try:
+        import journal as journal_module  # type: ignore
+    except ImportError:
+        from . import journal as journal_module  # type: ignore
+    return journal_module
 
 
 def _call_with_retry(client, api_kwargs: dict[str, Any], max_attempts: int = 3) -> Any:
@@ -251,6 +469,7 @@ def call_brain(
     timeout_s: int | None = None,
     max_tokens: int | None = None,
     temperature: float | None = None,
+    budget_source: str = "legacy_scheduler",
 ) -> dict[str, Any]:
     """Call the LLM and return parsed + validated decision dict.
 
@@ -258,6 +477,7 @@ def call_brain(
     L3: max_tokens and temperature now overridable per call (default from env).
     L6: Transient network/timeout errors retried with exponential backoff.
     """
+    _check_budget_before_call(budget_source)
     client = _get_client()
     used_model = model or os.getenv("AUTO_LLM_MODEL", DEFAULT_MODEL)
     used_timeout = timeout_s or DEFAULT_TIMEOUT_S
@@ -319,16 +539,5 @@ def call_brain(
     decision["_latency_s"] = round(elapsed, 2)
     decision["_model"] = used_model
     # T3F: record token usage + cost for daily cap tracking (best-effort).
-    try:
-        import journal as _journal  # local import to avoid circular at module load
-        usage_obj = getattr(resp, "usage", None)
-        if usage_obj is not None:
-            inp, out = _extract_tokens(usage_obj)
-            cost, state = _journal.add_llm_cost(inp, out)
-            decision["_input_tokens"] = inp
-            decision["_output_tokens"] = out
-            decision["_cost_usd"] = round(cost, 6)
-            decision["_daily_cost_usd"] = round(float(state.get("cost_usd", 0.0)), 6)
-    except Exception:  # noqa: BLE001
-        pass  # cost tracking is observability; never break the trade path
+    decision.update(_record_llm_usage(resp, source=budget_source))
     return decision

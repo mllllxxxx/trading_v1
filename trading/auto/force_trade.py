@@ -26,7 +26,6 @@ After placement:
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 import time
 from pathlib import Path
@@ -39,13 +38,18 @@ import alerts as _alerts  # type: ignore
 # Import okx_bracket from sibling directory.
 _BRACKETS = Path(__file__).resolve().parent.parent / "brackets"
 sys.path.insert(0, str(_BRACKETS))
-import okx_bracket as _okx  # type: ignore
+import okx_bracket as _okx  # type: ignore  # noqa: E402
 
 
 def _reject_if_unsafe(symbol: str) -> None:
     """Refuse if cooldown, kill switch, or existing position would cause issues."""
-    if journal.is_killed():
-        print("✗ REFUSED: kill switch is active (touch /data/STOP).")
+    block_reason_fn = getattr(journal, "trading_block_reason", None)
+    block_reason_raw = block_reason_fn() if callable(block_reason_fn) else ""
+    block_reason = block_reason_raw if isinstance(block_reason_raw, str) else ""
+    if not block_reason and journal.is_killed() is True:
+        block_reason = "kill_switch_active"
+    if block_reason:
+        print(f"✗ REFUSED: trading is blocked ({block_reason}).")
         sys.exit(2)
     in_cd, reason, rem = journal.is_in_cooldown()
     if in_cd:
@@ -397,11 +401,11 @@ def main() -> int:
     if orders.get("warning"):
         print(f"  WARN: {orders['warning']}")
 
-    pos = _record_position(proposal, orders, regime=args.regime)
-    print(f"\n✓ Position recorded to journal.")
-    print(f"  View at: http://localhost:8000/trader")
-    print(f"  Telegram alert sent.")
-    print(f"  Monitor thread will track TP/SL fills every 30s.")
+    _record_position(proposal, orders, regime=args.regime)
+    print("\n✓ Position recorded to journal.")
+    print("  View at: http://localhost:8000/trader")
+    print("  Telegram alert sent.")
+    print("  Monitor thread will track TP/SL fills every 30s.")
     return 0
 
 
@@ -472,7 +476,7 @@ def _run_market_path(args: argparse.Namespace) -> int:
     sl_order = result.get("sl_order") or {}
     avg_fill = result.get("avg_fill_price", current)
 
-    print(f"\nMarket order filled:")
+    print("\nMarket order filled:")
     print(f"  entry   id={entry_order.get('id', '?')[:25]} status={entry_order.get('status', '?')}")
     print(f"  fill    ${avg_fill:.4f}  (notional ~${avg_fill * args.amount:.2f})")
     if tp_order:
@@ -480,7 +484,7 @@ def _run_market_path(args: argparse.Namespace) -> int:
     if sl_order:
         print(f"  sl      id={sl_order.get('id', '?')[:25]} @ ${sl_price}")
 
-    pos = _record_market_position(
+    _record_market_position(
         symbol=args.symbol,
         side_norm=side_norm,
         amount=args.amount,
@@ -489,10 +493,10 @@ def _run_market_path(args: argparse.Namespace) -> int:
         sl_id=sl_order.get("id", ""),
         regime=args.regime,
     )
-    print(f"\n✓ Position recorded to journal.")
-    print(f"  View live at: http://localhost:8000/trader  (auto-refreshes 5s)")
-    print(f"  Telegram alert sent.")
-    print(f"  Monitor thread polls OKX every 30s for fills + unrealized PnL.")
+    print("\n✓ Position recorded to journal.")
+    print("  View live at: http://localhost:8000/trader  (auto-refreshes 5s)")
+    print("  Telegram alert sent.")
+    print("  Monitor thread polls OKX every 30s for fills + unrealized PnL.")
     return 0
 
 

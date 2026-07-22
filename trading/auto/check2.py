@@ -5,7 +5,7 @@ import journal
 
 journal.ensure_dirs()
 with journal.DECISIONS_LOG.open() as f:
-    all_decisions = [json.loads(l) for l in f if l.strip()]
+    all_decisions = [json.loads(line) for line in f if line.strip()]
 
 # Show recent decisions with symbols
 recent = [d for d in all_decisions if d.get("ts", "") > "2026-06-21T09:59"]

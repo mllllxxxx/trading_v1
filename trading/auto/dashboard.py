@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import journal  # type: ignore
+import exchange_reconciler  # type: ignore
 
 DASHBOARD_HTML = Path(__file__).resolve().parent / "dashboard.html"
 PORT = int(os.getenv("AUTO_DASHBOARD_PORT", "8001"))
@@ -36,8 +37,19 @@ class Handler(BaseHTTPRequestHandler):
             journal.KILL_SWITCH.touch()
             self._json({"ok": True, "msg": "kill switch set. Auto-trader will halt on next check."})
         elif path == "/api/resume":
-            journal.clear_kill_switch()
-            self._json({"ok": True, "msg": "kill switch cleared."})
+            sync_status = exchange_reconciler.run_startup_reconciliation(
+                trigger="dashboard_resume",
+                journal_module=journal,
+            )
+            if sync_status.get("status") == "error":
+                self._json({
+                    "ok": False,
+                    "msg": "resume blocked until exchange reconciliation succeeds.",
+                    "sync_status": sync_status,
+                })
+            else:
+                journal.clear_kill_switch()
+                self._json({"ok": True, "msg": "kill switch cleared.", "sync_status": sync_status})
         else:
             self.send_error(404)
 
@@ -59,10 +71,9 @@ class Handler(BaseHTTPRequestHandler):
                 decisions = [json.loads(line) for line in f if line.strip()][-200:]
         except (OSError, json.JSONDecodeError):
             decisions = []
-        # Phase 4: extract LLM-specific decisions for the dashboard
-        llm_decisions = [d for d in decisions
-                         if d.get("type") in ("llm", "llm_override_hold",
-                                                "llm_decision_used", "llm_error")][-50:]
+        # Include lifecycle TradeDecisionTicket events so signal-pipeline LLM
+        # decisions are visible alongside legacy brain events.
+        llm_decisions = journal.read_llm_decisions(limit=50, event_limit=20000)
         payload = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "positions": journal.read_positions(),

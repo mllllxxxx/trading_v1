@@ -44,6 +44,9 @@ def retrieve_rules(
     direction = _dossier_str(dossier, "candidate_direction").lower()
     regime = _dossier_str(dossier, "regime").upper()
     timeframe = _dossier_str(dossier, "timeframe").lower()
+    exposure = _dossier_mapping(dossier, "portfolio_exposure")
+    preferred_playbook_ids = _string_set(exposure.get("preferred_playbook_ids"))
+    required_soft_policy_ids = _string_set(exposure.get("required_soft_policy_ids"))
 
     active_rules = [
         rule for rule in manifest_rules.values()
@@ -63,6 +66,8 @@ def retrieve_rules(
                 continue
             score = _playbook_score(rule, direction, regime, timeframe)
             if score > 0:
+                if str(rule.get("id")) in preferred_playbook_ids:
+                    score += 0.5
                 playbook_candidates.append((score, rule))
     playbook_candidates.sort(key=lambda item: (-item[0], str(item[1].get("id", ""))))
     selected_playbooks = playbook_candidates[:max_playbooks]
@@ -73,6 +78,7 @@ def retrieve_rules(
     for _, playbook in selected_playbooks:
         related_soft_ids.update(str(item) for item in playbook.get("related_soft_policies", []))
         required_hard_ids.update(str(item) for item in playbook.get("required_hard_rules", []))
+    related_soft_ids.update(required_soft_policy_ids)
 
     soft_rules = [
         _snippet(rule, score=_soft_score(rule, related_soft_ids, regime))
@@ -226,3 +232,14 @@ def _dossier_str(dossier: MarketDossier | dict[str, Any], key: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise RuleRetrievalError(f"dossier.{key} is required")
     return value.strip()
+
+
+def _dossier_mapping(dossier: MarketDossier | dict[str, Any], key: str) -> dict[str, Any]:
+    value = dossier.get(key) if isinstance(dossier, dict) else getattr(dossier, key)
+    return dict(value) if isinstance(value, dict) else {}
+
+
+def _string_set(value: Any) -> set[str]:
+    if not isinstance(value, list):
+        return set()
+    return {str(item) for item in value if isinstance(item, str) and item}

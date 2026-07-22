@@ -20,6 +20,8 @@ def isolated_scheduler(tmp_data_dir, monkeypatch):
             sys.modules[stub] = MagicMock()
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "auto"))
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    if "journal" in sys.modules:
+        importlib.reload(sys.modules["journal"])
     if "scheduler" in sys.modules:
         importlib.reload(sys.modules["scheduler"])
     import scheduler  # type: ignore  # noqa: E402
@@ -78,6 +80,21 @@ class TestPhase1FallbackModule:
         # Should silently return (no exception, no nameerror)
         s.run_once_symbol("BTC-USDT")
         # No assertion needed: if NameError fired, the test would raise.
+
+    def test_run_once_symbol_respects_startup_sync_guard(self, isolated_scheduler, tmp_data_dir):
+        s = isolated_scheduler
+        s.journal.ensure_dirs()
+        s.journal.set_startup_sync_guard("exchange_snapshot_failed", {"error": "okx down"})
+
+        s.run_once_symbol("BTC-USDT")
+
+        with s.journal.DECISIONS_LOG.open(encoding="utf-8") as f:
+            events = [json.loads(line) for line in f if line.strip()]
+        assert any(
+            event.get("type") == "skip"
+            and event.get("reason") == "startup_sync_blocked"
+            for event in events
+        )
 
 
 # ---- C2: KeyError guards --------------------------------------------------
@@ -376,7 +393,6 @@ class TestCorrelationBothDirections:
     """H3: correlation cap applies to both long and short."""
 
     def test_three_buys_blocks_new_buy(self, isolated_scheduler):
-        s = isolated_scheduler
         # Need score>0 (is_long=True), regime TRENDING_UP
         positions = [
             {"symbol": "BTC-USDT", "side": "buy"},
@@ -391,7 +407,6 @@ class TestCorrelationBothDirections:
 
     def test_two_sells_blocks_new_sell(self, isolated_scheduler):
         """Regression: previous code only checked 'buy' count, missing shorts."""
-        s = isolated_scheduler
         positions = [
             {"symbol": "BTC-USDT", "side": "sell"},
             {"symbol": "ETH-USDT", "side": "sell"},

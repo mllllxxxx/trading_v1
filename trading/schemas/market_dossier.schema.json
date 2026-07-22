@@ -34,6 +34,16 @@
     "data_source": {
       "type": "string"
     },
+    "data_timestamp_utc": {
+      "format": "date-time",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "feature_snapshot": {
+      "type": "object"
+    },
     "funding_state": {
       "type": [
         "string",
@@ -52,8 +62,20 @@
     "portfolio_exposure": {
       "type": "object"
     },
+    "recent_trades": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
     "regime": {
       "type": "string"
+    },
+    "regime_evidence": {
+      "type": "object"
+    },
+    "setup_quality": {
+      "type": "object"
     },
     "spread_state": {
       "type": [

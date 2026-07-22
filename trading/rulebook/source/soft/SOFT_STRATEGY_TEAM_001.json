@@ -1,0 +1,68 @@
+{
+  "id": "SOFT_STRATEGY_TEAM_001",
+  "title": "Strategy team skill profiles",
+  "type": "soft_policy",
+  "status": "active",
+  "markets": ["crypto"],
+  "description": "The strategy-team tournament uses distinct advisory skill profiles for Momentum, Mean Reversion, and Volatility Breakout while preserving the shared LLM, verifier, compiler, and demo execution path.",
+  "profile_compliance": {
+    "min_profile_compliance_score": 0.6,
+    "applies_to": ["OPEN_LONG", "OPEN_SHORT"],
+    "required_ticket_fields": [
+      "profile_compliance_score",
+      "profile_compliance_summary",
+      "profile_compliance_flags"
+    ],
+    "preferred_playbook_required": true,
+    "failure_behavior": "verifier_reject"
+  },
+  "legacy_skills": {
+    "soft": {
+      "momentum_no_late_chase": "Momentum chi uu tien trend continuation sau impulse co liquidity va spread sach; khong chase candle da qua xa.",
+      "mean_reversion_range_only": "Mean Reversion chi fade stretched move khi co range/regime phu hop; khong fade strong trend.",
+      "volatility_breakout_pullback": "Volatility Breakout uu tien range expansion kem retest/pullback; khong chase breakout qua tre hoac spread rong."
+    }
+  },
+  "strategy_skill_profiles": {
+    "momentum": {
+      "preferred_playbook_ids": ["PB_CRYPTO_TREND_CONTINUATION_001"],
+      "required_soft_policy_ids": ["SOFT_CRYPTO_001", "SOFT_CRYPTO_002", "SOFT_REGIME_001", "SOFT_STRATEGY_TEAM_001"],
+      "entry_style": "Wait for a confirmed 1H/15m pullback or EMA20 reclaim inside a 4H trend; do not chase beyond 0.5 ATR.",
+      "avoid_conditions": [
+        "late impulse chase",
+        "thin liquidity",
+        "wide spread",
+        "funding or crowding warning"
+      ],
+      "risk_personality": "medium-high conviction trend follower; reduce confidence when entry is far from retest.",
+      "llm_guidance": "Momentum may promote trend continuation only when liquidity, spread, and regime support the impulse. Prefer HOLD over chasing an extended move."
+    },
+    "mean_reversion": {
+      "preferred_playbook_ids": ["PB_CRYPTO_MEAN_REVERSION_001"],
+      "required_soft_policy_ids": ["SOFT_REGIME_002", "SOFT_CORRELATION_001", "SOFT_STRATEGY_TEAM_001"],
+      "entry_style": "Fade a stretched RSI/Bollinger move only in a confirmed 1H range after 15m turns back toward value.",
+      "avoid_conditions": [
+        "strong trending regime",
+        "disorderly range expansion",
+        "missing range structure",
+        "thin liquidity"
+      ],
+      "risk_personality": "patient contrarian; low target risk unless range quality is clear.",
+      "llm_guidance": "Mean Reversion must not fade strong trends by default. It should return HOLD unless range behavior and invalidation are clear."
+    },
+    "volatility_breakout": {
+      "preferred_playbook_ids": ["PB_CRYPTO_BREAKOUT_PULLBACK_001"],
+      "required_soft_policy_ids": ["SOFT_CRYPTO_001", "SOFT_CRYPTO_002", "SOFT_CORRELATION_001", "SOFT_STRATEGY_TEAM_001"],
+      "entry_style": "Trade range expansion only after directional pressure is visible, preferring retest or pullback over raw chase.",
+      "avoid_conditions": [
+        "range expansion missing",
+        "failed breakout",
+        "overextended breakout",
+        "wide spread"
+      ],
+      "risk_personality": "highest tournament risk target, but only for confirmed expansion with clear invalidation.",
+      "llm_guidance": "Volatility Breakout may promote expansion setups, but must prefer pullback entries and reject failed or overextended breakouts."
+    }
+  },
+  "llm_guidance": "Use the strategy_skill_profiles metadata to interpret team-tagged SignalCandidate records. Skill profiles are advisory context only and never bypass hard rules, retrieved playbooks, verifier checks, or the risk compiler. For OPEN_LONG or OPEN_SHORT tickets from a team profile, return profile_compliance_score, profile_compliance_summary, and profile_compliance_flags; use HOLD when the selected setup cannot honestly meet the profile."
+}

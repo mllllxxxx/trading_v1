@@ -10,6 +10,7 @@ For each open position with order_ids:
 """
 from __future__ import annotations
 
+import math
 import os
 import sys
 import time
@@ -19,6 +20,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import journal  # type: ignore
 import alerts as _alerts  # type: ignore
+import exchange_reconciler  # type: ignore
 
 MONITOR_INTERVAL = int(os.getenv("AUTO_MONITOR_INTERVAL_S", "30"))
 HEARTBEAT_EVERY = int(os.getenv("AUTO_MONITOR_HEARTBEAT", "20"))
@@ -44,6 +46,9 @@ def _get_exchange():
 
 def _native_to_ccxt_symbol(symbol: str) -> str:
     """Map OKX native symbol (e.g. 'BTC-USDT-SWAP' or 'BTC-USDT') to CCXT symbol."""
+    trade_mode = os.getenv("TRADE_MODE", "spot").strip().lower()
+    if trade_mode == "futures" or symbol.upper().endswith("-SWAP") or ":" in symbol:
+        return exchange_reconciler.ccxt_swap_symbol(symbol)
     parts = symbol.split("-")
     if len(parts) == 3 and parts[2] == "SWAP":
         return f"{parts[0]}/{parts[1]}:{parts[1]}"
@@ -143,39 +148,94 @@ def _compute_slippage(expected: float, actual: float, side: str) -> dict[str, An
 
 
 def _close_position(symbol: str, exit_price: float, exit_reason: str,
+                    position_id: str | None = None,
                      extra: dict[str, Any] | None = None) -> None:
     """Remove position, compute PnL, append to closed log, update stats."""
-    pos = journal.remove_position(symbol)
+    pos = journal.remove_position(symbol, position_id=position_id)
     if not pos:
         return
-    side = pos["side"]
-    entry = pos["entry"]
-    size = pos["position_size"]
-    if side == "buy":
-        pnl = (exit_price - entry) * size
-    else:
-        pnl = (entry - exit_price) * size
+    side = str(pos["side"]).lower()
+    if side not in {"buy", "long", "sell", "short"}:
+        journal.add_position(pos)
+        journal.append_decision(
+            "close_rejected",
+            {"symbol": symbol, "reason": f"unknown_position_side:{side}"},
+        )
+        return
+    entry = float(pos["entry"])
+    size = float(pos["position_size"])
+    is_long = side in {"buy", "long"}
+    gross_pnl = (exit_price - entry) * size if is_long else (entry - exit_price) * size
+    fees_usd = _estimated_demo_fees(entry, exit_price, size)
+    pnl = gross_pnl - fees_usd
+    market_context = pos.get("market_context") if isinstance(pos.get("market_context"), dict) else {}
     trade = {
         "symbol": symbol,
         "side": side,
         "entry": entry,
         "exit_price": exit_price,
         "position_size": size,
+        "gross_pnl_usd": round(gross_pnl, 2),
+        "fees_usd": round(fees_usd, 6),
         "pnl_usd": round(pnl, 2),
         "rr_ratio": pos.get("rr_ratio", 0),
         "confluence_score": pos.get("confluence_score", 0),
-        "regime": pos.get("regime", ""),
+        "regime": pos.get("regime") or market_context.get("regime", ""),
         "exit_reason": exit_reason,
         "opened_at": pos.get("opened_at", ""),
         "closed_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
+    risk_usd = _positive_optional_float(pos.get("risk_usd"))
+    if risk_usd is not None:
+        trade["r_multiple"] = round(pnl / risk_usd, 6)
     # Phase 2: execution analytics
     if extra:
         trade["execution"] = extra
         if "slippage_pct" in extra:
             trade["slippage_pct"] = extra["slippage_pct"]
-    # Phase 4: skill usage tracking (inherited from LLM decision)
-    for key in ("llm_reasoning", "skills_applied"):
+    # Phase 4: skill usage tracking and demo-learning rationale inherited from
+    # the decision path. Closed-trade review needs the opening context.
+    for key in (
+        "llm_reasoning",
+        "skills_applied",
+        "position_id",
+        "team_id",
+        "team_name",
+        "strategy_id",
+        "strategy_name",
+        "team_capital_usd",
+        "target_risk_pct_equity",
+        "preferred_playbook_ids",
+        "required_soft_policy_ids",
+        "entry_style",
+        "avoid_conditions",
+        "llm_guidance",
+        "risk_personality",
+        "notional",
+        "risk_usd",
+        "requested_risk_pct_equity",
+        "actual_risk_pct_equity",
+        "risk_cap_reason",
+        "margin_used_usd",
+        "gross_notional_usd",
+        "leverage",
+        "broker_contracts",
+        "profile_compliance_score",
+        "profile_compliance_summary",
+        "profile_compliance_flags",
+        "source_signal_id",
+        "decision_id",
+        "open_reason",
+        "market_context",
+        "decision_context",
+        "decision_policy",
+        "decision_lane",
+        "rule_score",
+        "score_components",
+        "rule_conflicts",
+        "llm_context_review",
+        "routing_experiment",
+    ):
         if key in pos:
             trade[key] = pos[key]
     journal.append_closed_trade(trade)
@@ -204,12 +264,35 @@ def _close_position(symbol: str, exit_price: float, exit_reason: str,
         "rr_ratio": pos.get("rr_ratio", 0),
         "position_size": size,
         "regime": pos.get("regime", ""),
+        "team_id": trade.get("team_id"),
+        "team_name": trade.get("team_name"),
+        "decision_id": trade.get("decision_id"),
+        "gross_pnl_usd": trade.get("gross_pnl_usd"),
+        "fees_usd": trade.get("fees_usd"),
     }
     if exit_reason in ("take_profit", "tp_filled", "tp_hit"):
         _alerts.emit("tp_hit", base_payload)
     elif exit_reason in ("stop_loss", "sl_filled", "sl_hit"):
         _alerts.emit("sl_hit", base_payload)
     _alerts.emit("trade_closed", {**base_payload, "exit_reason": exit_reason})
+
+
+def _estimated_demo_fees(entry: float, exit_price: float, size: float) -> float:
+    """Estimate both filled legs when broker fee detail is unavailable."""
+    try:
+        fee_rate = max(0.0, float(os.getenv("AUTO_DEMO_FEE_RATE", "0.0005")))
+    except ValueError:
+        fee_rate = 0.0005
+    return (abs(entry) + abs(exit_price)) * abs(size) * fee_rate
+
+
+def _positive_optional_float(value: Any) -> float | None:
+    """Return a finite positive number for fee-aware R attribution."""
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if math.isfinite(parsed) and parsed > 0 else None
 
 
 def _handle_entry(exchange, pos: dict[str, Any], entry_info: dict[str, Any]) -> bool:
@@ -225,7 +308,12 @@ def _handle_entry(exchange, pos: dict[str, Any], entry_info: dict[str, Any]) -> 
                                             "reason": f"entry_{status}"})
         _cancel_order(exchange, symbol, pos["orders"].get("tp_id", ""))
         _cancel_order(exchange, symbol, pos["orders"].get("sl_id", ""))
-        _close_position(symbol, exit_price=pos["entry"], exit_reason=f"entry_{status}")
+        exchange_reconciler.resolve_pending_entry(
+            journal,
+            pos,
+            reason=f"entry_{status}",
+            broker_evidence=entry_info,
+        )
         return False
 
     if status == "closed":
@@ -266,7 +354,11 @@ def _check_position(exchange, pos: dict[str, Any]) -> None:
     # For legacy positions or market entries, treat "market" or empty entry_id as already filled.
     if entry_id == "market" or not entry_id:
         if not pos.get("entry_filled"):
-            journal.update_position(symbol, {"entry_filled": True})
+            journal.update_position(
+                symbol,
+                {"entry_filled": True},
+                position_id=pos.get("position_id") or pos.get("decision_id"),
+            )
             pos["entry_filled"] = True
 
     trade_mode = os.getenv("TRADE_MODE", "spot").strip().lower()
@@ -286,24 +378,24 @@ def _check_position(exchange, pos: dict[str, Any]) -> None:
                         break
                 
                 if has_active:
-                    journal.update_position(symbol, {"entry_filled": True})
+                    journal.update_position(
+                        symbol,
+                        {"entry_filled": True},
+                        position_id=pos.get("position_id") or pos.get("decision_id"),
+                    )
                     pos["entry_filled"] = True
                     journal.append_decision("execution", {
                         "symbol": symbol, "order": "entry",
                         "msg": "Futures position detected active on exchange."
                     })
-                else:
-                    entry_order = None
-                    try:
-                        entry_order = exchange.fetch_order(entry_id, symbol, params={"ordType": "conditional"})
-                    except Exception:
-                        pass
-                    
-                    if entry_order:
-                        status = entry_order.get("status", "")
-                        if status in ("canceled", "expired", "rejected"):
-                            journal.append_decision("cleanup", {"symbol": symbol, "reason": f"entry_algo_{status}"})
-                            _close_position(symbol, exit_price=pos["entry"], exit_reason=f"entry_{status}")
+                    _alerts.emit("trade_entry_filled", {
+                        "symbol": symbol,
+                        "side": pos.get("side"),
+                        "entry": pos.get("entry"),
+                        "team_id": pos.get("team_id"),
+                        "team_name": pos.get("team_name"),
+                        "decision_id": pos.get("decision_id"),
+                    })
             except Exception as exc:
                 journal.append_decision("error", {
                     "where": "futures_check_entry",
@@ -323,8 +415,20 @@ def _check_position(exchange, pos: dict[str, Any]) -> None:
         if not _handle_entry(exchange, pos, entry_info):
             return  # Entry not done (open, canceled, etc.)
         
-        journal.update_position(symbol, {"entry_filled": True})
+        journal.update_position(
+            symbol,
+            {"entry_filled": True},
+            position_id=pos.get("position_id") or pos.get("decision_id"),
+        )
         pos["entry_filled"] = True
+        _alerts.emit("trade_entry_filled", {
+            "symbol": symbol,
+            "side": pos.get("side"),
+            "entry": entry_info.get("average") or pos.get("entry"),
+            "team_id": pos.get("team_id"),
+            "team_name": pos.get("team_name"),
+            "decision_id": pos.get("decision_id"),
+        })
 
     # Entry filled (or partial) - now monitor TP and SL
     tp = _fetch_order_status(exchange, symbol, tp_id)
@@ -342,20 +446,35 @@ def _check_position(exchange, pos: dict[str, Any]) -> None:
         _cancel_order(exchange, symbol, sl_id)
         exit_price = tp_info["average"] if tp_info["average"] > 0 else pos["take_profit"]
         slip = _compute_slippage(pos["take_profit"], exit_price, pos["side"])
-        _close_position(symbol, exit_price=exit_price, exit_reason="take_profit",
-                        extra={"exit_status": tp_info["status"],
-                              "slippage_pct": slip["slippage_pct"]})
+        _close_position(
+            symbol,
+            exit_price=exit_price,
+            exit_reason="take_profit",
+            position_id=pos.get("position_id") or pos.get("decision_id"),
+            extra={"exit_status": tp_info["status"],
+                   "slippage_pct": slip["slippage_pct"]},
+        )
     elif sl_full and not tp_full:
         _cancel_order(exchange, symbol, tp_id)
         exit_price = sl_info["average"] if sl_info["average"] > 0 else pos["stop_loss"]
         slip = _compute_slippage(pos["stop_loss"], exit_price, pos["side"])
-        _close_position(symbol, exit_price=exit_price, exit_reason="stop_loss",
-                        extra={"exit_status": sl_info["status"],
-                              "slippage_pct": slip["slippage_pct"]})
+        _close_position(
+            symbol,
+            exit_price=exit_price,
+            exit_reason="stop_loss",
+            position_id=pos.get("position_id") or pos.get("decision_id"),
+            extra={"exit_status": sl_info["status"],
+                   "slippage_pct": slip["slippage_pct"]},
+        )
     elif tp_full and sl_full:
         journal.append_decision("warning", {"symbol": symbol,
                                               "msg": "both TP and SL filled - rare race"})
-        _close_position(symbol, exit_price=pos["stop_loss"], exit_reason="both_filled")
+        _close_position(
+            symbol,
+            exit_price=pos["stop_loss"],
+            exit_reason="both_filled",
+            position_id=pos.get("position_id") or pos.get("decision_id"),
+        )
     elif tp_partial or sl_partial:
         # Log partial fill; don't close until full. Spot TP/SL are NOT
         # reduce-only OCO so the opposite side still works; just wait for
@@ -370,16 +489,15 @@ def _check_position(exchange, pos: dict[str, Any]) -> None:
 
 
 def run_once() -> None:
-    if journal.is_killed():
-        return
     # H5: Auto kill switch on 3+ consecutive losses
     if journal.check_loss_streak_kill():
         journal.append_decision("h5_activated", {
             "msg": "Trading halted. Manual review required."
         })
-        return
+        _alerts.emit("kill_switch", {"reason": "loss_streak"})
+    trade_mode = os.getenv("TRADE_MODE", "spot").strip().lower()
     positions = journal.read_positions()
-    if not positions:
+    if trade_mode != "futures" and not positions:
         return
     try:
         exchange = _get_exchange()
@@ -388,21 +506,52 @@ def run_once() -> None:
         return
 
     # Reconciliation logic to handle out-of-sync positions
-    trade_mode = os.getenv("TRADE_MODE", "spot").strip().lower()
     if trade_mode == "futures":
         try:
-            raw_active_positions = exchange.fetch_positions()
-            active_symbols = set()
-            for pos in raw_active_positions:
-                size = float(pos.get("contracts", 0) or pos.get("size", 0) or 0)
-                if size != 0 and pos.get("symbol"):
-                    active_symbols.add(pos["symbol"])
+            snapshot = exchange_reconciler.fetch_okx_demo_snapshot(
+                exchange=exchange,
+                include_pending_algo=False,
+                journal_module=journal,
+            )
+            if snapshot.get("errors"):
+                journal.append_decision("error", {
+                    "where": "futures_sync_reconciliation",
+                    "error": "; ".join(str(item) for item in snapshot.get("errors", [])),
+                    "msg": "Exchange snapshot failed; preserving local journal positions.",
+                })
+                return
+            sync_status = exchange_reconciler.reconcile_journal_with_exchange(
+                snapshot=snapshot,
+                journal_module=journal,
+                import_missing=True,
+                update_existing=True,
+            )
+            if sync_status.get("status") != "in_sync":
+                journal.append_decision("exchange_sync_status", sync_status)
+            pending_status = exchange_reconciler.reconcile_pending_entries(
+                exchange=exchange,
+                snapshot=snapshot,
+                journal_module=journal,
+            )
+            if pending_status.get("errors"):
+                journal.append_decision("pending_entry_reconciliation_status", pending_status)
+            if getattr(journal, "startup_sync_guard_active", lambda: False)():
+                journal.clear_startup_sync_guard()
+            positions = journal.read_positions()
+            if not positions:
+                return
             
             for pos in list(positions):
                 symbol = pos["symbol"]
                 ccxt_symbol = _native_to_ccxt_symbol(symbol)
                 # Only reconcile if entry has already been filled
-                if pos.get("entry_filled") and ccxt_symbol not in active_symbols:
+                active, _, _ = exchange_reconciler.has_active_exchange_exposure(
+                    symbol,
+                    snapshot=snapshot,
+                )
+                if pos.get("entry_filled") and not active:
+                    if not _confirm_exchange_missing_before_close(pos, snapshot):
+                        continue
                     journal.append_decision("sync_reconciliation_exit", {
                         "symbol": symbol,
                         "ccxt_symbol": ccxt_symbol,
@@ -419,7 +568,12 @@ def run_once() -> None:
                         pass
                     
                     reason = _determine_exit_reason(pos, exit_price)
-                    _close_position(symbol, exit_price=exit_price, exit_reason=reason)
+                    _close_position(
+                        symbol,
+                        exit_price=exit_price,
+                        exit_reason=reason,
+                        position_id=pos.get("position_id") or pos.get("decision_id"),
+                    )
                     
                     # Cancel any orphaned orders
                     orders = pos.get("orders", {})
@@ -428,7 +582,10 @@ def run_once() -> None:
                         if oid:
                             _cancel_order(exchange, symbol, oid)
                             
-                    positions = [p for p in positions if p["symbol"] != symbol]
+                    positions = [
+                        p for p in positions
+                        if not _same_position_record(p, symbol, pos.get("position_id") or pos.get("decision_id"))
+                    ]
         except Exception as exc:
             journal.append_decision("error", {
                 "where": "futures_sync_reconciliation",
@@ -473,8 +630,16 @@ def run_once() -> None:
                             exit_price = ticker["close"]
                     except Exception:
                         pass
-                    _close_position(symbol, exit_price=exit_price, exit_reason="orders_inactive_or_pruned")
-                    positions = [p for p in positions if p["symbol"] != symbol]
+                    _close_position(
+                        symbol,
+                        exit_price=exit_price,
+                        exit_reason="orders_inactive_or_pruned",
+                        position_id=pos.get("position_id") or pos.get("decision_id"),
+                    )
+                    positions = [
+                        p for p in positions
+                        if not _same_position_record(p, symbol, pos.get("position_id") or pos.get("decision_id"))
+                    ]
 
     for pos in positions:
         try:
@@ -483,6 +648,38 @@ def run_once() -> None:
             journal.append_decision("error", {"where": "check_position",
                                                 "symbol": pos.get("symbol"),
                                                 "error": str(exc)})
+
+
+def _confirm_exchange_missing_before_close(pos: dict[str, Any], snapshot: dict[str, Any]) -> bool:
+    """Require a second clean missing-on-exchange observation before close."""
+    symbol = str(pos.get("symbol") or "")
+    fetched_at = str(snapshot.get("fetched_at") or "")
+    previous = str(pos.get("exchange_missing_confirmed_at") or "")
+    if previous:
+        return True
+    journal.update_position(
+        symbol,
+        {
+            "exchange_missing_confirmed_at": fetched_at,
+            "sync_status": "exchange_missing_pending",
+        },
+        position_id=pos.get("position_id") or pos.get("decision_id"),
+    )
+    journal.append_decision("exchange_missing_pending_close", {
+        "symbol": symbol,
+        "fetched_at": fetched_at,
+        "msg": "Futures position missing from exchange snapshot; waiting for one more clean snapshot before closing locally.",
+    })
+    return False
+
+
+def _same_position_record(pos: dict[str, Any], symbol: str, position_id: str | None) -> bool:
+    """Return whether a loop-local position is the one just closed."""
+    if pos.get("symbol") != symbol:
+        return False
+    if not position_id:
+        return True
+    return str(pos.get("position_id") or pos.get("decision_id") or "") == str(position_id)
 
 
 def _one_cycle(cycle_ref: list[int], heartbeat_every: int) -> None:

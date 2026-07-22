@@ -6,6 +6,8 @@ import {
   SlidersHorizontal,
   TrendingUp,
   Save,
+  Trophy,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -34,6 +36,42 @@ type ClosedTrade = {
   pnl_usd: number;
   exit_reason: string;
   confluence_score: number;
+  team_id?: string | null;
+  team_name?: string | null;
+  strategy_id?: string | null;
+  strategy_name?: string | null;
+};
+type StrategyTeamMetric = {
+  team_id: string;
+  team_name: string;
+  strategy_id: string;
+  strategy_name: string;
+  method: string;
+  color: string;
+  preferred_playbook_ids?: string[];
+  entry_style?: string;
+  llm_guidance?: string;
+  risk_personality?: string;
+  team_capital_usd: number;
+  target_risk_pct_equity: number;
+  open_positions: number;
+  closed_trades: number;
+  wins: number;
+  losses: number;
+  winrate: number;
+  realized_pnl_usd: number;
+  unrealized_pnl_usd: number;
+  current_equity_usd: number;
+  max_drawdown_usd: number;
+  max_drawdown_pct?: number;
+  expectancy_r?: number;
+  profit_factor?: number;
+  wilson_winrate?: number;
+  sample_reliability?: number;
+  competition_score?: number;
+  ranking_status?: "provisional" | "qualified";
+  avg_actual_risk_pct_equity?: number | null;
+  rank: number | null;
 };
 type Stats = {
   total_trades?: number;
@@ -51,6 +89,7 @@ type StatusPayload = {
   running?: boolean;
   symbols?: string[];
   stats?: Stats;
+  strategy_teams?: StrategyTeamMetric[];
   positions?: Position[];
   closed_trades?: ClosedTrade[];
 };
@@ -107,6 +146,10 @@ export function Cockpit() {
     () => status?.symbols ?? TICKER_SYMBOLS,
     [status?.symbols]
   );
+  const strategyTeams = useMemo(
+    () => status?.strategy_teams ?? [],
+    [status?.strategy_teams]
+  );
 
   return (
     <div className="flex h-full flex-col bg-ttcc-bg text-ttcc-text text-[12px] overflow-y-auto p-3.5 space-y-4 font-sans">
@@ -127,6 +170,8 @@ export function Cockpit() {
           </span>
         </div>
       </div>
+
+      <TeamLeaderboard teams={strategyTeams} loading={loading} />
 
       {/* 2. Active Positions Grid */}
       <div className="space-y-1.5 shrink-0">
@@ -153,6 +198,8 @@ export function Cockpit() {
                   key={`${p.symbol}-${i}`}
                   p={p}
                   mark={tk?.price ?? null}
+                  sequenceNumber={i + 1}
+                  sequenceTotal={positions.length}
                 />
               );
             })
@@ -244,6 +291,118 @@ export function Cockpit() {
 
           {activeTab === "settings" && <CockpitSettings />}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TeamLeaderboard({
+  teams,
+  loading,
+}: {
+  teams: StrategyTeamMetric[];
+  loading: boolean;
+}) {
+  if (loading && teams.length === 0) {
+    return (
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-24 rounded border border-ttcc-border/40 bg-ttcc-surface/50 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!teams.length) {
+    return null;
+  }
+
+  const rankedTeams = [...teams].sort(
+    (left, right) => (left.rank ?? Number.MAX_SAFE_INTEGER) - (right.rank ?? Number.MAX_SAFE_INTEGER)
+  );
+
+  return (
+    <div className="space-y-1.5 shrink-0">
+      <div className="flex items-center justify-between px-1 text-[10px] uppercase font-bold text-ttcc-text-secondary tracking-wider">
+        <span className="flex items-center gap-1.5">
+          <Trophy className="h-3.5 w-3.5 text-ttcc-accent" />
+          Strategy Team Tournament
+        </span>
+        <span className="text-ttcc-text-muted">composite / 30-trade gate</span>
+      </div>
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+        {rankedTeams.map((team) => (
+          <div
+            key={team.team_id}
+            className={cn(
+              "rounded border bg-ttcc-surface px-3 py-2.5",
+              teamBorderClass(team.team_id)
+            )}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-[10px] font-bold text-ttcc-accent tabular">
+                    #{team.rank ?? "-"}
+                  </span>
+                  <span className="truncate text-[12px] font-bold uppercase tracking-wider text-ttcc-text">
+                    {team.team_name}
+                  </span>
+                  <span className="shrink-0 font-mono text-[8px] uppercase text-ttcc-text-muted">
+                    {team.ranking_status === "qualified" ? "qualified" : "provisional"}
+                  </span>
+                </div>
+                <div className="mt-0.5 truncate text-[10px] text-ttcc-text-secondary" title={team.strategy_name}>
+                  {team.strategy_name}
+                </div>
+                <div
+                  className="mt-0.5 truncate font-mono text-[9px] text-ttcc-text-muted"
+                  title={team.entry_style || team.llm_guidance || team.method}
+                >
+                  {team.preferred_playbook_ids?.[0] ?? team.method}
+                </div>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded border border-ttcc-border bg-ttcc-bg px-1.5 py-0.5 font-mono text-[10px] text-ttcc-text-secondary">
+                <Target className="h-3 w-3" />
+                {formatPct(team.target_risk_pct_equity)}
+              </span>
+            </div>
+
+            <div className="mt-2 grid grid-cols-4 gap-1.5">
+              <TeamMetric label="Score" value={(team.competition_score ?? 0).toFixed(1)} tone={(team.competition_score ?? 0) >= 50 ? "good" : "warn"} />
+              <TeamMetric label="WR" value={`${team.winrate.toFixed(1)}%`} tone={team.winrate >= 50 ? "good" : "warn"} />
+              <TeamMetric label="Exp R" value={(team.expectancy_r ?? 0).toFixed(2)} tone={(team.expectancy_r ?? 0) > 0 ? "good" : "warn"} />
+              <TeamMetric label="PF" value={(team.profit_factor ?? 0).toFixed(2)} tone={(team.profit_factor ?? 0) > 1 ? "good" : "warn"} />
+            </div>
+
+            <div className="mt-2 flex items-center justify-between gap-2 font-mono text-[10px] text-ttcc-text-muted tabular">
+              <span>{team.closed_trades}/30 closed / {team.open_positions} open</span>
+              <span>{formatSignedUsd(team.realized_pnl_usd)} / DD {formatUsd(team.max_drawdown_usd)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TeamMetric({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "good" | "warn" | "bad";
+}) {
+  return (
+    <div className="rounded border border-ttcc-border/60 bg-ttcc-surface-2 px-2 py-1">
+      <div className="text-[8px] font-semibold uppercase tracking-wider text-ttcc-text-muted">{label}</div>
+      <div className={cn(
+        "mt-0.5 truncate font-mono text-[11px] font-bold tabular",
+        tone === "good" ? "text-ttcc-green" : tone === "bad" ? "text-ttcc-red" : "text-ttcc-yellow"
+      )}>
+        {value}
       </div>
     </div>
   );
@@ -555,6 +714,40 @@ function CockpitSettings() {
       </div>
     </form>
   );
+}
+
+function teamBorderClass(teamId: string): string {
+  if (teamId === "momentum") {
+    return "border-blue-400/40";
+  }
+  if (teamId === "mean_reversion") {
+    return "border-ttcc-yellow/40";
+  }
+  if (teamId === "volatility_breakout") {
+    return "border-ttcc-red/40";
+  }
+  return "border-ttcc-green/40";
+}
+
+function formatPct(value: number): string {
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
+  return `${(value * 100).toFixed(0)}%`;
+}
+
+function formatUsd(value: number): string {
+  if (!Number.isFinite(value)) {
+    return "$0.00";
+  }
+  return `$${value.toFixed(2)}`;
+}
+
+function formatSignedUsd(value: number): string {
+  if (!Number.isFinite(value)) {
+    return "$0.00";
+  }
+  return value >= 0 ? `+$${value.toFixed(2)}` : `-$${Math.abs(value).toFixed(2)}`;
 }
 
 function Loader2({ className }: { className?: string }) {

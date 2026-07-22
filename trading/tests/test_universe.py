@@ -4,6 +4,7 @@ Run with: pytest tests/test_universe.py tests/test_llm_override_tracker.py -x
 """
 from __future__ import annotations
 
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,18 +23,19 @@ import llm_override_tracker as ot  # noqa: E402
 # ---------------------------------------------------------------------------
 
 class TestUniverseFallback:
-    def test_hardcoded_has_10_symbols(self):
-        assert len(universe.HARDCODED_UNIVERSE) == 10
+    def test_hardcoded_has_50_symbols(self):
+        assert len(universe.HARDCODED_UNIVERSE) == 50
+        assert all(s.max_notional_pct == pytest.approx(0.20) for s in universe.HARDCODED_UNIVERSE)
 
-    def test_all_bases_match_top_10(self):
+    def test_top_bases_keep_original_core_universe(self):
         bases = {s.base for s in universe.HARDCODED_UNIVERSE}
-        assert bases == {"BTC", "ETH", "BNB", "SOL", "XRP", "DOGE", "ADA", "AVAX", "TRX", "LINK"}
+        assert {"BTC", "ETH", "BNB", "SOL", "XRP", "DOGE", "ADA", "AVAX", "TRX", "LINK"}.issubset(bases)
 
     def test_load_universe_falls_back_on_api_fail(self, tmp_path, monkeypatch):
         monkeypatch.setenv("VIBE_TRADING_HOME", str(tmp_path))
         snap = universe.load_universe(fetcher=lambda url: (_ for _ in ()).throw(RuntimeError("boom")))
         assert snap.source == "fallback_hardcoded"
-        assert len(snap.symbols) == 10
+        assert len(snap.symbols) == 50
 
     def test_env_override_skips_api(self, tmp_path, monkeypatch):
         monkeypatch.setenv("VIBE_TRADING_HOME", str(tmp_path))
@@ -47,12 +49,12 @@ class TestUniverseFallback:
         assert [s.base for s in snap.symbols] == ["BTC", "ETH"]
         assert called_api == []
 
-    def test_env_override_filters_unknown(self, tmp_path, monkeypatch):
+    def test_env_override_allows_dynamic_non_stablecoin_symbol(self, tmp_path, monkeypatch):
         monkeypatch.setenv("VIBE_TRADING_HOME", str(tmp_path))
         monkeypatch.setenv("UNIVERSE_OVERRIDE", "BTC-USDT-SWAP,FOO-USDT-SWAP")
         snap = universe.load_universe(fetcher=lambda url: {})
-        bases = {s.base for s in snap.symbols}
-        assert bases == {"BTC"}, f"expected only BTC, got {bases}"
+        assert [s.base for s in snap.symbols] == ["BTC", "FOO"]
+        assert snap.symbols[1].leverage == 3
 
     def test_cache_used_when_api_fails(self, tmp_path, monkeypatch):
         monkeypatch.setenv("VIBE_TRADING_HOME", str(tmp_path))
@@ -84,6 +86,53 @@ class TestUniverseFallback:
         assert out[1] is None  # USDC stablecoin
         assert out[2] is not None
         assert out[3] is None  # not USDT-margined
+
+    def test_live_okx_universe_accepts_dynamic_top50_symbol(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("VIBE_TRADING_HOME", str(tmp_path))
+        fake_tickers = [
+            {"instId": "FOO-USDT-SWAP", "volCcy24h": "100", "last": "10"},
+            {"instId": "BTC-USDT-SWAP", "volCcy24h": "50", "last": "10"},
+        ]
+
+        snap = universe.load_universe(top_n=2, fetcher=lambda _url: {"data": fake_tickers})
+
+        assert snap.source == "okx_api"
+        assert [s.base for s in snap.symbols] == ["FOO", "BTC"]
+        assert snap.symbols[0].leverage == 3
+
+    def test_default_fetch_uses_simulated_swap_catalog_without_invalid_uly(self, monkeypatch):
+        seen: dict[str, object] = {}
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return None
+
+            @staticmethod
+            def read() -> bytes:
+                return json.dumps(
+                    {"code": "0", "data": [{"instId": "BTC-USDT-SWAP"}]}
+                ).encode("utf-8")
+
+        def fake_urlopen(request, timeout):  # noqa: ANN001
+            seen.update({"url": request.full_url, "headers": dict(request.header_items()), "timeout": timeout})
+            return FakeResponse()
+
+        import urllib.request
+
+        monkeypatch.setenv("OKX_TESTNET", "true")
+        monkeypatch.setenv("OKX_SANDBOX", "true")
+        monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+        rows = universe.fetch_okx_swap_tickers()
+
+        assert rows == [{"instId": "BTC-USDT-SWAP"}]
+        assert str(seen["url"]).endswith("/api/v5/market/tickers?instType=SWAP")
+        assert "uly=" not in str(seen["url"])
+        headers = {str(key).lower(): value for key, value in dict(seen["headers"]).items()}
+        assert headers["x-simulated-trading"] == "1"
 
 
 class TestUniverseSnapshotIO:

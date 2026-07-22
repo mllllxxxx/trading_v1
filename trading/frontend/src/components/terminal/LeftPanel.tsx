@@ -50,6 +50,10 @@ export function LeftPanel({
   lastUpdate,
   running,
   killActive,
+  accountSourceLabel,
+  accountSyncedAt,
+  accountAvailableBalance,
+  accountMarginUsed,
   cost,
   onKillToggle,
 }: {
@@ -70,13 +74,34 @@ export function LeftPanel({
   lastUpdate: string | null;
   running: boolean;
   killActive: boolean;
+  accountSourceLabel?: string;
+  accountSyncedAt?: string | null;
+  accountAvailableBalance?: number | null;
+  accountMarginUsed?: number | null;
   cost?: {
     cost_usd: number;
     cap_usd: number;
     calls: number;
+    call_cap?: number;
+    remaining_calls?: number | null;
+    hourly_calls?: number;
+    hourly_call_cap?: number;
+    remaining_hourly_calls?: number | null;
     monthly_cost_usd: number;
     pct_of_cap: number;
     cap_reached: boolean;
+    cap_reason?: string;
+    budget_skips?: number;
+    last_budget_skip?: {
+      ts?: string;
+      source?: string;
+      reason?: string;
+      behavior?: string;
+      calls?: number;
+      call_cap?: number;
+      hourly_calls?: number;
+      hourly_call_cap?: number;
+    } | null;
   } | null;
   onKillToggle: () => void;
 }) {
@@ -125,6 +150,24 @@ export function LeftPanel({
             <span className={cn("font-mono", isUp ? "text-ttcc-green" : "text-ttcc-red")}>
               {isUp ? "+" : ""}{totalPnl.toFixed(2)}
             </span>
+          </div>
+          <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 border-t border-ttcc-border/50 pt-1 text-[9px] tabular">
+            <span className="text-ttcc-text-secondary">source</span>
+            <span className="truncate text-right font-mono uppercase text-ttcc-text-muted" title={accountSyncedAt || undefined}>
+              {accountSourceLabel || "journal fallback"}
+            </span>
+            {accountAvailableBalance !== null && accountAvailableBalance !== undefined ? (
+              <>
+                <span className="text-ttcc-text-secondary">available</span>
+                <span className="text-right font-mono text-ttcc-text">${accountAvailableBalance.toFixed(2)}</span>
+              </>
+            ) : null}
+            {accountMarginUsed !== null && accountMarginUsed !== undefined ? (
+              <>
+                <span className="text-ttcc-text-secondary">margin</span>
+                <span className="text-right font-mono text-ttcc-text">${accountMarginUsed.toFixed(2)}</span>
+              </>
+            ) : null}
           </div>
         </MetricCard>
 
@@ -265,10 +308,32 @@ export function LeftPanel({
                 style={{ width: `${Math.min(100, cost?.pct_of_cap ?? 0)}%` }}
               />
             </div>
-            <div className="mt-1 flex justify-between text-[10px] tabular text-ttcc-text-secondary">
-              <span>{cost?.calls ?? 0} calls</span>
+            <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] tabular text-ttcc-text-secondary">
+              <span>calls</span>
+              <span className="text-right font-mono text-ttcc-text">
+                {cost?.calls ?? 0}/{cost?.call_cap ?? 120}
+              </span>
+              <span>hour</span>
+              <span className="text-right font-mono text-ttcc-text">
+                {cost?.hourly_calls ?? 0}/{cost?.hourly_call_cap ?? 6}
+              </span>
+              <span>remaining</span>
+              <span className="text-right font-mono text-ttcc-text">
+                {cost?.remaining_calls ?? Math.max(0, (cost?.call_cap ?? 120) - (cost?.calls ?? 0))}
+              </span>
               <span>${cost?.monthly_cost_usd?.toFixed(2) ?? "0.00"} / mo</span>
+              <span className="text-right font-mono text-ttcc-text">
+                {cost?.budget_skips ?? 0} skips
+              </span>
             </div>
+            {cost?.last_budget_skip?.reason ? (
+              <div
+                className="mt-1 truncate rounded border border-ttcc-yellow/30 bg-ttcc-yellow/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-ttcc-yellow"
+                title={`${cost.last_budget_skip.source ?? "llm"}: ${cost.last_budget_skip.reason}`}
+              >
+                skip {cost.last_budget_skip.reason}
+              </div>
+            ) : null}
           </MetricCard>
         </div>
       </div>

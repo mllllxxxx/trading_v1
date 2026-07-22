@@ -5,13 +5,12 @@ import os
 import json
 import ccxt
 import journal
-import brain
 
 journal.ensure_dirs()
 
 # 1. Check services via journal
 with journal.DECISIONS_LOG.open() as f:
-    decisions = [json.loads(l) for l in f if l.strip()]
+    decisions = [json.loads(line) for line in f if line.strip()]
 starts = [d for d in decisions if d.get("type") in ("start", "unified_start", "auto_start")]
 vibes = [d for d in decisions if d.get("type") in ("vibe_starting", "vibe_ready")]
 dashboards = [d for d in decisions if d.get("type") in ("dashboard_start", "dashboard_ready")]
@@ -63,7 +62,7 @@ for d in decisions[-5:]:
 print()
 
 # 5. Kill switch
-print(f"=== Kill switch ===")
+print("=== Kill switch ===")
 print(f"  Active: {journal.is_killed()}")
 if journal.KILL_SWITCH.exists():
     print(f"  File: {journal.KILL_SWITCH}")

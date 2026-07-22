@@ -38,6 +38,12 @@ def compute_replay_metrics(records: Iterable[Mapping[str, Any]]) -> dict[str, An
         "average_r": round(sum(r_values) / len(r_values), 4) if r_values else None,
         "performance_by_playbook": _performance_breakdown(rows, "playbook_id"),
         "performance_by_regime": _performance_breakdown(rows, "regime"),
+        "performance_by_strategy_profile": _performance_breakdown(rows, _strategy_profile_key),
+        "performance_by_profile_regime": _performance_breakdown(rows, _profile_regime_key),
+        "performance_by_decision_lane": _performance_breakdown(rows, _decision_lane_key),
+        "performance_by_rule_score_bucket": _performance_breakdown(rows, _rule_score_bucket_key),
+        "average_profile_compliance_score": _average_profile_compliance(rows),
+        "average_profile_compliance_by_strategy_profile": _average_profile_compliance_by_group(rows),
         "decision_stability": _decision_stability(rows),
     }
     return metrics
@@ -145,10 +151,10 @@ def _max_drawdown(pnls: list[float]) -> float:
     return round(max_dd, 4)
 
 
-def _performance_breakdown(rows: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any]]:
+def _performance_breakdown(rows: list[dict[str, Any]], key: str | Any) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
     for row in rows:
-        group = str(row.get(key) or "unknown")
+        group = str(key(row) if callable(key) else row.get(key) or "unknown")
         slot = out.setdefault(group, {"n": 0, "pnl_usd": 0.0, "wins": 0, "losses": 0})
         slot["n"] += 1
         pnl = _number_or_none(row.get("pnl_usd"))
@@ -163,6 +169,94 @@ def _performance_breakdown(rows: list[dict[str, Any]], key: str) -> dict[str, di
         finished = slot["wins"] + slot["losses"]
         slot["win_rate"] = round(slot["wins"] / finished, 4) if finished else None
     return dict(sorted(out.items()))
+
+
+def _strategy_profile_key(row: Mapping[str, Any]) -> str:
+    source_context = row.get("source_context")
+    source = source_context if isinstance(source_context, Mapping) else {}
+    return str(
+        row.get("strategy_id")
+        or row.get("team_id")
+        or source.get("strategy_id")
+        or source.get("team_id")
+        or "unknown"
+    )
+
+
+def _profile_regime_key(row: Mapping[str, Any]) -> str:
+    profile = _strategy_profile_key(row)
+    regime = str(row.get("regime") or _nested(row, "market_context", "regime") or "unknown")
+    return f"{profile}|{regime}"
+
+
+def _decision_lane_key(row: Mapping[str, Any]) -> str:
+    return str(
+        row.get("decision_lane")
+        or _nested(row, "decision_context", "decision_lane")
+        or "legacy_unknown"
+    )
+
+
+def _rule_score_bucket_key(row: Mapping[str, Any]) -> str:
+    score = _number_or_none(
+        row.get("rule_score")
+        if row.get("rule_score") is not None
+        else _nested(row, "decision_context", "rule_score")
+    )
+    if score is None:
+        proposal = _nested(row, "decision_context", "rule_proposal")
+        if isinstance(proposal, Mapping):
+            score = _number_or_none(proposal.get("rule_score"))
+    if score is None:
+        return "unknown"
+    if score < 60:
+        return "0-59"
+    if score < 70:
+        return "60-69"
+    if score < 80:
+        return "70-79"
+    if score < 90:
+        return "80-89"
+    return "90-100"
+
+
+def _profile_compliance_score(row: Mapping[str, Any]) -> float | None:
+    for value in (
+        row.get("profile_compliance_score"),
+        _nested(row, "decision_context", "profile_compliance_score"),
+        _nested(row, "ticket", "profile_compliance_score"),
+    ):
+        score = _number_or_none(value)
+        if score is not None:
+            return score
+    return None
+
+
+def _average_profile_compliance(rows: list[dict[str, Any]]) -> float | None:
+    scores = [score for score in (_profile_compliance_score(row) for row in rows) if score is not None]
+    if not scores:
+        return None
+    return round(sum(scores) / len(scores), 4)
+
+
+def _average_profile_compliance_by_group(rows: list[dict[str, Any]]) -> dict[str, float]:
+    grouped: dict[str, list[float]] = {}
+    for row in rows:
+        score = _profile_compliance_score(row)
+        if score is None:
+            continue
+        grouped.setdefault(_strategy_profile_key(row), []).append(score)
+    return {
+        group: round(sum(scores) / len(scores), 4)
+        for group, scores in sorted(grouped.items())
+    }
+
+
+def _nested(row: Mapping[str, Any], parent: str, key: str) -> Any:
+    value = row.get(parent)
+    if isinstance(value, Mapping):
+        return value.get(key)
+    return None
 
 
 def _decision_stability(rows: list[dict[str, Any]]) -> float | None:

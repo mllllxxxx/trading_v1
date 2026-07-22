@@ -5,7 +5,6 @@ other's journal files. Mocks ccxt / yfinance / OpenAI by default.
 """
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 

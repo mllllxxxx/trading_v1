@@ -5,7 +5,7 @@ sys.path.insert(0, '/app/auto')
 import journal
 journal.ensure_dirs()
 with journal.DECISIONS_LOG.open() as f:
-    decisions = [json.loads(l) for l in f if l.strip()]
+    decisions = [json.loads(line) for line in f if line.strip()]
 
 # Get recent decisions (last 3 min)
 recent = [d for d in decisions if d.get("ts", "") > "2026-06-21T10:00"]

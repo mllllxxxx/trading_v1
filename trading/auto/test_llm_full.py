@@ -1,5 +1,6 @@
 """Force LLM call with full 2.6K context using mock STRONG data."""
 import sys
+import subprocess
 sys.path.insert(0, '/app/auto')
 import json
 import prompts
@@ -23,7 +24,6 @@ confluence = {
 }
 
 # Mock regime output (real regime.py + indicators)
-import subprocess
 regime_real = json.loads(subprocess.run(
     ['python', '/app/regime/regime.py', '--symbol', 'BTC-USDT', '--json'],
     capture_output=True, text=True

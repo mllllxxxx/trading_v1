@@ -52,7 +52,7 @@ render it for runtime consumers.
 
 ## Development Rules
 
-- Design before code: create or update `.hermes/features/{name}/design.md`
+- Design before code: create or update `trading/docs/features/{name}/design.md`
   before development.
 - Contract-first: update canonical docs or specs before code when behavior
   changes.

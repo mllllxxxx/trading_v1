@@ -1,5 +1,6 @@
 """Quick test for Phase B - 3-tier MTF + regime trend."""
-import json, subprocess
+import json
+import subprocess
 r = subprocess.run(['python', '/app/confluence/confluence.py', '--symbol', 'BTC-USDT', '--json'], capture_output=True, text=True)
 d = json.loads(r.stdout)
 print('=== Phase B6+B7: 3-tier MTF with weights ===')

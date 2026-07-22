@@ -29,11 +29,11 @@ from typing import Any
 # Import sibling journal module
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import journal  # type: ignore
-import skills as _skills  # type: ignore
 import validator as _validator  # type: ignore
 import brain as _brain  # type: ignore
 import prompts as _prompts  # type: ignore
 import alerts as _alerts  # type: ignore
+import equity as _equity  # type: ignore
 from confluence_signal import classify_confluence_direction  # type: ignore
 
 # Futures layer (lazy: imported only when TRADE_MODE=futures to avoid ccxt dep
@@ -132,9 +132,9 @@ SYMBOLS = [s.strip() for s in SYMBOLS_STR.split(",") if s.strip()]
 SCHED_INTERVAL = int(os.getenv("AUTO_INTERVAL_S", "300"))  # 5 min default
 MIN_CONFLUENCE = int(os.getenv("AUTO_MIN_CONFLUENCE", "2"))  # need abs(score) >= threshold
 ALLOWED_REGIMES = {"TRENDING_UP", "TRENDING_DOWN"}
-MAX_OPEN_POSITIONS = int(os.getenv("AUTO_MAX_POSITIONS", "3"))
+MAX_OPEN_POSITIONS = int(os.getenv("AUTO_MAX_POSITIONS", "10"))
 DAILY_LOSS_CAP_PCT = float(os.getenv("AUTO_DAILY_LOSS_CAP_PCT", "0.03"))
-CAPITAL = float(os.getenv("AUTO_CAPITAL", "10000"))
+CAPITAL = _equity.runtime_equity(10_000.0)
 # C1: Drawdown-based risk multiplier tiers (drawdown_pct -> risk_multiplier).
 # Each tier halves risk to shrink exposure as losses accumulate.
 # Format: list of (max_drawdown_pct, multiplier). Sorted by drawdown ascending.
@@ -162,9 +162,9 @@ class _RuntimeConfig:
     def reload(self) -> None:
         self.interval_s = int(os.getenv("AUTO_INTERVAL_S", "300"))
         self.min_confluence = int(os.getenv("AUTO_MIN_CONFLUENCE", "2"))
-        self.max_positions = int(os.getenv("AUTO_MAX_POSITIONS", "3"))
+        self.max_positions = int(os.getenv("AUTO_MAX_POSITIONS", "10"))
         self.daily_loss_cap_pct = float(os.getenv("AUTO_DAILY_LOSS_CAP_PCT", "0.03"))
-        self.capital = float(os.getenv("AUTO_CAPITAL", "10000"))
+        self.capital = _equity.runtime_equity(10_000.0)
         # 0 disables cooldown.
         self.cooldown_minutes = float(os.getenv("AUTO_COOLDOWN_MINUTES", "30"))
 
@@ -252,7 +252,7 @@ _API_KEY_MISSING = "DEEPSEEK_API_KEY not set"
 
 
 def _classify_llm_error(err: str | None) -> str:
-    """Return one of: 'ok', 'no_key', 'api_error', 'unexpected'.
+    """Return one of: 'ok', 'no_key', 'api_error'.
 
     The explicit fallback policy decides whether 'no_key' can use legacy
     rules-only execution. Any real API error still aborts the cycle.
@@ -425,8 +425,13 @@ def run_once_symbol(current_symbol: str) -> None:
     if any(p["symbol"] == current_symbol for p in positions):
         return  # already open for this symbol, skip silently
 
-    if journal.is_killed():
-        journal.append_decision("skip", {"reason": "kill_switch_active",
+    block_reason_fn = getattr(journal, "trading_block_reason", None)
+    block_reason_raw = block_reason_fn() if callable(block_reason_fn) else ""
+    block_reason = block_reason_raw if isinstance(block_reason_raw, str) else ""
+    if not block_reason and journal.is_killed() is True:
+        block_reason = "kill_switch_active"
+    if block_reason:
+        journal.append_decision("skip", {"reason": block_reason,
                                           "symbol": current_symbol})
         return
 
@@ -644,15 +649,30 @@ def run_once_symbol(current_symbol: str) -> None:
     cost_status = journal.daily_cost_status()
     cap_reached = bool(cost_status.get("cap_reached", False))
     if cap_reached:
+        cap_reason = str(cost_status.get("cap_reason") or "daily_llm_cost_cap")
         cost_payload = {
             "symbol": current_symbol,
             "cost_usd": round(float(cost_status.get("cost_usd", 0.0)), 6),
             "cap_usd": float(cost_status.get("cap_usd", 0.0)),
             "calls_today": int(cost_status.get("calls", 0)),
+            "call_cap": cost_status.get("call_cap"),
+            "hourly_calls": cost_status.get("hourly_calls"),
+            "hourly_call_cap": cost_status.get("hourly_call_cap"),
+            "cap_reason": cap_reason,
             "require_llm": fallback_policy["require_llm"],
             "enable_rules_only": fallback_policy["enable_rules_only"],
             "live_like": fallback_policy["live_like"],
         }
+        record_budget_skip = getattr(journal, "record_llm_budget_skip", None)
+        if callable(record_budget_skip):
+            try:
+                record_budget_skip(
+                    source="legacy_scheduler",
+                    reason=cap_reason,
+                    status=cost_status,
+                )
+            except Exception:  # noqa: BLE001
+                pass
         if fallback_policy["require_llm"]:
             journal.append_decision("skip", {
                 **cost_payload,
@@ -660,19 +680,12 @@ def run_once_symbol(current_symbol: str) -> None:
                 "msg": "Daily LLM cost cap reached; LLM decision is required.",
             })
             return
-        if not fallback_policy["enable_rules_only"]:
-            journal.append_decision("skip", {
-                **cost_payload,
-                "reason": "daily_llm_cost_cap_rules_only_disabled",
-                "msg": "Daily LLM cost cap reached; rules-only fallback disabled.",
-            })
-            return
         journal.append_decision("skip", {
             **cost_payload,
-            "reason": "daily_llm_cost_cap",
-            "msg": "Daily LLM cost cap reached; using rules-only fallback.",
+            "reason": "llm_budget_cap_fail_closed",
+            "msg": "LLM budget cap reached; fail-closed policy blocks rules-only fallback.",
         })
-        # Do NOT call LLM; fall through to the Phase 1 rules-only path.
+        return
     else:
         try:
             system_prompt = _prompts.build_system_prompt()

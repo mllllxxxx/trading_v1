@@ -7,15 +7,18 @@ harness.db-shm
 target/
 dist/
 
+# Local dependency and test-run caches.
+.pnpm-store/
+.pytest_cache/
+.pytest_tmp*/
+.pytest-tmp-*/
+.ruff_cache/
+
 # Downloaded Harness CLI binary for installed project instances.
 scripts/bin/harness-cli
 scripts/bin/harness-cli.exe
 
-# Dev Autopilot — dynamic state, per-instance
-.hermes/features/in_progress.md
-.hermes/features/*/status
-.hermes/features/*/branch
-
 # Local test cache/temp directories.
 .test-tmp/
 .test-runs/
+test-tmp-codex/

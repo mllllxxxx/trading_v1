@@ -17,6 +17,8 @@ export function TopBar({
   modelName,
   capitalUsd,
   pnlTodayUsd,
+  accountSourceLabel,
+  accountSyncedAt,
   onKillToggle,
   onNavigateHome,
 }: {
@@ -28,10 +30,15 @@ export function TopBar({
   modelName: string;
   capitalUsd: number;
   pnlTodayUsd: number;
+  accountSourceLabel?: string;
+  accountSyncedAt?: string | null;
   onKillToggle: () => void;
   onNavigateHome?: () => void;
 }) {
   const pnlUp = pnlTodayUsd >= 0;
+  const accountTitle = accountSyncedAt
+    ? `Current capital - ${accountSourceLabel || "account"} at ${accountSyncedAt}`
+    : `Current capital - ${accountSourceLabel || "account"}`;
   return (
     <header className="flex items-center gap-0 h-10 border-b border-ttcc-border bg-ttcc-bg shrink-0">
       {/* Brand */}
@@ -56,11 +63,16 @@ export function TopBar({
       {/* Right cluster: stats + controls */}
       <div className="flex h-full items-center gap-1.5 border-l border-ttcc-border/60 bg-ttcc-surface px-3 shrink-0">
         {/* Capital */}
-        <div className="flex items-center gap-1.5 rounded border border-ttcc-border bg-ttcc-surface-2 px-2 py-0.5" title="Current capital">
+        <div className="flex items-center gap-1.5 rounded border border-ttcc-border bg-ttcc-surface-2 px-2 py-0.5" title={accountTitle}>
           <span className="text-[9px] font-semibold uppercase tracking-wider text-ttcc-text-muted">cap</span>
           <span className="font-mono text-[11px] font-semibold text-ttcc-text tabular">
             ${capitalUsd.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </span>
+          {accountSourceLabel ? (
+            <span className="hidden rounded border border-ttcc-border/70 px-1 py-px font-mono text-[8px] uppercase tracking-wider text-ttcc-text-muted lg:inline">
+              {accountSourceLabel.includes("exchange") ? "exch" : "journal"}
+            </span>
+          ) : null}
         </div>
 
         {/* PnL today */}

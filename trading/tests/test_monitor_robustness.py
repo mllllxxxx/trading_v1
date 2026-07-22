@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import sys
-import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -98,6 +97,88 @@ class TestMonitorTPPartialFill:
         # Position should be removed
         assert m.journal.read_positions() == []
 
+    def test_close_preserves_open_rationale_metadata(self, isolated_monitor, tmp_data_dir):
+        """Closed trades keep rationale metadata for outcome review."""
+        m = isolated_monitor
+        m.journal.ensure_dirs()
+        pos = _make_position()
+        pos.update({
+            "source_signal_id": "sig-demo-001",
+            "decision_id": "sigexec_sig-demo-001",
+            "open_reason": "Opened because Berkshire trend setup aligned with LLM thesis.",
+            "market_context": {
+                "candidate_direction": "long",
+                "regime": "TRENDING_UP",
+                "data_quality": "fresh",
+            },
+            "decision_context": {
+                "thesis": "Trend continuation remains valid above invalidation.",
+                "playbook_id": "PB_CRYPTO_TREND_CONTINUATION_001",
+                "rule_citations": ["HARD_DATA_001"],
+            },
+            "requested_risk_pct_equity": 0.05,
+            "actual_risk_pct_equity": 0.03,
+            "risk_cap_reason": "broker_contract_rounding",
+            "routing_experiment": {
+                "approval_id": "approval-1",
+                "candidate_fingerprint": "candidate-1",
+            },
+        })
+        m.journal.add_position(pos)
+
+        m._close_position(pos["symbol"], exit_price=110.0, exit_reason="take_profit")
+
+        closed = m.journal.read_closed_trades()
+        assert len(closed) == 1
+        trade = closed[0]
+        assert trade["source_signal_id"] == "sig-demo-001"
+        assert trade["decision_id"] == "sigexec_sig-demo-001"
+        assert trade["open_reason"] == pos["open_reason"]
+        assert trade["market_context"] == pos["market_context"]
+        assert trade["decision_context"] == pos["decision_context"]
+        assert trade["regime"] == "TRENDING_UP"
+        assert trade["risk_usd"] == 50.0
+        assert trade["actual_risk_pct_equity"] == 0.03
+        assert trade["gross_pnl_usd"] == 1.0
+        assert trade["fees_usd"] > 0
+        assert trade["pnl_usd"] < trade["gross_pnl_usd"]
+        assert trade["routing_experiment"] == pos["routing_experiment"]
+        assert trade["r_multiple"] == pytest.approx(trade["pnl_usd"] / 50.0, abs=1e-3)
+
+    def test_reconciled_long_side_uses_long_pnl_math(self, isolated_monitor, tmp_data_dir, monkeypatch):
+        monkeypatch.setenv("AUTO_DEMO_FEE_RATE", "0")
+        m = isolated_monitor
+        m.journal.ensure_dirs()
+        pos = _make_position(position_size=1.0)
+        pos["side"] = "long"
+        m.journal.add_position(pos)
+
+        m._close_position(pos["symbol"], exit_price=110.0, exit_reason="take_profit")
+
+        assert m.journal.read_closed_trades()[0]["pnl_usd"] == 10.0
+
+    def test_canceled_entry_is_not_counted_as_closed_trade(self, isolated_monitor, tmp_data_dir):
+        m = isolated_monitor
+        m.journal.ensure_dirs()
+        pos = _make_position()
+        pos["status"] = "pending_entry"
+        pos["entry_filled"] = False
+        m.journal.add_position(pos)
+        exchange = MagicMock()
+
+        should_monitor = m._handle_entry(
+            exchange,
+            pos,
+            {"status": "canceled", "filled": 0.0, "average": 0.0},
+        )
+
+        assert should_monitor is False
+        assert m.journal.read_positions() == []
+        assert m.journal.read_closed_trades() == []
+        decisions = [json.loads(line) for line in m.journal.DECISIONS_LOG.read_text().splitlines()]
+        assert decisions[-1]["type"] == "pending_entry_resolved"
+        assert decisions[-1]["performance_eligible"] is False
+
     def test_sl_partial_does_not_close(self, isolated_monitor, tmp_data_dir):
         m = isolated_monitor
         m.journal.ensure_dirs()
@@ -139,7 +220,6 @@ class TestMonitorHeartbeat:
             for _ in range(7):
                 m.main_loop_cycle()
         with m.journal.DECISIONS_LOG.open(encoding="utf-8") as f:
-            import json
             heartbeats = sum(1 for line in f
                              if line.strip() and '"monitor_heartbeat"' in line)
         assert heartbeats == 2  # cycles 3 and 6
@@ -193,8 +273,8 @@ class TestMonitorReconciliation:
         assert closed[0]["exit_reason"] == "orders_inactive_or_pruned"
         assert closed[0]["exit_price"] == 102.0
 
-    def test_futures_reconciliation_closed_on_exchange(self, isolated_monitor, tmp_data_dir, monkeypatch):
-        """Futures mode: close position if not found in exchange.fetch_positions()."""
+    def test_futures_reconciliation_closed_on_exchange_after_confirmation(self, isolated_monitor, tmp_data_dir, monkeypatch):
+        """Futures mode: require two clean missing snapshots before local close."""
         monkeypatch.setenv("TRADE_MODE", "futures")
         m = isolated_monitor
         m.journal.ensure_dirs()
@@ -209,12 +289,46 @@ class TestMonitorReconciliation:
         with patch.object(m, "_get_exchange", return_value=exchange):
             m.run_once()
 
-        # Position should be closed locally
+        open_positions = m.journal.read_positions()
+        assert len(open_positions) == 1
+        assert open_positions[0]["sync_status"] == "exchange_missing_pending"
+        assert open_positions[0]["exchange_missing_confirmed_at"]
+        assert m.journal.read_closed_trades() == []
+
+        with patch.object(m, "_get_exchange", return_value=exchange):
+            m.run_once()
+
+        # Position should be closed locally after the second clean confirmation.
         assert m.journal.read_positions() == []
         closed = m.journal.read_closed_trades()
         assert len(closed) == 1
         assert closed[0]["exit_reason"] == "take_profit"  # close to 110.0
         assert closed[0]["exit_price"] == 109.5
+
+    def test_futures_reconciliation_imports_when_journal_empty(self, isolated_monitor, tmp_data_dir, monkeypatch):
+        """Regression: empty restart journal must still import active OKX exposure."""
+        monkeypatch.setenv("TRADE_MODE", "futures")
+        m = isolated_monitor
+        m.journal.ensure_dirs()
+        exchange = MagicMock()
+        exchange.fetch_positions.return_value = [
+            {
+                "symbol": "BTC/USDT:USDT",
+                "side": "long",
+                "contracts": 1.0,
+                "entryPrice": 100.0,
+                "markPrice": 101.0,
+                "info": {"instId": "BTC-USDT-SWAP"},
+            }
+        ]
+
+        with patch.object(m, "_get_exchange", return_value=exchange):
+            m.run_once()
+
+        positions = m.journal.read_positions()
+        assert len(positions) == 1
+        assert positions[0]["symbol"] == "BTC-USDT"
+        assert positions[0]["source"] == "exchange_reconciler"
 
     def test_futures_reconciliation_active_on_exchange(self, isolated_monitor, tmp_data_dir, monkeypatch):
         """Futures mode: do nothing if position is still active on exchange."""
@@ -235,6 +349,33 @@ class TestMonitorReconciliation:
 
         # Position must remain open
         assert len(m.journal.read_positions()) == 1
+
+    def test_futures_reconciliation_canonical_symbol_active_on_exchange(self, isolated_monitor, tmp_data_dir, monkeypatch):
+        """Regression: BTC-USDT must match BTC/USDT:USDT in futures mode."""
+        monkeypatch.setenv("TRADE_MODE", "futures")
+        m = isolated_monitor
+        m.journal.ensure_dirs()
+        pos = _make_position(symbol="BTC-USDT")
+        pos["entry_filled"] = True
+        m.journal.add_position(pos)
+
+        exchange = MagicMock()
+        exchange.fetch_positions.return_value = [
+            {
+                "symbol": "BTC/USDT:USDT",
+                "side": "short",
+                "contracts": 3.0,
+                "entryPrice": 100.0,
+                "markPrice": 101.0,
+                "info": {"instId": "BTC-USDT-SWAP"},
+            }
+        ]
+
+        with patch.object(m, "_get_exchange", return_value=exchange):
+            m.run_once()
+
+        assert len(m.journal.read_positions()) == 1
+        assert m.journal.read_closed_trades() == []
 
     def test_futures_entry_fill_detection(self, isolated_monitor, tmp_data_dir, monkeypatch):
         """Futures mode: detect entry fill when position becomes active on exchange."""

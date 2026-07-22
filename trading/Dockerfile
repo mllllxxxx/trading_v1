@@ -45,10 +45,12 @@ COPY auto/ /app/auto/
 COPY llm/ /app/llm/
 COPY verifier/ /app/verifier/
 COPY risk/ /app/risk/
+COPY config/ /app/config/
 COPY replay/ /app/replay/
 COPY execution/ /app/execution/
 COPY schemas/ /app/schemas/
 COPY rulebook/ /app/rulebook/
+COPY docs/features/ /app/docs/features/
 COPY scripts/ /app/scripts/
 
 # Make auto a package by adding __init__.py
@@ -64,6 +66,9 @@ COPY --from=frontend-builder /build/dist /usr/local/lib/python3.11/frontend/dist
 # (adds /trader route for auto-trader dashboard inside Vibe-Trading UI)
 COPY api_server.py /usr/local/lib/python3.11/site-packages/api_server.py
 COPY berkshire_routes.py /app/berkshire_routes.py
+COPY berkshire_scanner.py /app/berkshire_scanner.py
+COPY market_features.py /app/market_features.py
+COPY strategy_teams.py /app/strategy_teams.py
 
 # Persistent data directory
 RUN mkdir -p /data

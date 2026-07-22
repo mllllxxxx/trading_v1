@@ -6,8 +6,6 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock
-
 import pandas as pd
 import pytest
 
@@ -93,7 +91,6 @@ class TestRoundZeroGuard:
     def test_senkou_zero_returns_zero_not_none(self, tmp_path):
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "regime"))
         from indicators import compute_ichimoku
-        import numpy as np
         # 60-day constant price → Ichimoku Tenkan/Kijun = constant, Senkou = constant
         # Senkou_a = (Tenkan + Kijun) / 2 = constant. Could be 0 if price near 0.
         # Use small price to test zero handling.
