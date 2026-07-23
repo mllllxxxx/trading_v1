@@ -3,6 +3,7 @@ import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import en from "./locales/en.json";
 import zhCN from "./locales/zh-CN.json";
+import vi from "./locales/vi.json";
 
 i18n
   .use(LanguageDetector)
@@ -11,6 +12,7 @@ i18n
     resources: {
       en: { translation: en },
       "zh-CN": { translation: zhCN },
+      vi: { translation: vi },
     },
     // Default to English for everyone on first visit; only an explicit toggle
     // (persisted to localStorage) switches to Chinese. We intentionally do NOT

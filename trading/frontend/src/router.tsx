@@ -31,6 +31,9 @@ const TraderHistory = lazy(() =>
 const BerkshireDesk = lazy(() =>
   import("@/pages/BerkshireDesk").then((m) => ({ default: m.BerkshireDesk })),
 );
+const NotFoundPage = lazy(() =>
+  import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })),
+);
 
 function PageLoader() {
   return (
@@ -66,6 +69,7 @@ export const router = createBrowserRouter([
       { path: "/trader", element: wrap(Trader) },
       { path: "/trader/history", element: wrap(TraderHistory) },
       { path: "/berkshire", element: wrap(BerkshireDesk) },
+      { path: "*", element: wrap(NotFoundPage) },
     ],
   },
 ]);
