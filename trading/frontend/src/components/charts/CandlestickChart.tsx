@@ -5,7 +5,7 @@ import type { PriceBar, TradeMarker, IndicatorPoint } from "@/lib/api";
 import { calcMA, calcBOLL, calcMACD, calcRSI, calcKDJ, calcEMA } from "@/lib/indicators";
 import { getChartTheme } from "@/lib/chart-theme";
 import { abbreviateNum } from "@/lib/formatters";
-import { echarts, CHART_GROUP, connectCharts } from "@/lib/echarts";
+import { echarts, CHART_GROUP, connectCharts, type ChartFormatterParams } from "@/lib/echarts";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 type Sub = "vol" | "macd" | "rsi" | "kdj";
@@ -105,8 +105,7 @@ export function CandlestickChart({ data, markers, indicators, height = 500 }: Pr
     const { dates, closes, opens, candle } = baseData;
 
     // Overlay series
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const overlaySeries: any[] = [];
+    const overlaySeries: Record<string, unknown>[] = [];
     const legendNames: string[] = ["K"];
     let colorIdx = 0;
 
@@ -153,14 +152,12 @@ export function CandlestickChart({ data, markers, indicators, height = 500 }: Pr
     }));
 
     // Sub-chart
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let subSeries: any[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let subYAxis: any = { scale: true, gridIndex: 1, splitLine: { lineStyle: { color: t.gridColor } }, axisLabel: { color: t.textColor, fontSize: 10 } };
+    let subSeries: Record<string, unknown>[] = [];
+    let subYAxis: Record<string, unknown> = { scale: true, gridIndex: 1, splitLine: { lineStyle: { color: t.gridColor } }, axisLabel: { color: t.textColor, fontSize: 10 } };
 
     if (sub === "vol") {
       subSeries = [{ name: "Vol", type: "bar", data: vol, xAxisIndex: 1, yAxisIndex: 1 }];
-      subYAxis = { ...subYAxis, axisLabel: { ...subYAxis.axisLabel, formatter: (v: number) => abbreviateNum(v) } };
+      subYAxis = { ...subYAxis, axisLabel: { ...(subYAxis.axisLabel as Record<string, unknown>), formatter: (v: number) => abbreviateNum(v) } };
       legendNames.push("Vol");
     } else if (sub === "macd") {
       const m = indicatorCache.macd;
@@ -199,13 +196,12 @@ export function CandlestickChart({ data, markers, indicators, height = 500 }: Pr
         trigger: "axis", axisPointer: { type: "cross" },
         backgroundColor: t.tooltipBg, borderColor: t.tooltipBorder,
         textStyle: { color: t.tooltipText, fontSize: 11 },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        formatter: (params: any) => {
+        formatter: (params: ChartFormatterParams) => {
           if (!Array.isArray(params) || !params.length) return "";
           let html = `<b>${params[0].axisValue}</b>`;
           for (const p of params) {
             if (p.seriesName === "K" && Array.isArray(p.value)) {
-              const [open, close, low, high] = p.value;
+              const [open, close, low, high] = p.value.map(Number);
               const chg = close - open;
               const pct = open ? ((chg / open) * 100).toFixed(2) : "0.00";
               const clr = chg >= 0 ? t.upColor : t.downColor;

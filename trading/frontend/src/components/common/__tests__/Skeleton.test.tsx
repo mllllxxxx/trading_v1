@@ -2,10 +2,10 @@ import { render } from "@testing-library/react";
 import { Skeleton, SkeletonMetrics, SkeletonChart } from "../Skeleton";
 
 describe("Skeleton", () => {
-  it("renders with animate-pulse class", () => {
+  it("renders with the terminal skeleton class", () => {
     const { container } = render(<Skeleton />);
     const el = container.firstChild as HTMLElement;
-    expect(el.classList.contains("animate-pulse")).toBe(true);
+    expect(el.classList.contains("tt-skeleton")).toBe(true);
   });
 
   it("applies custom className", () => {
@@ -25,7 +25,7 @@ describe("Skeleton", () => {
 describe("SkeletonMetrics", () => {
   it("renders 6 skeleton items", () => {
     const { container } = render(<SkeletonMetrics />);
-    const items = container.querySelectorAll(".animate-pulse");
+    const items = container.querySelectorAll(".tt-skeleton");
     // Each of the 6 items has 2 skeleton elements (label + value)
     expect(items.length).toBe(12);
   });

@@ -1,4 +1,8 @@
 import { authHeaders, withAuthQuery } from "@/lib/apiAuth";
+import type { TraderStatusPayload } from "@/types/api";
+import type { TickerEntry } from "@/components/terminal/Ticker";
+
+export type { TraderStatusPayload, TickerEntry };
 
 const BASE = "";
 
@@ -458,6 +462,28 @@ export const api = {
   // Trader terminal — alert timeline surfaced from the decisions log.
   getTraderAlerts: (limit = 100) =>
     request<TraderAlertsResponse>(`/api/trader/alerts?limit=${Math.max(1, Math.min(limit, 1000))}`),
+
+  // Trader terminal — status snapshot (polled by TerminalLayout + pages).
+  getTraderStatus: () => request<TraderStatusPayload>("/api/trader/status"),
+  getTraderTicker: (symbols: string[]) =>
+    request<{ tickers: TickerEntry[] }>(
+      `/api/trader/ticker?symbols=${encodeURIComponent(symbols.join(","))}`,
+    ),
+  armKillSwitch: () => request<{ status: string }>("/api/trader/kill", { method: "POST" }),
+  disarmKillSwitch: () => request<{ status: string }>("/api/trader/resume", { method: "POST" }),
+
+  // Trader terminal — trade history (paginated) + aggregates.
+  // Generic shapes — pages own the precise type (HistoryStats, HistoryResponse).
+  getTraderHistoryStats: <T = unknown>() =>
+    request<T>("/api/trader/history/stats"),
+  getTraderHistory: <T = unknown>(query: string) =>
+    request<T>(`/api/trader/history?${query}`),
+
+  // Correlation matrix — GET /correlation?codes=...&days=...&method=...
+  getCorrelation: (codes: string, days: number, method: "pearson" | "spearman") =>
+    request<{ labels: string[]; matrix: number[][] }>(
+      `/correlation?codes=${encodeURIComponent(codes)}&days=${days}&method=${method}`,
+    ),
 
   // Project feature pipeline — list designs tracked in trading/docs/features/.
   listProjectFeatures: () => request<ProjectFeaturesResponse>("/api/project/features"),

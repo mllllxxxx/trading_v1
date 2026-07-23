@@ -1,8 +1,8 @@
-import { cn } from "@/lib/utils";
+import { Skeleton as TerminalSkeleton } from "@/components/terminal/primitives";
 
-export function Skeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <div className={cn("animate-pulse rounded-md bg-muted/50", className)} style={style} />;
-}
+// Single Skeleton primitive — re-exported from the terminal design system
+// so both terminal pages and legacy pages share the same shimmer style.
+export const Skeleton = TerminalSkeleton;
 
 export function SkeletonMetrics() {
   return (

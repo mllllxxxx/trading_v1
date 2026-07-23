@@ -10,115 +10,15 @@ import { LeftPanel } from "@/components/terminal/LeftPanel";
 import { RightPanel } from "@/components/terminal/RightPanel";
 import { BottomBar } from "@/components/terminal/BottomBar";
 import { ConnectionBanner } from "@/components/layout/ConnectionBanner";
+import { api } from "@/lib/api";
+import type { AccountState, Stats, TraderStatusPayload } from "@/types/api";
 import type { TickerEntry } from "@/components/terminal/Ticker";
-import type { BrainDecision } from "@/components/terminal/BrainLog";
 import type { MiniTrade } from "@/components/terminal/MiniHistory";
 
-// ============= Types (mirrors backend /api/trader/status) =============
-
-export type Stats = {
-  total_trades?: number;
-  wins?: number;
-  losses?: number;
-  total_pnl_usd?: number;
-  open_count?: number;
-  max_drawdown_usd?: number;
-  starting_capital?: number;
-  current_capital?: number;
-  winrate?: number;
-  consecutive_losses?: number;
-  daily_llm_cost?: {
-    date: string;
-    cost_usd: number;
-    calls: number;
-    cap_usd: number;
-    remaining_usd: number;
-    pct_of_cap: number;
-    cap_reached: boolean;
-    cap_reason?: string;
-    call_cap?: number;
-    remaining_calls?: number | null;
-    hourly_calls?: number;
-    hourly_call_cap?: number;
-    remaining_hourly_calls?: number | null;
-    budget_skips?: number;
-    last_budget_skip?: {
-      ts?: string;
-      source?: string;
-      reason?: string;
-      behavior?: string;
-      calls?: number;
-      call_cap?: number;
-      hourly_calls?: number;
-      hourly_call_cap?: number;
-    } | null;
-    monthly_cost_usd: number;
-    monthly_date: string;
-  };
-};
-
-export type AccountState = {
-  source?: string;
-  mode?: string;
-  risk_profile?: string;
-  synced_at?: string;
-  starting_capital_usd?: number;
-  current_capital_usd?: number;
-  total_pnl_usd?: number;
-  unrealized_pnl_usd?: number;
-  journal_realized_pnl_usd?: number;
-  available_balance_usd?: number | null;
-  margin_used_usd?: number | null;
-  simulation_equity_cap_usd?: number | null;
-  equity_cap_pnl_baseline_usd?: number | null;
-  pre_cap_total_pnl_usd?: number | null;
-  actual_current_capital_usd?: number | null;
-  actual_available_balance_usd?: number | null;
-  actual_total_pnl_usd?: number | null;
-  errors?: string[];
-};
-
-type StatusPayload = {
-  error?: string;
-  timestamp?: string;
-  running?: boolean;
-  started_at?: string | null;
-  symbols?: string[];
-  stats?: Stats;
-  account_state?: AccountState;
-  positions?: unknown[];
-  exchange_positions?: unknown[];
-  sync_status?: {
-    status?: string;
-    positions_on_exchange?: number;
-    positions_in_journal?: number;
-    missing_in_journal?: string[];
-    missing_on_exchange?: string[];
-    errors?: string[];
-  };
-  closed_trades?: MiniTrade[];
-  decisions?: BrainDecision[];
-  llm_decisions?: BrainDecision[];
-  kill_switch_active?: boolean;
-  trading_blocked?: boolean;
-  trading_block_reason?: string;
-  startup_sync_guard_active?: boolean;
-  startup_sync_guard?: Record<string, unknown> | null;
-  adaptive_policy_controller?: {
-    status?: string;
-    mode?: string;
-    revision?: number;
-    active_zones?: {
-      strong_min_score?: number;
-      gray_min_score?: number;
-    };
-    effective_source?: string;
-    last_action?: string | null;
-    last_reason?: string | null;
-    state_error?: string | null;
-    strategy_coverage_failures?: Array<Record<string, unknown>>;
-  };
-};
+// ============= Re-exports for backward compatibility =============
+// Consumers that imported these types from TerminalLayout can keep working.
+export type { Stats, AccountState };
+export type StatusPayload = TraderStatusPayload;
 
 export function statusPayloadError(payload: { error?: unknown }): string | null {
   const message = typeof payload.error === "string" ? payload.error.trim() : "";
@@ -179,20 +79,17 @@ function finiteNumberOrNull(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-// ============= Minimal fetch helper =============
+// ============= Mini fetch helpers (thin wrappers over `api` client) =============
+// Kept so the layout can throw Error-shaped messages without leaking ApiError
+// internals to toasts.
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    method: init?.method ?? "GET",
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-    ...init,
-  });
-  if (!res.ok) {
-    let detail = `HTTP ${res.status}`;
-    try { detail = (await res.json()).detail || detail; } catch { /* ignore */ }
-    throw new Error(detail);
-  }
-  return (await res.json()) as T;
+async function fetchTraderStatus(): Promise<TraderStatusPayload> {
+  return api.getTraderStatus();
+}
+
+async function fetchTicker(symbols: string[]): Promise<TickerEntry[]> {
+  const res = await api.getTraderTicker(symbols);
+  return res.tickers ?? [];
 }
 
 // ============= MiniNav — compact nav strip for non-trader routes =============
@@ -284,7 +181,7 @@ export function TerminalLayout() {
 
   const loadStatus = useCallback(async () => {
     try {
-      const next = await request<StatusPayload>("/api/trader/status");
+      const next = await fetchTraderStatus();
       const nextError = statusPayloadError(next);
       if (nextError) {
         setStatusError(nextError);
@@ -331,10 +228,7 @@ export function TerminalLayout() {
 
   const loadTicker = useCallback(async () => {
     try {
-      const r = await request<{ tickers: TickerEntry[] }>(
-        `/api/trader/ticker?symbols=${TICKER_SYMBOLS.join(",")}`
-      );
-      setTickers(r.tickers ?? []);
+      setTickers(await fetchTicker(TICKER_SYMBOLS));
     } catch {
       /* silent */
     }
@@ -401,7 +295,7 @@ export function TerminalLayout() {
     const recent = (status?.llm_decisions ?? []).slice(-10);
     if (!recent.length) return "—";
     const total = recent.reduce(
-      (s: number, d: any) => s + (Number(d?.latency_s) || 0),
+      (s, d) => s + (Number(d?.latency_s) || 0),
       0
     );
     return (total / recent.length).toFixed(1) + "s";
@@ -409,7 +303,7 @@ export function TerminalLayout() {
 
   const recentDecisionCount = useMemo(() => {
     const today = new Date().toISOString().substring(0, 10);
-    return (status?.llm_decisions ?? []).filter((d: any) =>
+    return (status?.llm_decisions ?? []).filter((d) =>
       String(d?.ts || "").startsWith(today)
     ).length;
   }, [status?.llm_decisions]);
@@ -417,10 +311,10 @@ export function TerminalLayout() {
   const handleKillConfirm = () => {
     setConfirmKill(false);
     if (killActive) {
-      request("/api/trader/resume", { method: "POST" }).catch(() => undefined);
+      api.disarmKillSwitch().catch(() => undefined);
       toast.success("Kill switch disarmed", { description: "Trading resumed" });
     } else {
-      request("/api/trader/kill", { method: "POST" }).catch(() => undefined);
+      api.armKillSwitch().catch(() => undefined);
       toast.warning("Kill switch armed", {
         description: "All new entries blocked",
         className: "border-ttcc-red/50",

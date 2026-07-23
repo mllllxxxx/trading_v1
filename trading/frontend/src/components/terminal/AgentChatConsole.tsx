@@ -40,31 +40,7 @@ import {
   buildSwarmStatusFromToolResultPreview,
 } from "@/lib/swarmStatus";
 import { cn } from "@/components/terminal/primitives";
-
-type MsgGroup =
-  | { kind: "single"; msg: AgentMessage }
-  | { kind: "timeline"; msgs: AgentMessage[] };
-
-function groupMessages(msgs: AgentMessage[]): MsgGroup[] {
-  const out: MsgGroup[] = [];
-  let buf: AgentMessage[] = [];
-  const flush = () => {
-    if (buf.length) {
-      out.push({ kind: "timeline", msgs: [...buf] });
-      buf = [];
-    }
-  };
-  for (const m of msgs) {
-    if (["thinking", "tool_call", "tool_result", "compact"].includes(m.type)) {
-      buf.push(m);
-    } else {
-      flush();
-      out.push({ kind: "single", msg: m });
-    }
-  }
-  flush();
-  return out;
-}
+import { groupMessages } from "@/lib/groupMessages";
 
 const act = () => useAgentStore.getState();
 

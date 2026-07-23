@@ -11,8 +11,6 @@ import {
   PositionCard,
   EmptyPositions,
   type Position,
-  type PositionDecisionContext,
-  type PositionMarketContext,
   SideBadge,
   TeamBadge,
   ConfluenceBadge,
@@ -29,170 +27,34 @@ import {
 import type { TickerEntry } from "@/components/terminal/Ticker";
 import type { AlertItem } from "@/lib/api";
 import { api } from "@/lib/api";
+import type {
+  AdaptivePolicyControllerStatus,
+  ClosedTrade,
+  ShadowScoreCanaryStatus,
+  ShadowScoreReviewControllerStatus,
+  ShadowScoringExperimentStatus,
+  Stats,
+  TraderStatusPayload,
+} from "@/types/api";
 
-// ====================================================================
-// Re-exports for backward compatibility with TraderHistory.tsx.
-// TraderHistory imports these from "@/pages/Trader" — keep the same
-// public API even though the components now live in
-// @/components/terminal/*.
-// ====================================================================
+// Re-export canonical types and primitives so existing imports
+// (`@/pages/Trader`) keep working — the public surface is unchanged.
+export type {
+  AdaptivePolicyControllerStatus,
+  ShadowScoreCanaryStatus,
+  ShadowScoreReviewControllerStatus,
+  ShadowScoringExperimentStatus,
+  Stats,
+};
 export { fmtUsd, fmtPct, fmtPctSigned, fmtPx, fmtTime, colorClass } from "@/components/terminal/primitives";
 export { PillBadge as Pill } from "@/components/terminal/primitives";
 export { ConfluenceBadge, RrBadge, SideBadge, TeamBadge } from "@/components/terminal/PositionCard";
 
-// ====================================================================
-// Types (mirror backend shapes)
-// ====================================================================
+type Status = TraderStatusPayload;
 
-type Stats = {
-  total_trades?: number;
-  wins?: number;
-  losses?: number;
-  total_pnl_usd?: number;
-  open_count?: number;
-  max_drawdown_usd?: number;
-  starting_capital?: number;
-  current_capital?: number;
-  winrate?: number;
-  consecutive_losses?: number;
-};
-
-type ClosedTrade = {
-  closed_at: string;
-  symbol: string;
-  side: string;
-  entry: number;
-  exit_price: number;
-  position_size: number;
-  pnl_usd: number;
-  exit_reason: string;
-  confluence_score: number;
-  team_id?: string | null;
-  team_name?: string | null;
-  strategy_id?: string | null;
-  strategy_name?: string | null;
-  source_signal_id?: string;
-  decision_id?: string;
-  open_reason?: string;
-  market_context?: PositionMarketContext;
-  decision_context?: PositionDecisionContext;
-};
-
-type Status = {
-  timestamp?: string;
-  running?: boolean;
-  symbols?: string[];
-  stats?: Stats;
-  positions?: Position[];
-  exchange_positions?: Position[];
-  sync_status?: {
-    status?: string;
-    positions_on_exchange?: number;
-    positions_in_journal?: number;
-    missing_in_journal?: string[];
-    missing_on_exchange?: string[];
-    errors?: string[];
-  };
-  closed_trades?: ClosedTrade[];
-  kill_switch_active?: boolean;
-  adaptive_policy_controller?: AdaptivePolicyControllerStatus;
-  shadow_score_review_controller?: ShadowScoreReviewControllerStatus;
-  shadow_score_canary?: ShadowScoreCanaryStatus;
-  adaptive_evaluation?: {
-    shadow_scoring_experiment_evaluation?: {
-      continuous_conflict_v2?: ShadowScoringExperimentStatus;
-    };
-  };
-};
-
-export type AdaptivePolicyControllerStatus = {
-  status?: string;
-  mode?: string;
-  revision?: number;
-  active_zones?: {
-    strong_min_score?: number;
-    gray_min_score?: number;
-  };
-  effective_source?: string;
-  last_action?: string | null;
-  last_reason?: string | null;
-  state_error?: string | null;
-  strategy_coverage_failures?: Array<{
-    strategy_id?: string;
-    eligible_records?: number;
-    minimum_records?: number;
-  }>;
-};
-
-export type ShadowScoreReviewControllerStatus = {
-  status?: string;
-  revision?: number;
-  operator_approved?: boolean;
-  active_for_routing?: boolean;
-  canary_enabled?: boolean;
-  candidate?: {
-    strong_min_score?: number | null;
-    gray_min_score?: number | null;
-    confirmations?: number;
-    required_confirmations?: number;
-  } | null;
-  last_reason?: string | null;
-};
-
-export type ShadowScoreCanaryStatus = {
-  status?: string;
-  routing_enabled?: boolean;
-  approval_id?: string | null;
-  candidate_fingerprint?: string | null;
-  candidate_thresholds?: {
-    strong_min_score?: number;
-    gray_min_score?: number;
-  } | null;
-  allocation_rate?: number;
-  risk_multiplier?: number;
-  last_reason?: string | null;
-  rollback_metrics?: {
-    closed_trades?: number;
-    average_r_lower_bound?: number | null;
-    profit_factor?: number | null;
-    cumulative_r?: number;
-  };
-};
-
-export type ShadowScoringExperimentStatus = {
-  mode?: string;
-  active_for_routing?: boolean;
-  eligible_records?: number;
-  score_coverage?: {
-    valid?: number;
-    total?: number;
-    ratio?: number;
-    exclusion_reasons?: Record<string, number>;
-  };
-  score_delta_v2_minus_v1?: {
-    average?: number | null;
-    average_absolute?: number | null;
-  };
-  zone_transitions?: Record<string, number>;
-  threshold_calibration?: {
-    status?: string;
-    sample_reasons?: string[];
-    candidate_thresholds?: {
-      strong_min_score?: number;
-      gray_min_score?: number;
-      active_for_routing?: boolean;
-    } | null;
-    objective_comparison_vs_active_v1?: {
-      validation_delta_v2_minus_v1?: number | null;
-    } | null;
-  };
-  review_eligibility?: {
-    status?: string;
-    eligible?: boolean;
-    blocking_reasons?: string[];
-  };
-  auto_apply?: boolean;
-};
+// Re-exported for backward compat with TraderHistory.tsx — ClosedTrade now
+// comes from the canonical types module.
+export type { ClosedTrade };
 
 const STATUS_REFRESH_MS = 5_000;
 const TICKER_REFRESH_MS = 10_000;
@@ -200,17 +62,17 @@ const TICKER_SYMBOLS = ["BTC-USDT", "ETH-USDT", "SOL-USDT", "BNB-USDT"];
 const HISTORY_PAGE_SIZE = 20;
 
 // ====================================================================
-// Fetch helper (also used by Status + Alerts inside TraderCenter)
+// Fetch helpers — thin wrappers over the shared `api` client so all
+// trader pages share auth, error normalization, and JSON parsing.
 // ====================================================================
 
-async function request<T>(path: string): Promise<T> {
-  const res = await fetch(path, { headers: { "Content-Type": "application/json" } });
-  if (!res.ok) {
-    let detail = `HTTP ${res.status}`;
-    try { detail = (await res.json()).detail || detail; } catch { /* ignore */ }
-    throw new Error(detail);
-  }
-  return (await res.json()) as T;
+async function fetchTraderStatus(): Promise<Status> {
+  return api.getTraderStatus();
+}
+
+async function fetchTraderTicker(symbols: string[]): Promise<TickerEntry[]> {
+  const res = await api.getTraderTicker(symbols);
+  return res.tickers ?? [];
 }
 
 // ====================================================================
@@ -756,8 +618,7 @@ export function Trader() {
 
   const loadStatus = useCallback(async () => {
     try {
-      const next = await request<Status>("/api/trader/status");
-      setLocalStatus(next);
+      setLocalStatus(await fetchTraderStatus());
       setLocalLoading(false);
     } catch {
       /* silent */
@@ -766,10 +627,7 @@ export function Trader() {
 
   const loadTicker = useCallback(async () => {
     try {
-      const r = await request<{ tickers: TickerEntry[] }>(
-        `/api/trader/ticker?symbols=${TICKER_SYMBOLS.join(",")}`
-      );
-      setLocalTickers(r.tickers ?? []);
+      setLocalTickers(await fetchTraderTicker(TICKER_SYMBOLS));
     } catch {
       /* silent */
     }

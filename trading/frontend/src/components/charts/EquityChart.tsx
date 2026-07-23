@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import type { EquityPoint } from "@/lib/api";
 import { getChartTheme } from "@/lib/chart-theme";
 import { abbreviateNum } from "@/lib/formatters";
-import { echarts, CHART_GROUP, connectCharts } from "@/lib/echarts";
+import { echarts, CHART_GROUP, connectCharts, type ChartFormatterParams } from "@/lib/echarts";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 interface Props {
@@ -34,9 +34,8 @@ export function EquityChart({ data, height = 300 }: Props) {
         backgroundColor: t.tooltipBg,
         borderColor: t.tooltipBorder,
         textStyle: { color: t.tooltipText, fontSize: 11 },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        formatter: (params: any) => {
-          if (!Array.isArray(params) || !params.length) return "";
+      formatter: (params: ChartFormatterParams) => {
+        if (!Array.isArray(params) || !params.length) return "";
           let html = `<b>${params[0].axisValue}</b>`;
           for (const p of params) {
             const val = p.seriesName === "Drawdown%"

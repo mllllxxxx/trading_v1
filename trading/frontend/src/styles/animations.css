@@ -1,0 +1,93 @@
+/* ============================================================ */
+/*  Keyframes + animation utilities                              */
+/*  - PnL flash, live dot, skeleton shimmer, ticker scroll,     */
+/*    toast slide-in, progress pulse, danger pulse, ttcc rows    */
+/* ============================================================ */
+
+/* Streaming pulse-slide animation (running bar). */
+@keyframes pulse-slide {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(200%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* PnL flash — green when value rises, red when it falls. */
+@keyframes pnl-flash-up {
+  0%   { background-color: rgba(34, 197, 94, 0.22); color: inherit; }
+  100% { background-color: rgba(34, 197, 94, 0); }
+}
+@keyframes pnl-flash-down {
+  0%   { background-color: rgba(239, 68, 68, 0.22); color: inherit; }
+  100% { background-color: rgba(239, 68, 68, 0); }
+}
+
+/* Auto-refresh indicator dot — slow heartbeat. */
+@keyframes live-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  50%      { opacity: 0.55; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+
+/* Skeleton shimmer. */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Live tick mark — a quick green flash for new rows. */
+@keyframes live-row-flash {
+  0%   { background-color: rgba(34, 197, 94, 0.10); }
+  100% { background-color: transparent; }
+}
+
+/* Ticker scroll — used by the marquee header. */
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Toast slide-in. */
+@keyframes toast-slide-in {
+  0%   { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
+/* Position-card SL/TP progress — smooth interpolation. */
+@keyframes progress-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+/* Kill switch armed-pulse. */
+@keyframes danger-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
+  50%      { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+}
+
+/* ============================================================ */
+/*  Trading Command Center — tab + brain log animations          */
+/* ============================================================ */
+
+@keyframes ttcc-tab-fade {
+  0%   { opacity: 0; transform: translateY(2px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ttcc-row-in {
+  0%   { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0);   opacity: 1; }
+}
+
+/* Stream marquee fallback (older browsers) */
+@media (prefers-reduced-motion: reduce) {
+  .tt-ticker-track,
+  .tt-flash-up,
+  .tt-flash-down,
+  .tt-live-dot,
+  .tt-row-new,
+  .tt-skeleton,
+  .tt-kill-armed,
+  .ttcc-tab-fade,
+  .ttcc-row-in {
+    animation: none !important;
+  }
+}

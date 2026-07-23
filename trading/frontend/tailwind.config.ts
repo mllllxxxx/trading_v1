@@ -37,18 +37,11 @@ export default {
           dim: "rgba(234, 179, 8, 0.18)",
           text: "#facc15",
         },
-        term: {
-          bg: "#0D1117",        /* terminal base */
-          surface: "#11161D",   /* surface-1 */
-          surface2: "#161C24",  /* surface-2 (cards) */
-          border: "#222B36",    /* surface-3 */
-          grid: "#1A2230",
-          ink: "#E6EDF3",
-          muted: "#7D8590",
-        },
 
         /* Trading Command Center palette — exposed as utility classes
-           (bg-ttcc-bg, border-ttcc-border, text-ttcc-green, ...). */
+           (bg-ttcc-bg, border-ttcc-border, text-ttcc-green, ...).
+           Mirrors the CSS custom properties in src/styles/base.css — keep
+           both in sync when adjusting colors. */
         ttcc: {
           bg: "#0D1117",
           surface: "#161B22",

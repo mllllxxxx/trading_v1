@@ -1,0 +1,104 @@
+/* ============================================================ */
+/*  Component utilities                                          */
+/*  - PnL flash, live dot, skeleton, ticker, toast, danger,     */
+/*    card hover, label, divider, field input, ttcc tab fade     */
+/* ============================================================ */
+
+@layer utilities {
+  /* PnL flash classes — toggled by JS for ~500ms after a value changes. */
+  .tt-flash-up   { animation: pnl-flash-up   500ms ease-out; }
+  .tt-flash-down { animation: pnl-flash-down 500ms ease-out; }
+
+  /* Auto-refresh dot. */
+  .tt-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: hsl(var(--success));
+    animation: live-dot 1.6s ease-in-out infinite;
+  }
+  .tt-live-dot--idle {
+    background: hsl(var(--muted-foreground));
+    animation: none;
+  }
+
+  /* Skeleton block. */
+  .tt-skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--border)) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+    border-radius: 3px;
+  }
+
+  /* Marquee ticker track — JS duplicates content so the animation can loop. */
+  .tt-ticker-track {
+    display: inline-flex;
+    white-space: nowrap;
+    animation: ticker-scroll 60s linear infinite;
+    will-change: transform;
+  }
+  .tt-ticker-track:hover { animation-play-state: paused; }
+
+  /* New row flash — applied for ~1s when a new closed trade shows up. */
+  .tt-row-new { animation: live-row-flash 1.2s ease-out; }
+
+  /* Toast slide-in (used if we replace sonner with custom). */
+  .tt-toast-in { animation: toast-slide-in 200ms ease-out; }
+
+  /* Danger pulse for armed kill switch. */
+  .tt-kill-armed { animation: danger-pulse 1.8s ease-in-out infinite; }
+
+  /* Card hover lift (border highlight, no scale). */
+  .tt-card-hover {
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+  .tt-card-hover:hover { border-color: hsl(var(--muted-foreground) / 0.45); }
+
+  /* Small caps label used in section headers. */
+  .tt-label {
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+    font-weight: 600;
+  }
+
+  /* Subtle 1px surface divider. */
+  .tt-divider {
+    border-top: 1px solid hsl(var(--border) / 0.6);
+  }
+
+  /* Trading Command Center — tab content fade transition. */
+  .field-input {
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid var(--tt-border);
+    background: var(--tt-bg);
+    padding: 0.5rem 0.625rem;
+    font-size: 12px;
+    line-height: 1.25rem;
+    color: var(--tt-text);
+    outline: none;
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+  .field-input::placeholder { color: var(--tt-text-muted); }
+  .field-input:focus {
+    border-color: var(--tt-accent);
+    background: var(--tt-surface);
+  }
+
+  .ttcc-tab-fade {
+    animation: ttcc-tab-fade 200ms ease-out;
+  }
+
+  /* Brain log new row — slide in from below. */
+  .ttcc-row-in {
+    animation: ttcc-row-in 220ms ease-out;
+  }
+}

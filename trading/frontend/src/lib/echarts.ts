@@ -34,3 +34,24 @@ export function connectCharts() {
 }
 
 export { echarts };
+
+/**
+ * Lightweight ECharts tooltip formatter param shape.
+ *
+ * We keep a local structural type instead of importing echarts' deep
+ * `TopLevelFormatterParams` union so chart components can drop the
+ * `// eslint-disable-next-line @typescript-eslint/no-explicit-any` comments
+ * without pulling in the full echarts type tree at editor-time.
+ */
+export interface ChartFormatterParam {
+  axisValue?: string;
+  seriesName?: string;
+  value?: number | string | (number | string)[];
+  marker?: string;
+  color?: string;
+  dataIndex?: number;
+  seriesIndex?: number;
+}
+
+export type ChartFormatterParams = ChartFormatterParam | ChartFormatterParam[];
+

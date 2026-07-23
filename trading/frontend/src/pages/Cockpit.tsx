@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import {
   PositionCard,
   EmptyPositions,
-  type Position,
 } from "@/components/terminal/PositionCard";
 import { ClosedTradesTable } from "@/pages/Trader";
 import { CorrelationMatrix } from "@/components/charts/CorrelationMatrix";
@@ -23,24 +22,11 @@ import {
   type LLMSettings,
   type DataSourceSettings,
 } from "@/lib/api";
+import type { ClosedTrade as ClosedTradeType, TraderStatusPayload } from "@/types/api";
 import { cn } from "@/lib/utils";
 
 type ActiveTab = "history" | "confluence" | "correlation" | "settings";
-type ClosedTrade = {
-  closed_at: string;
-  symbol: string;
-  side: string;
-  entry: number;
-  exit_price: number;
-  position_size: number;
-  pnl_usd: number;
-  exit_reason: string;
-  confluence_score: number;
-  team_id?: string | null;
-  team_name?: string | null;
-  strategy_id?: string | null;
-  strategy_name?: string | null;
-};
+type ClosedTrade = ClosedTradeType;
 type StrategyTeamMetric = {
   team_id: string;
   team_name: string;
@@ -73,25 +59,8 @@ type StrategyTeamMetric = {
   avg_actual_risk_pct_equity?: number | null;
   rank: number | null;
 };
-type Stats = {
-  total_trades?: number;
-  wins?: number;
-  losses?: number;
-  total_pnl_usd?: number;
-  open_count?: number;
-  max_drawdown_usd?: number;
-  starting_capital?: number;
-  current_capital?: number;
-  winrate?: number;
-};
-type StatusPayload = {
-  timestamp?: string;
-  running?: boolean;
-  symbols?: string[];
-  stats?: Stats;
+type StatusPayload = TraderStatusPayload & {
   strategy_teams?: StrategyTeamMetric[];
-  positions?: Position[];
-  closed_trades?: ClosedTrade[];
 };
 
 const STATUS_REFRESH_MS = 5_000;
@@ -107,8 +76,7 @@ export function Cockpit() {
   // Load status and ticker
   const loadStatus = useCallback(async () => {
     try {
-      const next = await fetch("/api/trader/status").then((r) => r.json());
-      setStatus(next);
+      setStatus(await api.getTraderStatus());
       setLoading(false);
     } catch {
       // Keep last state
@@ -117,9 +85,7 @@ export function Cockpit() {
 
   const loadTicker = useCallback(async () => {
     try {
-      const r = await fetch(
-        `/api/trader/ticker?symbols=${TICKER_SYMBOLS.join(",")}`
-      ).then((res) => res.json());
+      const r = await api.getTraderTicker(TICKER_SYMBOLS);
       setTickers(r.tickers ?? []);
     } catch {
       // ignore
@@ -508,12 +474,7 @@ function CorrelationPanel() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(
-        `/correlation?codes=${encodeURIComponent(codes)}&days=${days}&method=${method}`
-      ).then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      });
+      const res = await api.getCorrelation(codes, days, method);
       setLabels(res.labels);
       setMatrix(res.matrix);
     } catch (err) {

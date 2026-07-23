@@ -7,55 +7,41 @@ const apiMock = vi.hoisted(() => ({
   getDataSourceSettings: vi.fn(),
   updateLLMSettings: vi.fn(),
   updateDataSourceSettings: vi.fn(),
+  getTraderStatus: vi.fn(),
+  getTraderTicker: vi.fn(),
+  getCorrelation: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({
   api: apiMock,
 }));
 
-// Mock global fetch
-const fetchMock = vi.fn();
-globalThis.fetch = fetchMock;
-
 describe("Cockpit page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchMock.mockReset();
     apiMock.getLLMSettings.mockReset();
     apiMock.getDataSourceSettings.mockReset();
+    apiMock.getTraderStatus.mockReset();
+    apiMock.getTraderTicker.mockReset();
+    apiMock.getCorrelation.mockReset();
 
-    // Default fetch mocks
-    fetchMock.mockImplementation((url: string) => {
-      if (url.includes("/api/trader/status")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              timestamp: "2026-06-26T03:00:00Z",
-              running: true,
-              symbols: ["BTC-USDT", "ETH-USDT"],
-              stats: {
-                total_trades: 12,
-                winrate: 58.3,
-                current_capital: 10500,
-              },
-              positions: [],
-            }),
-        });
-      }
-      if (url.includes("/api/trader/ticker")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              tickers: [
-                { symbol: "BTC-USDT", price: 65200, change_24h_pct: 1.8 },
-                { symbol: "ETH-USDT", price: 3450, change_24h_pct: -0.5 },
-              ],
-            }),
-        });
-      }
-      return Promise.reject(new Error("unknown fetch"));
+    // Default api mocks
+    apiMock.getTraderStatus.mockResolvedValue({
+      timestamp: "2026-06-26T03:00:00Z",
+      running: true,
+      symbols: ["BTC-USDT", "ETH-USDT"],
+      stats: {
+        total_trades: 12,
+        winrate: 58.3,
+        current_capital: 10500,
+      },
+      positions: [],
+    });
+    apiMock.getTraderTicker.mockResolvedValue({
+      tickers: [
+        { symbol: "BTC-USDT", price: 65200, change_24h_pct: 1.8 },
+        { symbol: "ETH-USDT", price: 3450, change_24h_pct: -0.5 },
+      ],
     });
 
     apiMock.getLLMSettings.mockResolvedValue({

@@ -21,8 +21,9 @@ import {
   fmtPct,
   fmtTime,
   colorClass,
-  Pill,
-} from "@/pages/Trader";
+  PillBadge,
+} from "@/components/terminal/primitives";
+import { api } from "@/lib/api";
 import type {
   PositionDecisionContext,
   PositionMarketContext,
@@ -203,16 +204,6 @@ function CalendarHeatmap({ data }: { data: Trade[] }) {
   );
 }
 
-async function request<T>(path: string): Promise<T> {
-  const res = await fetch(path, { headers: { "Content-Type": "application/json" } });
-  if (!res.ok) {
-    let detail = `HTTP ${res.status}`;
-    try { detail = (await res.json()).detail || detail; } catch { /* ignore */ }
-    throw new Error(detail);
-  }
-  return (await res.json()) as T;
-}
-
 // ============= Page =============
 export function TraderHistory() {
   const { t } = useTranslation();
@@ -240,8 +231,8 @@ export function TraderHistory() {
     setError(null);
     try {
       const [s, p] = await Promise.all([
-        request<HistoryStats>("/api/trader/history/stats"),
-        request<HistoryResponse>(`/api/trader/history?${buildQuery()}`),
+        api.getTraderHistoryStats<HistoryStats>(),
+        api.getTraderHistory<HistoryResponse>(buildQuery()),
       ]);
       setStats(s);
       setPage(p);
@@ -359,7 +350,7 @@ export function TraderHistory() {
                   <span className="ml-2 text-base font-medium text-muted-foreground">USD</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <Pill tone={isUp ? "ok" : "fail"}>{isUp ? "PROFIT" : "LOSS"}</Pill>
+                  <PillBadge tone={isUp ? "ok" : "fail"}>{isUp ? "PROFIT" : "LOSS"}</PillBadge>
                   <span className="text-muted-foreground">
                     from <b className="text-foreground">{totalTrades}</b> closed trade{totalTrades !== 1 ? "s" : ""}
                   </span>
@@ -614,11 +605,20 @@ function SmallStat({
 }
 
 // ============= Breakdown card =============
+type BreakdownRow = {
+  n?: number;
+  pnl?: number;
+  wins?: number;
+  losses?: number;
+  winrate_pct?: number;
+  avg_profile_compliance_score?: number | null;
+};
+
 function BreakdownCard({
   title, rows, colHeaders, pnlCol, simple, showCompliance,
 }: {
   title: string;
-  rows: [string, any][];
+  rows: [string, BreakdownRow][];
   colHeaders: string[];
   pnlCol: number;
   simple?: boolean;
@@ -722,7 +722,7 @@ function ClosedTradesTableFull({
                 </td>
                 <td className="px-3 py-2 text-muted-foreground">{fmtTime(t.closed_at)}</td>
                 <td className="px-3 py-2 font-medium">{t.symbol}</td>
-                <td className="px-3 py-2"><Pill tone={t.side === "buy" ? "long" : "short"}>{t.side.toUpperCase()}</Pill></td>
+                <td className="px-3 py-2"><PillBadge tone={t.side === "buy" ? "long" : "short"}>{t.side.toUpperCase()}</PillBadge></td>
                 <td className="px-3 py-2 text-right tabular-nums">{t.entry}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{t.exit_price}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{t.position_size}</td>
@@ -732,7 +732,7 @@ function ClosedTradesTableFull({
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{t.rr_ratio ? "1:" + parseFloat(String(t.rr_ratio)).toFixed(2) : "—"}</td>
                 <td className="px-3 py-2">
-                  <Pill tone={tone}>{reason}</Pill>
+                  <PillBadge tone={tone}>{reason}</PillBadge>
                   {openReason ? (
                     <div
                       className="mt-1 max-w-[340px] truncate text-[11px] text-muted-foreground"

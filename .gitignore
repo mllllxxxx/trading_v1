@@ -1,24 +1,35 @@
-# Harness durable layer — each project instance generates its own data.
-harness.db
-harness.db-wal
-harness.db-shm
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
 
-# Rust build output for harness tooling.
-target/
-dist/
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
 
-# Local dependency and test-run caches.
-.pnpm-store/
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
 .pytest_cache/
-.pytest_tmp*/
-.pytest-tmp-*/
+.mypy_cache/
 .ruff_cache/
 
-# Downloaded Harness CLI binary for installed project instances.
-scripts/bin/harness-cli
-scripts/bin/harness-cli.exe
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
 
-# Local test cache/temp directories.
-.test-tmp/
-.test-runs/
-test-tmp-codex/
+# Env
+.env
+.env.local
+.env.*.local
+
+# Hermes
+.hermes/
