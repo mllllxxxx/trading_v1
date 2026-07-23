@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Activity,
   History as HistoryIcon,
@@ -17,12 +17,10 @@ import {
 import { ClosedTradesTable } from "@/pages/Trader";
 import { CorrelationMatrix } from "@/components/charts/CorrelationMatrix";
 import type { TickerEntry } from "@/components/terminal/Ticker";
-import {
-  api,
-  type LLMSettings,
-  type DataSourceSettings,
-} from "@/lib/api";
+import { api } from "@/lib/api";
 import type { ClosedTrade as ClosedTradeType, TraderStatusPayload } from "@/types/api";
+import { useTraderStatusStore } from "@/stores/traderStatus";
+import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/lib/utils";
 
 type ActiveTab = "history" | "confluence" | "correlation" | "settings";
@@ -63,45 +61,12 @@ type StatusPayload = TraderStatusPayload & {
   strategy_teams?: StrategyTeamMetric[];
 };
 
-const STATUS_REFRESH_MS = 5_000;
-const TICKER_REFRESH_MS = 10_000;
 const TICKER_SYMBOLS = ["BTC-USDT", "ETH-USDT", "SOL-USDT", "BNB-USDT"];
 
 export function Cockpit() {
-  const [status, setStatus] = useState<StatusPayload | null>(null);
-  const [tickers, setTickers] = useState<TickerEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { status: storeStatus, tickers, loading } = useTraderStatusStore();
+  const status = storeStatus as StatusPayload | null;
   const [activeTab, setActiveTab] = useState<ActiveTab>("history");
-
-  // Load status and ticker
-  const loadStatus = useCallback(async () => {
-    try {
-      setStatus(await api.getTraderStatus());
-      setLoading(false);
-    } catch {
-      // Keep last state
-    }
-  }, []);
-
-  const loadTicker = useCallback(async () => {
-    try {
-      const r = await api.getTraderTicker(TICKER_SYMBOLS);
-      setTickers(r.tickers ?? []);
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
-    loadStatus();
-    loadTicker();
-    const sTimer = setInterval(loadStatus, STATUS_REFRESH_MS);
-    const tTimer = setInterval(loadTicker, TICKER_REFRESH_MS);
-    return () => {
-      clearInterval(sTimer);
-      clearInterval(tTimer);
-    };
-  }, [loadStatus, loadTicker]);
 
   const positions = useMemo(() => status?.positions ?? [], [status?.positions]);
   const recentTrades = useMemo(
@@ -569,41 +534,47 @@ function CorrelationPanel() {
 
 // Embedded Settings Panel
 function CockpitSettings() {
-  const [settings, setSettings] = useState<LLMSettings | null>(null);
-  const [dataSettings, setDataSettings] = useState<DataSourceSettings | null>(null);
+  const {
+    llmSettings,
+    dataSourceSettings,
+    llmLoading,
+    loadLLMSettings,
+    updateLLMSettings,
+    loadDataSourceSettings,
+    updateDataSourceSettings,
+  } = useSettingsStore();
   const [model, setModel] = useState("");
   const [temp, setTemp] = useState(0.0);
   const [tushare, setTushare] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([api.getLLMSettings(), api.getDataSourceSettings()])
-      .then(([llm, data]) => {
-        setSettings(llm);
-        setModel(llm.model_name);
-        setTemp(llm.temperature);
-        setDataSettings(data);
-      })
-      .catch(() => {
-        // silent
-      });
-  }, []);
+    loadLLMSettings();
+    loadDataSourceSettings();
+  }, [loadLLMSettings, loadDataSourceSettings]);
+
+  useEffect(() => {
+    if (llmSettings) {
+      setModel(llmSettings.model_name);
+      setTemp(llmSettings.temperature);
+    }
+  }, [llmSettings]);
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
-    if (!settings) return;
+    if (!llmSettings) return;
     setSaving(true);
     try {
-      await api.updateLLMSettings({
-        provider: settings.provider,
+      await updateLLMSettings({
+        provider: llmSettings.provider,
         model_name: model,
-        base_url: settings.base_url,
+        base_url: llmSettings.base_url,
         temperature: temp,
-        timeout_seconds: settings.timeout_seconds,
-        max_retries: settings.max_retries,
+        timeout_seconds: llmSettings.timeout_seconds,
+        max_retries: llmSettings.max_retries,
       });
       if (tushare.trim()) {
-        await api.updateDataSourceSettings({
+        await updateDataSourceSettings({
           tushare_token: tushare.trim(),
         });
       }
@@ -615,7 +586,7 @@ function CockpitSettings() {
     }
   };
 
-  if (!settings) {
+  if (!llmSettings) {
     return (
       <div className="flex h-24 items-center justify-center text-ttcc-text-secondary text-[11px]">
         Loading settings metadata...
@@ -657,7 +628,7 @@ function CockpitSettings() {
             type="password"
             value={tushare}
             onChange={(e) => setTushare(e.target.value)}
-            placeholder={dataSettings?.tushare_token_configured ? "******** (configured)" : "unconfigured"}
+            placeholder={dataSourceSettings?.tushare_token_configured ? "******** (configured)" : "unconfigured"}
             className="rounded border border-ttcc-border bg-ttcc-bg px-2.5 py-1 text-xs text-ttcc-text outline-none font-mono"
           />
         </div>
@@ -665,7 +636,7 @@ function CockpitSettings() {
         <div className="flex items-end">
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || llmLoading}
             className="h-7 w-24 rounded bg-ttcc-accent text-white font-bold hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-1"
           >
             {saving ? <Loader2 className="h-3 w-3" /> : <Save className="h-3.5 w-3.5" />}

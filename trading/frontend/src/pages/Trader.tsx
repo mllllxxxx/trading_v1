@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useOutletContext } from "react-router-dom";
 import { Activity, Banknote, Bell, History as HistoryIcon } from "lucide-react";
 import {
   TabBar,
@@ -24,6 +23,7 @@ import { AdaptivePolicyBadge } from "@/components/terminal/AdaptivePolicyBadge";
 import { mergePositionFeeds } from "@/lib/traderUtils";
 import type { AlertItem } from "@/lib/api";
 import { api } from "@/lib/api";
+import { useTraderStatusStore } from "@/stores/traderStatus";
 import type {
   AdaptivePolicyControllerStatus,
   ClosedTrade,
@@ -31,7 +31,6 @@ import type {
   ShadowScoreReviewControllerStatus,
   ShadowScoringExperimentStatus,
   Stats,
-  TraderStatusPayload,
 } from "@/types/api";
 
 // Re-export canonical types and primitives so existing imports
@@ -57,26 +56,8 @@ export { canonicalPositionSymbol, mergePositionFeeds } from "@/lib/traderUtils";
 // comes from the canonical types module.
 export type { ClosedTrade };
 
-type Status = TraderStatusPayload;
-
 const STATUS_REFRESH_MS = 5_000;
-const TICKER_REFRESH_MS = 10_000;
-const TICKER_SYMBOLS = ["BTC-USDT", "ETH-USDT", "SOL-USDT", "BNB-USDT"];
 const HISTORY_PAGE_SIZE = 20;
-
-// ====================================================================
-// Fetch helpers — thin wrappers over the shared `api` client so all
-// trader pages share auth, error normalization, and JSON parsing.
-// ====================================================================
-
-async function fetchTraderStatus(): Promise<Status> {
-  return api.getTraderStatus();
-}
-
-async function fetchTraderTicker(symbols: string[]): Promise<TickerEntry[]> {
-  const res = await api.getTraderTicker(symbols);
-  return res.tickers ?? [];
-}
 
 // ====================================================================
 // PositionsTab
@@ -319,52 +300,10 @@ function SeverityBadge({ severity }: { severity: AlertItem["severity"] }) {
 
 type TraderTab = "positions" | "history" | "alerts";
 
-type TraderRouteContext = {
-  status: Status | null;
-  tickers: TickerEntry[];
-  loading: boolean;
-};
-
 export function Trader() {
   const { t } = useTranslation();
-  const routeContext = useOutletContext<TraderRouteContext | undefined>();
-  const hasRouteContext = routeContext !== undefined;
-  const [localStatus, setLocalStatus] = useState<Status | null>(null);
-  const [localTickers, setLocalTickers] = useState<TickerEntry[]>([]);
-  const [localLoading, setLocalLoading] = useState(true);
+  const { status, tickers, loading } = useTraderStatusStore();
   const [tab, setTab] = useState<TraderTab>("positions");
-  const status = hasRouteContext ? routeContext?.status ?? null : localStatus;
-  const tickers = hasRouteContext ? routeContext?.tickers ?? [] : localTickers;
-  const loading = hasRouteContext ? routeContext?.loading ?? false : localLoading;
-
-  const loadStatus = useCallback(async () => {
-    try {
-      setLocalStatus(await fetchTraderStatus());
-      setLocalLoading(false);
-    } catch {
-      /* silent */
-    }
-  }, []);
-
-  const loadTicker = useCallback(async () => {
-    try {
-      setLocalTickers(await fetchTraderTicker(TICKER_SYMBOLS));
-    } catch {
-      /* silent */
-    }
-  }, []);
-
-  useEffect(() => {
-    if (hasRouteContext) return undefined;
-    loadStatus();
-    loadTicker();
-    const sTimer = window.setInterval(loadStatus, STATUS_REFRESH_MS);
-    const tTimer = window.setInterval(loadTicker, TICKER_REFRESH_MS);
-    return () => {
-      window.clearInterval(sTimer);
-      window.clearInterval(tTimer);
-    };
-  }, [hasRouteContext, loadStatus, loadTicker]);
 
   const positions = useMemo(
     () => mergePositionFeeds(status?.positions ?? [], status?.exchange_positions ?? []),

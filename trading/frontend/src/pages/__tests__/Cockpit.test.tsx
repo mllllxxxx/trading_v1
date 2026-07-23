@@ -1,5 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Cockpit } from "../Cockpit";
+import { useTraderStatusStore } from "@/stores/traderStatus";
+import { useSettingsStore } from "@/stores/settings";
 import { vi } from "vitest";
 
 const apiMock = vi.hoisted(() => ({
@@ -57,6 +59,34 @@ describe("Cockpit page", () => {
       tushare_token_configured: true,
       baostock_supported: false,
     });
+
+    // Reset shared stores between tests so polling/state don't leak across
+    // cases. Cockpit reads status/tickers from useTraderStatusStore and LLM
+    // settings from useSettingsStore; in the app TerminalLayout starts the
+    // polling, but these tests render <Cockpit /> in isolation.
+    useTraderStatusStore.getState().stopPolling();
+    useTraderStatusStore.setState({
+      status: null,
+      tickers: [],
+      loading: true,
+      error: null,
+      refreshAgeMs: 0,
+    });
+    useSettingsStore.setState({
+      llmSettings: null,
+      llmLoading: false,
+      llmError: null,
+      dataSourceSettings: null,
+      dataSourceLoading: false,
+      dataSourceError: null,
+    });
+    // Kick off the shared status/ticker polling so the mocked api feeds the
+    // store the same way TerminalLayout does in the real app.
+    useTraderStatusStore.getState().startPolling();
+  });
+
+  afterEach(() => {
+    useTraderStatusStore.getState().stopPolling();
   });
 
   it("renders cockpit header and empty positions by default", async () => {

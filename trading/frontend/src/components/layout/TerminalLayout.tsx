@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { BrainCircuit, ChevronRight, LayoutGrid, X } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useAgentStore } from "@/stores/agent";
+import { useTraderStatusStore, statusPayloadError } from "@/stores/traderStatus";
 import { cn } from "@/components/terminal/primitives";
 import { TopBar } from "@/components/terminal/TopBar";
 import { LeftPanel } from "@/components/terminal/LeftPanel";
@@ -12,21 +13,15 @@ import { BottomBar } from "@/components/terminal/BottomBar";
 import { ConnectionBanner } from "@/components/layout/ConnectionBanner";
 import { api } from "@/lib/api";
 import type { AccountState, Stats, TraderStatusPayload } from "@/types/api";
-import type { TickerEntry } from "@/components/terminal/Ticker";
-import type { MiniTrade } from "@/components/terminal/MiniHistory";
 
 // ============= Re-exports for backward compatibility =============
-// Consumers that imported these types from TerminalLayout can keep working.
+// Consumers that imported these types/helpers from TerminalLayout can keep
+// working. `statusPayloadError` now lives in the traderStatus store and is
+// re-exported here to avoid breaking historical imports.
 export type { Stats, AccountState };
 export type StatusPayload = TraderStatusPayload;
+export { statusPayloadError };
 
-export function statusPayloadError(payload: { error?: unknown }): string | null {
-  const message = typeof payload.error === "string" ? payload.error.trim() : "";
-  return message || null;
-}
-
-const STATUS_REFRESH_MS = 5_000;
-const TICKER_REFRESH_MS = 10_000;
 const TICKER_SYMBOLS = ["BTC-USDT", "ETH-USDT", "SOL-USDT", "BNB-USDT"];
 const SCAN_INTERVAL_S = 600; // default; backend reports its own cycle
 const MAX_POSITIONS = 10;
@@ -77,19 +72,6 @@ function finiteNumber(value: unknown, fallback: number): number {
 function finiteNumberOrNull(value: unknown): number | null {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
-}
-
-// ============= Mini fetch helpers (thin wrappers over `api` client) =============
-// Kept so the layout can throw Error-shaped messages without leaking ApiError
-// internals to toasts.
-
-async function fetchTraderStatus(): Promise<TraderStatusPayload> {
-  return api.getTraderStatus();
-}
-
-async function fetchTicker(symbols: string[]): Promise<TickerEntry[]> {
-  const res = await api.getTraderTicker(symbols);
-  return res.tickers ?? [];
 }
 
 // ============= MiniNav — compact nav strip for non-trader routes =============
@@ -166,86 +148,23 @@ export function TerminalLayout() {
   const sseStatus = useAgentStore((s) => s.sseStatus);
   const sseRetryAttempt = useAgentStore((s) => s.sseRetryAttempt);
 
-  const [status, setStatus] = useState<StatusPayload | null>(null);
-  const [tickers, setTickers] = useState<TickerEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusError, setStatusError] = useState<string | null>(null);
-  const [refreshAgeMs, setRefreshAgeMs] = useState(0);
+  // Trader status / tickers / polling are owned by the traderStatus store so
+  // every route mounted under TerminalLayout shares a single source of truth
+  // (and a single set of polling timers) instead of re-fetching per layout.
+  const { status, tickers, loading, error: statusError, refreshAgeMs, startPolling, stopPolling } = useTraderStatusStore();
+
   const [confirmKill, setConfirmKill] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [showSide, setShowSide] = useState(true);
-  const prevClosedRef = useRef<Set<string>>(new Set());
-  const seenTradesInitRef = useRef(false);
 
   const isTraderRoute = pathname === "/" || pathname === "/trader" || pathname.startsWith("/trader/");
 
-  const loadStatus = useCallback(async () => {
-    try {
-      const next = await fetchTraderStatus();
-      const nextError = statusPayloadError(next);
-      if (nextError) {
-        setStatusError(nextError);
-        setLoading(false);
-        return;
-      }
-      setStatusError(null);
-      setStatus((_prev) => {
-        const newTrades: MiniTrade[] = [];
-        for (const tr of next.closed_trades ?? []) {
-          const key = `${tr.closed_at}|${tr.symbol}|${tr.side}|${tr.pnl_usd}`;
-          if (!prevClosedRef.current.has(key)) {
-            if (seenTradesInitRef.current) newTrades.push(tr);
-            prevClosedRef.current.add(key);
-          }
-        }
-        if (prevClosedRef.current.size > 200) {
-          prevClosedRef.current = new Set(
-            Array.from(prevClosedRef.current).slice(-200)
-          );
-        }
-        if (newTrades.length && seenTradesInitRef.current) {
-          for (const tr of newTrades.slice(0, 3)) {
-            const win = tr.pnl_usd >= 0;
-            toast(
-              `${tr.symbol.replace("-USDT", "")} ${tr.side.toUpperCase()} ${win ? "✓" : "✗"} ${tr.pnl_usd >= 0 ? "+" : ""}${tr.pnl_usd.toFixed(2)}`,
-              {
-                description: `${tr.exit_reason || "exit"}`,
-                className: win ? "border-ttcc-green/40" : "border-ttcc-red/40",
-              }
-            );
-          }
-        }
-        seenTradesInitRef.current = true;
-        return next;
-      });
-      setRefreshAgeMs(0);
-      setLoading(false);
-    } catch (error) {
-      setStatusError(error instanceof Error ? error.message : "Trader status unavailable");
-      setLoading(false);
-    }
-  }, []);
-
-  const loadTicker = useCallback(async () => {
-    try {
-      setTickers(await fetchTicker(TICKER_SYMBOLS));
-    } catch {
-      /* silent */
-    }
-  }, []);
-
+  // Start the shared status/ticker/age polling on mount; stop on unmount.
+  // The store dedupes concurrent pollers via its `polling` flag.
   useEffect(() => {
-    loadStatus();
-    loadTicker();
-    const sTimer = window.setInterval(loadStatus, STATUS_REFRESH_MS);
-    const tTimer = window.setInterval(loadTicker, TICKER_REFRESH_MS);
-    const ageTimer = window.setInterval(() => setRefreshAgeMs((x) => x + 1000), 1000);
-    return () => {
-      window.clearInterval(sTimer);
-      window.clearInterval(tTimer);
-      window.clearInterval(ageTimer);
-    };
-  }, [loadStatus, loadTicker]);
+    startPolling();
+    return () => stopPolling();
+  }, [startPolling, stopPolling]);
 
   // Drop the auto-injected ?ts=… query param that some navigation paths add.
   useEffect(() => {
