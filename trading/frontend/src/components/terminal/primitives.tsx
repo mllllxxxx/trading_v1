@@ -24,10 +24,10 @@ export function PanelLabel({
     : tone === "warn" ? "text-ttcc-yellow"
     : tone === "info" ? "text-ttcc-blue"
     : tone === "accent" ? "text-ttcc-accent"
-    : "text-ttcc-text-secondary";
+    : "text-ttcc-text-muted";
   return (
-    <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 border-b border-ttcc-border/60">
-      <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ttcc-text-secondary">
+    <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 mb-1">
+      <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-ttcc-text-muted">
         {Icon ? <Icon className={cn("h-3 w-3 shrink-0", toneCls)} /> : null}
         <span className={cn(tone !== "muted" && toneCls)}>{children}</span>
       </span>
@@ -46,22 +46,23 @@ export function PillBadge({
   mono?: boolean;
 }) {
   const cls: Record<string, string> = {
-    long: "bg-ttcc-green/10 text-ttcc-green border-ttcc-green/40",
-    short: "bg-ttcc-red/10 text-ttcc-red border-ttcc-red/40",
-    ok: "bg-ttcc-green/10 text-ttcc-green border-ttcc-green/40",
-    fail: "bg-ttcc-red/10 text-ttcc-red border-ttcc-red/40",
-    tp: "bg-ttcc-green/10 text-ttcc-green border-ttcc-green/40",
-    sl: "bg-ttcc-red/10 text-ttcc-red border-ttcc-red/40",
-    info: "bg-ttcc-blue/10 text-ttcc-blue border-ttcc-blue/40",
-    warn: "bg-ttcc-yellow/10 text-ttcc-yellow border-ttcc-yellow/40",
+    long: "bg-ttcc-green/8 text-ttcc-green border-ttcc-green/40",
+    short: "bg-ttcc-red/8 text-ttcc-red border-ttcc-red/40",
+    ok: "bg-ttcc-green/8 text-ttcc-green border-ttcc-green/40",
+    fail: "bg-ttcc-red/8 text-ttcc-red border-ttcc-red/40",
+    tp: "bg-ttcc-green/8 text-ttcc-green border-ttcc-green/40",
+    sl: "bg-ttcc-red/8 text-ttcc-red border-ttcc-red/40",
+    info: "bg-ttcc-blue/8 text-ttcc-blue border-ttcc-blue/40",
+    warn: "bg-ttcc-yellow/8 text-ttcc-yellow border-ttcc-yellow/40",
     critical: "bg-ttcc-red/15 text-ttcc-red border-ttcc-red/50",
     neutral: "bg-ttcc-surface-2 text-ttcc-text-secondary border-ttcc-border",
   };
   return (
     <span className={cn(
-      "inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider leading-none",
+      "inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider leading-none",
       mono && "font-mono",
-      cls[tone]
+      cls[tone],
+      tone === "critical" && "tt-glow-red"
     )}>
       {children}
     </span>
@@ -72,9 +73,10 @@ export function LiveDot({ idle }: { idle?: boolean }) {
   return (
     <span
       className={cn(
-        "tt-live-dot",
+        "tt-live-dot !w-[7px] !h-[7px]",
         idle && "tt-live-dot--idle"
       )}
+      style={{ boxShadow: idle ? undefined : "0 0 6px 1px rgba(54, 211, 153, 0.45)" }}
       aria-hidden
     />
   );
@@ -87,6 +89,7 @@ export function MetricCard({
   tone,
   dense,
   icon: Icon,
+  glow,
 }: {
   label: React.ReactNode;
   children: React.ReactNode;
@@ -94,31 +97,46 @@ export function MetricCard({
   tone?: "bull" | "bear" | "warn" | "muted" | "info" | "accent";
   dense?: boolean;
   icon?: React.ComponentType<{ className?: string }>;
+  glow?: boolean;
 }) {
-  const ringCls =
-    tone === "bull" ? "before:bg-ttcc-green"
-    : tone === "bear" ? "before:bg-ttcc-red"
-    : tone === "warn" ? "before:bg-ttcc-yellow"
-    : tone === "info" ? "before:bg-ttcc-blue"
-    : tone === "accent" ? "before:bg-ttcc-accent"
-    : tone === "muted" ? "before:bg-ttcc-text-muted"
+  const toneColor =
+    tone === "bull" ? "bg-ttcc-green"
+    : tone === "bear" ? "bg-ttcc-red"
+    : tone === "warn" ? "bg-ttcc-yellow"
+    : tone === "info" ? "bg-ttcc-blue"
+    : tone === "accent" ? "bg-ttcc-accent"
+    : tone === "muted" ? "bg-ttcc-text-muted"
+    : null;
+  const glowColor =
+    tone === "bull" ? "rgba(54, 211, 153, 0.5)"
+    : tone === "bear" ? "rgba(248, 114, 114, 0.5)"
+    : tone === "warn" ? "rgba(251, 191, 36, 0.5)"
+    : tone === "info" ? "rgba(96, 165, 250, 0.5)"
+    : tone === "accent" ? "rgba(167, 139, 250, 0.5)"
+    : tone === "muted" ? "rgba(148, 163, 184, 0.35)"
     : null;
   return (
     <div className={cn(
-      "relative overflow-hidden rounded border border-ttcc-border bg-ttcc-surface",
-      ringCls && "before:absolute before:left-0 before:top-0 before:h-full before:w-[2px] before:content-['']",
+      "relative overflow-hidden rounded-lg border border-ttcc-border bg-ttcc-surface tt-hero-gradient hover:shadow-tt-md transition-shadow",
+      glow && "tt-glow-accent",
       className
     )}>
+      {toneColor && (
+        <span
+          className={cn("absolute left-0 top-0 h-full w-[3px] rounded-r", toneColor)}
+          style={{ boxShadow: glowColor ? `0 0 8px 0 ${glowColor}` : undefined }}
+        />
+      )}
       <div className={cn(
-        "flex items-center justify-between px-2.5 border-b border-ttcc-border/60",
+        "flex items-center justify-between px-2.5",
         dense ? "py-1" : "py-1.5"
       )}>
-        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ttcc-text-secondary">
+        <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-ttcc-text-muted">
           {Icon ? <Icon className="h-3 w-3 text-ttcc-text-secondary" /> : null}
           {label}
         </span>
       </div>
-      <div className={cn("px-2.5", dense ? "py-1.5" : "py-2.5")}>{children}</div>
+      <div className={cn("px-2.5", dense ? "py-1.5" : "py-3")}>{children}</div>
     </div>
   );
 }
@@ -148,10 +166,13 @@ export function NumberCell({
     : tone === "bear" ? "text-ttcc-red"
     : tone === "muted" ? "text-ttcc-text-muted"
     : "text-ttcc-text";
+  const isLarge = size === "lg" || size === "xl";
   return (
     <span className={cn(
       "font-mono tabular leading-none",
       sizeCls,
+      isLarge && "tracking-tight",
+      size === "xl" && "tt-hero-gradient",
       bold && "font-bold",
       toneCls,
       className
@@ -162,7 +183,7 @@ export function NumberCell({
 }
 
 export function Skeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <div className={cn("tt-skeleton", className)} style={style} />;
+  return <div className={cn("tt-skeleton rounded-md bg-gradient-to-r from-ttcc-surface-2 via-ttcc-surface-3 to-ttcc-surface-2", className)} style={style} />;
 }
 
 /**

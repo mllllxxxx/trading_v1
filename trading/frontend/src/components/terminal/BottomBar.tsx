@@ -5,7 +5,7 @@ import { StatusBar } from "@/components/terminal/StatusBar";
 import { cn } from "@/components/terminal/primitives";
 
 /**
- * BottomBar — sticky 36px strip below the main content.
+ * BottomBar — sticky 40px strip below the main content.
  *
  * Layout: [nav] [mini history] [quick actions] [status]
  *
@@ -29,14 +29,14 @@ export function BottomBar({
   refreshAgeMs: number;
 }) {
   return (
-    <footer className="flex h-9 shrink-0 items-center justify-between gap-3 border-t border-ttcc-border bg-ttcc-bg px-2">
+    <footer className="tt-glass flex h-10 shrink-0 items-center justify-between gap-3 px-2">
       <button
         type="button"
         onClick={onOpenNav}
         className={cn(
-          "shrink-0 inline-flex items-center gap-1.5 rounded border border-ttcc-border bg-ttcc-surface px-2 py-1",
+          "tt-focus shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-ttcc-surface-2/50 px-2 py-1",
           "text-[10px] font-semibold uppercase tracking-wider text-ttcc-text-secondary",
-          "hover:border-ttcc-accent/50 hover:bg-ttcc-accent/10 hover:text-ttcc-accent transition-colors"
+          "hover:bg-ttcc-accent/10 hover:text-ttcc-accent transition-colors"
         )}
         title="Open navigation"
         aria-label="Open navigation"

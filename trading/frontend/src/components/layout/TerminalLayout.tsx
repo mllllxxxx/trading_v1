@@ -93,7 +93,7 @@ function MiniNav({ pathname, onClose }: { pathname: string; onClose: () => void 
   return (
     <div className="absolute inset-0 z-40 flex bg-black/40" onClick={onClose}>
       <nav
-        className="flex w-64 flex-col gap-1 border-r border-ttcc-border bg-ttcc-surface p-3 shadow-2xl"
+        className="flex w-64 flex-col gap-1 border-r border-ttcc-border-subtle bg-ttcc-surface p-3 tt-glass shadow-tt-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-2 flex items-center justify-between">
@@ -103,7 +103,7 @@ function MiniNav({ pathname, onClose }: { pathname: string; onClose: () => void 
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-1 text-ttcc-text-secondary hover:bg-ttcc-surface-2 hover:text-ttcc-text"
+            className="rounded-lg p-1 text-ttcc-text-secondary hover:bg-ttcc-surface-2 hover:text-ttcc-text tt-focus"
             title="Close"
           >
             <X className="h-3.5 w-3.5" />
@@ -117,17 +117,17 @@ function MiniNav({ pathname, onClose }: { pathname: string; onClose: () => void 
               key={it.to}
               href={it.to}
               className={cn(
-                "flex items-center gap-2 rounded border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
+                "flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors tt-focus",
                 active
-                  ? "border-ttcc-accent/50 bg-ttcc-accent/15 text-ttcc-accent"
-                  : "border-ttcc-border bg-ttcc-surface-2 text-ttcc-text-secondary hover:text-ttcc-text",
+                  ? "border-ttcc-accent/50 bg-ttcc-accent/15 text-ttcc-accent tt-glow-accent"
+                  : "border-ttcc-border-subtle bg-ttcc-surface-2 text-ttcc-text-secondary hover:text-ttcc-text",
                 it.accent && !active && "ring-1 ring-ttcc-accent/20"
               )}
             >
               <Icon className="h-3.5 w-3.5" />
               <span>{it.label}</span>
               {it.accent ? (
-                <span className="ml-auto rounded border border-ttcc-accent/40 bg-ttcc-accent/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-ttcc-accent">
+                <span className="ml-auto rounded-md border border-ttcc-accent/40 bg-ttcc-accent/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-ttcc-accent">
                   here
                 </span>
               ) : null}
@@ -243,7 +243,8 @@ export function TerminalLayout() {
 
   return (
     <div className={cn(
-      "ttcc-root flex h-screen flex-col bg-ttcc-bg text-ttcc-text antialiased",
+      "ttcc-root relative flex h-screen flex-col bg-ttcc-bg text-ttcc-text antialiased",
+      "before:fixed before:inset-0 before:pointer-events-none before:bg-[radial-gradient(ellipse_at_top,_rgba(167,139,250,0.03),_transparent_60%)]",
       !dark && "ring-1 ring-inset ring-ttcc-border/30"
     )}>
       <ConnectionBanner status={sseStatus} retryAttempt={sseRetryAttempt} />
@@ -293,11 +294,11 @@ export function TerminalLayout() {
               onKillToggle={() => setConfirmKill(true)}
             />
           ) : (
-            <aside className="flex w-9 shrink-0 flex-col items-center gap-2 border-r border-ttcc-border bg-ttcc-bg py-2">
+            <aside className="flex w-9 shrink-0 flex-col items-center gap-2 border-r border-ttcc-border-subtle bg-ttcc-bg py-2">
               <button
                 type="button"
                 onClick={() => setShowSide(true)}
-                className="flex h-7 w-7 items-center justify-center rounded border border-ttcc-border bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text transition-colors"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-ttcc-border-subtle bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text transition-colors tt-focus"
                 title="Show metrics panel"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -310,11 +311,11 @@ export function TerminalLayout() {
         ) : null}
 
         {/* Center = route content */}
-        <main className="flex-1 min-w-0 overflow-y-auto bg-ttcc-bg relative">
+        <main className="flex-1 min-w-0 overflow-y-auto relative">
           {statusError ? (
             <div
               role="alert"
-              className="absolute inset-x-3 top-3 z-40 rounded border border-ttcc-red/50 bg-ttcc-bg/95 px-3 py-2 text-[11px] text-ttcc-red shadow-lg backdrop-blur"
+              className="absolute inset-x-3 top-3 z-40 rounded-lg border border-ttcc-red/50 bg-ttcc-red/5 px-3 py-2 text-[11px] text-ttcc-red shadow-lg backdrop-blur tt-glow-red"
               title={statusError}
             >
               <span className="font-semibold uppercase tracking-wider">Trader data unavailable:</span>{" "}
@@ -325,7 +326,7 @@ export function TerminalLayout() {
 
           {loading && !status ? (
             <div className="flex h-full items-center justify-center text-[11px] text-ttcc-text-secondary">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 rounded-lg px-3 py-2 tt-skeleton">
                 <span className="tt-live-dot" />
                 loading terminal data…
               </div>
@@ -350,11 +351,11 @@ export function TerminalLayout() {
         refreshAgeMs={refreshAgeMs}
       />
 
-      {/* Theme toggle is hidden in the bottom-right corner for now. */}
+      {/* Theme toggle — relocated for better discoverability. */}
       <button
         type="button"
         onClick={toggle}
-        className="absolute bottom-10 right-2 z-30 rounded border border-ttcc-border bg-ttcc-surface px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-ttcc-text-secondary opacity-40 hover:opacity-100 transition-opacity"
+        className="absolute bottom-12 right-2 z-30 rounded-lg border border-ttcc-border-subtle bg-ttcc-surface px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-ttcc-text-secondary opacity-40 hover:opacity-100 transition-opacity tt-focus"
         title={dark ? "Switch to light theme" : "Switch to dark theme"}
       >
         {dark ? "dark" : "light"}
@@ -398,12 +399,15 @@ function ConfirmKillDialog({
       onClick={onCancel}
     >
       <div
-        className="w-[360px] max-w-[92vw] rounded-md border border-ttcc-border bg-ttcc-surface p-4 shadow-2xl tt-toast-in"
+        className={cn(
+          "w-[360px] max-w-[92vw] rounded-xl border border-ttcc-border-subtle bg-ttcc-surface p-4 shadow-tt-lg tt-glass tt-toast-in",
+          active ? "tt-glow-red" : "tt-glow-green"
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 text-sm font-semibold text-ttcc-text">
           <span className={cn(
-            "flex h-6 w-6 items-center justify-center rounded",
+            "flex h-6 w-6 items-center justify-center rounded-md",
             active ? "bg-ttcc-red/15 text-ttcc-red" : "bg-ttcc-green/15 text-ttcc-green"
           )}>!</span>
           {active ? "Disarm kill switch?" : "Arm kill switch?"}
@@ -417,7 +421,7 @@ function ConfirmKillDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded border border-ttcc-border bg-ttcc-surface-2 px-2.5 py-1 text-xs text-ttcc-text-secondary hover:text-ttcc-text transition-colors"
+            className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface-2 px-2.5 py-1 text-xs text-ttcc-text-secondary hover:text-ttcc-text transition-colors tt-focus"
           >
             Cancel
           </button>
@@ -425,7 +429,7 @@ function ConfirmKillDialog({
             type="button"
             onClick={onConfirm}
             className={cn(
-              "rounded border px-2.5 py-1 text-xs font-semibold transition-colors",
+              "rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors tt-focus",
               active
                 ? "border-ttcc-green/60 bg-ttcc-green/15 text-ttcc-green hover:bg-ttcc-green/25"
                 : "border-ttcc-red/60 bg-ttcc-red/15 text-ttcc-red hover:bg-ttcc-red/25"

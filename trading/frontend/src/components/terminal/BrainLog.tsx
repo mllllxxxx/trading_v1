@@ -36,9 +36,12 @@ export function BrainLog({ decisions, maxRows = 30 }: { decisions: BrainDecision
 
   if (!rows.length) {
     return (
-      <div className="rounded border border-ttcc-border bg-ttcc-surface">
+      <div className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface">
         <PanelLabel icon={Brain} tone="info">Brain log</PanelLabel>
         <div className="px-2.5 py-6 text-center text-[11px] text-ttcc-text-muted">
+          <div className="flex justify-center mb-2">
+            <Brain className="h-6 w-6 text-ttcc-blue/40 tt-glow-accent" />
+          </div>
           <div className="font-medium text-ttcc-text-secondary">No LLM activity in last ~1000 events</div>
           <div className="mt-1 text-[10px]">Regime conflict or weak confluence — LLM skipped to save tokens.</div>
         </div>
@@ -47,7 +50,7 @@ export function BrainLog({ decisions, maxRows = 30 }: { decisions: BrainDecision
   }
 
   return (
-    <div className="rounded border border-ttcc-border bg-ttcc-surface">
+    <div className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface">
       <PanelLabel
         icon={Brain}
         tone="info"
@@ -63,7 +66,8 @@ export function BrainLog({ decisions, maxRows = 30 }: { decisions: BrainDecision
             <li
               key={id}
               className={cn(
-                "border-b border-ttcc-border/40 px-2.5 py-1.5 last:border-b-0",
+                "border-b border-ttcc-border-subtle/40 px-2.5 py-1.5 last:border-b-0",
+                "hover:bg-ttcc-surface-2/30 transition-colors",
                 isNew && "ttcc-row-in"
               )}
             >

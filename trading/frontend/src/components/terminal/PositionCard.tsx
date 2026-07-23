@@ -161,21 +161,21 @@ export function PositionCard({
 
   return (
     <div className={cn(
-      "group relative flex flex-col overflow-hidden rounded border bg-ttcc-surface tt-card-hover",
-      positive ? "border-ttcc-green/30" : "border-ttcc-red/30"
+      "group relative flex flex-col overflow-hidden rounded-lg border border-ttcc-border-subtle bg-ttcc-surface tt-card-hover transition-colors hover:border-ttcc-border hover:shadow-tt-md",
+      isLong ? "tt-hero-gradient-green" : "tt-hero-gradient-red"
     )}>
-      <div className="flex items-start justify-between gap-2 border-b border-ttcc-border bg-ttcc-surface-2 px-3 py-2">
+      <div className="flex items-start justify-between gap-2 border-b border-ttcc-border-subtle/60 bg-ttcc-surface-2/50 px-4 py-2.5">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             {sequenceNumber ? (
               <span
-                className="inline-flex shrink-0 rounded border border-ttcc-border bg-ttcc-bg px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-ttcc-accent tabular"
+                className="inline-flex shrink-0 rounded-md border border-ttcc-border-subtle bg-ttcc-bg px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-ttcc-accent tabular"
                 title={`Position ${sequenceNumber}${sequenceTotal ? ` of ${sequenceTotal}` : ""}`}
               >
                 #{sequenceNumber}{sequenceTotal ? `/${sequenceTotal}` : ""}
               </span>
             ) : null}
-            <span className="truncate font-mono text-[16px] font-bold leading-none tracking-tight text-ttcc-text">
+            <span className="truncate font-mono text-[14px] font-bold leading-none tracking-tight text-ttcc-text">
               {p.symbol.replace("-USDT", "")}
             </span>
             <SideBadge side={p.side} />
@@ -191,7 +191,7 @@ export function PositionCard({
 
         <div className="flex shrink-0 items-center gap-1">
           <span className={cn(
-            "hidden rounded border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider sm:inline-flex",
+            "hidden rounded-md border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider sm:inline-flex",
             positive
               ? "border-ttcc-green/40 bg-ttcc-green/10 text-ttcc-green"
               : "border-ttcc-red/40 bg-ttcc-red/10 text-ttcc-red"
@@ -201,7 +201,7 @@ export function PositionCard({
           <button
             type="button"
             onClick={() => setDetailsOpen((open) => !open)}
-            className="inline-flex items-center gap-1 rounded border border-ttcc-border bg-ttcc-surface px-1.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ttcc-text-secondary transition-colors hover:border-ttcc-accent/50 hover:text-ttcc-text"
+            className="inline-flex items-center gap-1 rounded-lg border border-ttcc-border-subtle bg-ttcc-surface px-1.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ttcc-text-secondary transition-colors hover:border-ttcc-accent/50 hover:text-ttcc-text tt-focus"
             aria-expanded={detailsOpen}
           >
             <Info className="h-3 w-3" />
@@ -212,7 +212,7 @@ export function PositionCard({
             type="button"
             aria-label="Close position"
             title="Close position"
-            className="rounded border border-ttcc-border bg-ttcc-surface p-1 text-ttcc-text-secondary opacity-70 transition-colors hover:border-ttcc-red/50 hover:bg-ttcc-red/15 hover:text-ttcc-red hover:opacity-100"
+            className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface p-1 text-ttcc-text-secondary opacity-70 transition-colors hover:border-ttcc-red/50 hover:bg-ttcc-red/15 hover:text-ttcc-red hover:opacity-100 tt-glow-red"
           >
             <X className="h-3 w-3" />
           </button>
@@ -243,7 +243,7 @@ export function PositionCard({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1 border-t border-ttcc-border/60 px-3 py-2 text-[10px]">
+      <div className="flex flex-wrap items-center gap-1 border-t border-ttcc-border-subtle/60 px-4 py-2 text-[10px]">
         <MetaChip label="size" value={sizeText} />
         <MetaChip label="lev" value={leverage} />
         <MetaChip label="R/R" value={formatRr(p.rr_ratio)} />
@@ -256,8 +256,8 @@ export function PositionCard({
       </div>
 
       {detailsOpen ? (
-        <div className="border-t border-ttcc-border bg-ttcc-surface/70">
-          <div className="flex flex-wrap items-center gap-1 px-3 py-2 text-[10px]">
+        <div className="border-t border-ttcc-border-subtle/60 bg-ttcc-surface/40 tt-glass">
+          <div className="flex flex-wrap items-center gap-1 px-4 py-2 text-[10px]">
             <MetaChip label="mark_source" value={markSource} />
             <MetaChip label="mark_price" value={hasMark ? fmtPx(px) : ""} />
             <MetaChip label="notional" value={formatUsdNumber(p.notional)} />
@@ -282,14 +282,14 @@ function ProfitMetric({
 }) {
   const toneClass = positive ? "text-ttcc-green" : "text-ttcc-red";
   return (
-    <div className="min-w-0 rounded border border-ttcc-border/70 bg-ttcc-surface-2 px-2.5 py-2">
+    <div className="min-w-0 rounded-md border border-ttcc-border-subtle/70 bg-ttcc-surface-2/30 px-2.5 py-2">
       <div className="flex items-center justify-between gap-2">
         <div className="text-[9px] font-semibold uppercase tracking-wider text-ttcc-text-muted">P&L</div>
-        <div className={cn("rounded border px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none tabular", positive ? "border-ttcc-green/40 bg-ttcc-green/10 text-ttcc-green" : "border-ttcc-red/40 bg-ttcc-red/10 text-ttcc-red")}>
+        <div className={cn("rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none tabular", positive ? "border-ttcc-green/40 bg-ttcc-green/10 text-ttcc-green" : "border-ttcc-red/40 bg-ttcc-red/10 text-ttcc-red")}>
           {formatSignedPct(pnlPct)}
         </div>
       </div>
-      <div className={cn("mt-1 truncate font-mono text-[20px] font-bold leading-tight tabular", toneClass)} title={formatSignedUsd(pnlUsd)}>
+      <div className={cn("mt-1 truncate font-mono text-[22px] font-bold leading-tight tabular", toneClass)} title={formatSignedUsd(pnlUsd)}>
         {formatSignedUsd(pnlUsd)}
       </div>
     </div>
@@ -310,7 +310,7 @@ function PriceMetric({
     : tone === "bear" ? "text-ttcc-red"
     : "text-ttcc-text";
   return (
-    <div className="min-w-0 rounded border border-ttcc-border/70 bg-ttcc-surface-2 px-2 py-1.5">
+    <div className="min-w-0 rounded-md border border-ttcc-border-subtle/70 bg-ttcc-surface-2/30 px-2 py-1.5">
       <div className="text-[8px] font-semibold uppercase tracking-wider text-ttcc-text-muted">{label}</div>
       <div className={cn("mt-0.5 truncate font-mono text-[12px] font-semibold tabular", toneClass)} title={value}>
         {value}
@@ -321,7 +321,7 @@ function PriceMetric({
 
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded border border-ttcc-border/50 bg-ttcc-surface/70 px-2 py-1">
+    <div className="min-w-0 rounded-md border border-ttcc-border-subtle/50 bg-ttcc-surface-2/30 px-2 py-1">
       <div className="text-[8px] font-semibold uppercase tracking-wider text-ttcc-text-muted">{label}</div>
       <div className="mt-0.5 truncate font-mono text-[10px] font-semibold text-ttcc-text-secondary tabular" title={value}>
         {value}
@@ -339,7 +339,7 @@ function ConfidenceBar({ confidence }: { confidence: ConfidenceMetric }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={confidence.score}
-      className={cn("min-w-0 rounded border bg-ttcc-surface-2 px-2.5 py-2", tone.border)}
+      className={cn("min-w-0 rounded-md border bg-ttcc-surface-2/30 px-2.5 py-2", tone.border)}
     >
       <div className="flex items-center justify-between gap-2">
         <div className="text-[9px] font-semibold uppercase tracking-wider text-ttcc-text-muted">Conf.</div>
@@ -384,7 +384,7 @@ function ExchangeSection({ p }: { p: Position }) {
   }
 
   return (
-    <div className="border-t border-ttcc-border/60 px-2.5 py-2 text-[10px]">
+    <div className="border-t border-ttcc-border-subtle/60 px-2.5 py-2 text-[10px]">
       <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-ttcc-text-muted">
         Exchange sync
       </div>
@@ -444,7 +444,7 @@ function RationaleSection({ p }: { p: Position }) {
   }
 
   return (
-    <div className="border-t border-ttcc-border/60 px-2.5 py-2 text-[10px]">
+    <div className="border-t border-ttcc-border-subtle/60 px-2.5 py-2 text-[10px]">
       <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-ttcc-text-muted">
         Open rationale
       </div>
@@ -514,7 +514,7 @@ function MetaChip({ label, value }: { label: string; value: unknown }) {
     return null;
   }
   return (
-    <span className="inline-flex max-w-full items-center gap-1 rounded border border-ttcc-border/70 bg-ttcc-surface-2 px-1.5 py-0.5 leading-none text-ttcc-text-secondary">
+    <span className="inline-flex max-w-full items-center gap-1 rounded-md border border-ttcc-border-subtle/50 bg-ttcc-surface-2/40 px-1.5 py-0.5 leading-none text-ttcc-text-secondary">
       <span className="shrink-0 font-semibold uppercase text-ttcc-text-muted">{label}</span>
       <span className="min-w-0 truncate font-mono text-ttcc-text" title={text}>{text}</span>
     </span>
@@ -856,7 +856,7 @@ export function RrBadge({ rr }: { rr: number }) {
 
 export function EmptyPositions() {
   return (
-    <div className="flex h-32 flex-col items-center justify-center rounded border border-dashed border-ttcc-border bg-ttcc-surface/40 text-[11px] text-ttcc-text-secondary">
+    <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-ttcc-border-subtle bg-ttcc-surface/40 text-[11px] text-ttcc-text-secondary">
       <Activity className="mb-1 h-4 w-4 opacity-40" />
       <span>No open positions</span>
       <span className="text-[10px] opacity-60">scanner running - waiting for signal</span>

@@ -101,4 +101,49 @@
   .ttcc-row-in {
     animation: ttcc-row-in 220ms ease-out;
   }
+
+  /* Glass panel — frosted backdrop blur surface. */
+  .tt-glass {
+    background: var(--tt-glass-bg);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border: 1px solid var(--tt-glass-border);
+  }
+
+  /* Glow ring — for active/important elements. */
+  .tt-glow-accent { box-shadow: 0 0 0 1px var(--tt-accent-soft), 0 0 20px var(--tt-accent-glow); }
+  .tt-glow-green  { box-shadow: 0 0 0 1px var(--tt-green-soft),  0 0 20px var(--tt-green-glow); }
+  .tt-glow-red    { box-shadow: 0 0 0 1px var(--tt-red-soft),    0 0 20px var(--tt-red-glow); }
+
+  /* Subtle gradient overlay for hero metric cards. */
+  .tt-hero-gradient {
+    background-image: radial-gradient(
+      ellipse at top left,
+      rgba(167, 139, 250, 0.06),
+      transparent 60%
+    );
+  }
+  .tt-hero-gradient-green {
+    background-image: radial-gradient(
+      ellipse at top left,
+      rgba(54, 211, 153, 0.06),
+      transparent 60%
+    );
+  }
+  .tt-hero-gradient-red {
+    background-image: radial-gradient(
+      ellipse at top left,
+      rgba(248, 114, 114, 0.06),
+      transparent 60%
+    );
+  }
+
+  /* Focus ring — accessible + premium. */
+  .tt-focus {
+    outline: none;
+    transition: box-shadow 150ms ease;
+  }
+  .tt-focus:focus-visible {
+    box-shadow: 0 0 0 2px var(--tt-bg), 0 0 0 4px var(--tt-accent-soft);
+  }
 }

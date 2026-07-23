@@ -42,11 +42,18 @@ export function RightPanel({
 
   if (collapsed) {
     return (
-      <aside className="flex w-9 shrink-0 flex-col items-center gap-2 border-l border-ttcc-border bg-ttcc-bg py-2">
+      <aside
+        className={cn(
+          "relative flex w-9 shrink-0 flex-col items-center gap-2 bg-ttcc-bg py-2",
+          "before:absolute before:left-0 before:top-0 before:h-full before:w-px",
+          "before:bg-gradient-to-b before:from-transparent before:via-ttcc-border/50 before:to-transparent",
+          "before:pointer-events-none before:content-['']"
+        )}
+      >
         <button
           type="button"
           onClick={() => setCollapsed(false)}
-          className="flex h-7 w-7 items-center justify-center rounded border border-ttcc-border bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-ttcc-border-subtle bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text hover:tt-glow-accent transition-all"
           title="Expand right panel"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
@@ -66,16 +73,23 @@ export function RightPanel({
   ];
 
   return (
-    <aside className="flex w-[360px] shrink-0 flex-col overflow-hidden bg-ttcc-bg border-l border-ttcc-border">
+    <aside
+      className={cn(
+        "relative flex w-[380px] shrink-0 flex-col overflow-hidden bg-ttcc-bg",
+        "before:absolute before:left-0 before:top-0 before:h-full before:w-px",
+        "before:bg-gradient-to-b before:from-transparent before:via-ttcc-border/50 before:to-transparent",
+        "before:pointer-events-none before:content-['']"
+      )}
+    >
       {/* Sidebar Header & Collapser */}
-      <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-ttcc-border/60 bg-ttcc-surface shrink-0">
+      <div className="tt-glass flex items-center justify-between px-2.5 py-1.5 shrink-0">
         <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-ttcc-text-secondary">
           AI Co-pilot Console
         </span>
         <button
           type="button"
           onClick={() => setCollapsed(true)}
-          className="flex h-5 w-5 items-center justify-center rounded text-ttcc-text-secondary hover:text-ttcc-text transition-colors"
+          className="flex h-5 w-5 items-center justify-center rounded-lg text-ttcc-text-secondary hover:text-ttcc-text hover:tt-glow-accent transition-all"
           title="Collapse panel"
         >
           <ChevronRight className="h-3.5 w-3.5" />
@@ -83,7 +97,7 @@ export function RightPanel({
       </div>
 
       {/* Tab Selectors */}
-      <div className="flex border-b border-ttcc-border bg-ttcc-surface/40 shrink-0 p-1 gap-0.5">
+      <div className="flex bg-ttcc-surface/40 shrink-0 p-1 gap-0.5">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -93,9 +107,9 @@ export function RightPanel({
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-1 px-1 rounded transition-colors text-[10px] font-bold uppercase tracking-wider",
+                "flex-1 flex items-center justify-center gap-1.5 py-1 px-1 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wider",
                 active
-                  ? "bg-ttcc-surface text-ttcc-accent border border-ttcc-border"
+                  ? "bg-ttcc-accent/10 text-ttcc-accent tt-glow-accent"
                   : "text-ttcc-text-secondary hover:text-ttcc-text hover:bg-ttcc-surface/30"
               )}
             >
@@ -107,7 +121,7 @@ export function RightPanel({
       </div>
 
       {/* Tab Panels */}
-      <div className="flex-1 min-h-0 overflow-y-auto relative">
+      <div className="relative flex-1 min-h-0 overflow-y-auto before:absolute before:inset-x-0 before:top-0 before:h-8 before:bg-gradient-to-b before:from-ttcc-surface/40 before:to-transparent before:pointer-events-none before:content-['']">
         {activeTab === "chat" && (
           <Suspense
             fallback={(
