@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOutletContext } from "react-router-dom";
-import { Activity, Banknote, Bell, History as HistoryIcon, SlidersHorizontal } from "lucide-react";
+import { Activity, Banknote, Bell, History as HistoryIcon } from "lucide-react";
 import {
   TabBar,
   TabPanel,
@@ -11,20 +11,17 @@ import {
   PositionCard,
   EmptyPositions,
   type Position,
-  SideBadge,
-  TeamBadge,
-  ConfluenceBadge,
 } from "@/components/terminal/PositionCard";
 import {
-  fmtUsd,
-  fmtPx,
   fmtTime,
-  colorClass,
   PillBadge,
   Skeleton,
   cn,
 } from "@/components/terminal/primitives";
 import type { TickerEntry } from "@/components/terminal/Ticker";
+import { ClosedTradesTable } from "@/components/terminal/ClosedTradesTable";
+import { AdaptivePolicyBadge } from "@/components/terminal/AdaptivePolicyBadge";
+import { mergePositionFeeds } from "@/lib/traderUtils";
 import type { AlertItem } from "@/lib/api";
 import { api } from "@/lib/api";
 import type {
@@ -50,11 +47,17 @@ export { fmtUsd, fmtPct, fmtPctSigned, fmtPx, fmtTime, colorClass } from "@/comp
 export { PillBadge as Pill } from "@/components/terminal/primitives";
 export { ConfluenceBadge, RrBadge, SideBadge, TeamBadge } from "@/components/terminal/PositionCard";
 
-type Status = TraderStatusPayload;
+// Re-export extracted components for backward compat with `@/pages/Trader`
+// importers (Cockpit.tsx, Trader.test.tsx).
+export { ClosedTradesTable } from "@/components/terminal/ClosedTradesTable";
+export { AdaptivePolicyBadge } from "@/components/terminal/AdaptivePolicyBadge";
+export { canonicalPositionSymbol, mergePositionFeeds } from "@/lib/traderUtils";
 
 // Re-exported for backward compat with TraderHistory.tsx — ClosedTrade now
 // comes from the canonical types module.
 export type { ClosedTrade };
+
+type Status = TraderStatusPayload;
 
 const STATUS_REFRESH_MS = 5_000;
 const TICKER_REFRESH_MS = 10_000;
@@ -176,171 +179,6 @@ function HistoryTab({
       ) : null}
     </div>
   );
-}
-
-export function ClosedTradesTable({
-  trades,
-  startIndex = 0,
-  totalTrades,
-}: {
-  trades: ClosedTrade[];
-  startIndex?: number;
-  totalTrades?: number;
-}) {
-  if (!trades.length) {
-    return null;
-  }
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[11px]">
-        <thead className="bg-ttcc-surface-2 text-[10px] uppercase tracking-wider text-ttcc-text-secondary">
-          <tr className="border-b border-ttcc-border">
-            <th className="px-2.5 py-1.5 text-left font-medium">#</th>
-            <th className="px-2.5 py-1.5 text-left font-medium">Closed</th>
-            <th className="px-2.5 py-1.5 text-left font-medium">Team</th>
-            <th className="px-2.5 py-1.5 text-left font-medium">Symbol</th>
-            <th className="px-2.5 py-1.5 text-left font-medium">Side</th>
-            <th className="px-2.5 py-1.5 text-right font-medium">Entry</th>
-            <th className="px-2.5 py-1.5 text-right font-medium">Exit</th>
-            <th className="px-2.5 py-1.5 text-right font-medium">Size</th>
-            <th className="px-2.5 py-1.5 text-right font-medium">PnL</th>
-            <th className="px-2.5 py-1.5 text-left font-medium">Reason</th>
-            <th className="px-2.5 py-1.5 text-right font-medium">Conf.</th>
-          </tr>
-        </thead>
-        <tbody>
-          {trades.map((t, i) => {
-            const pnl = parseFloat(String(t.pnl_usd));
-            const reason = t.exit_reason || "";
-            const tradeNumber = startIndex + i + 1;
-            const openReason = t.open_reason || t.decision_context?.thesis || t.decision_context?.reasoning_summary || "";
-            const tone = reason.includes("profit") || reason.includes("tp")
-              ? "tp"
-              : reason.includes("stop") || reason.includes("sl")
-              ? "sl"
-              : "neutral";
-            return (
-              <tr key={i} className="border-b border-ttcc-border/40 hover:bg-ttcc-surface-2">
-                <td
-                  className="px-2.5 py-1 font-mono text-[10px] font-bold tabular text-ttcc-accent"
-                  title={`Trade ${tradeNumber}${totalTrades ? ` of ${totalTrades}` : ""}`}
-                >
-                  #{tradeNumber}
-                </td>
-                <td className="px-2.5 py-1 font-mono tabular text-ttcc-text-muted">{fmtTime(t.closed_at)}</td>
-                <td className="px-2.5 py-1">
-                  <TeamBadge teamId={t.team_id} teamName={t.team_name || t.strategy_name} />
-                </td>
-                <td className="px-2.5 py-1 font-mono font-medium text-ttcc-text">{t.symbol.replace("-USDT", "")}</td>
-                <td className="px-2.5 py-1"><SideBadge side={t.side} /></td>
-                <td className="px-2.5 py-1 text-right font-mono tabular text-ttcc-text">{fmtPx(t.entry)}</td>
-                <td className="px-2.5 py-1 text-right font-mono tabular text-ttcc-text">{fmtPx(t.exit_price)}</td>
-                <td className="px-2.5 py-1 text-right font-mono tabular text-ttcc-text">{t.position_size}</td>
-                <td className={cn(
-                  "px-2.5 py-1 text-right font-mono font-semibold tabular",
-                  colorClass(pnl)
-                )}>
-                  <span className="inline-flex items-center gap-0.5">
-                    {pnl >= 0 ? "▲" : "▼"}{fmtUsd(pnl)}
-                  </span>
-                </td>
-                <td className="px-2.5 py-1">
-                  <PillBadge tone={tone as "tp" | "sl" | "neutral"}>{reason}</PillBadge>
-                  {openReason ? (
-                    <div
-                      className="mt-1 max-w-[320px] truncate text-[10px] leading-tight text-ttcc-text-secondary"
-                      title={openReason}
-                    >
-                      {openReason}
-                    </div>
-                  ) : null}
-                </td>
-                <td className="px-2.5 py-1 text-right"><ConfluenceBadge score={t.confluence_score} /></td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-export function canonicalPositionSymbol(symbol: string | undefined | null): string {
-  let raw = String(symbol || "").trim().toUpperCase();
-  if (!raw) {
-    return "";
-  }
-  if (raw.includes(":")) {
-    raw = raw.split(":", 1)[0];
-  }
-  raw = raw.replace("/", "-");
-  if (raw.endsWith("-SWAP")) {
-    raw = raw.slice(0, -"-SWAP".length);
-  }
-  const parts = raw.split("-").filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0]}-${parts[1]}`;
-  }
-  return raw;
-}
-
-export function mergePositionFeeds(
-  journalPositions: Position[] = [],
-  exchangePositions: Position[] = [],
-): Position[] {
-  const bySymbol = new Map<string, Position>();
-  const order: string[] = [];
-
-  const putExchange = (position: Position) => {
-    const key = canonicalPositionSymbol(position.symbol);
-    if (!key) return;
-    if (!bySymbol.has(key)) {
-      order.push(key);
-    }
-    bySymbol.set(key, {
-      ...position,
-      symbol: key,
-      source: position.source || "exchange",
-    });
-  };
-
-  const putJournal = (position: Position) => {
-    const key = canonicalPositionSymbol(position.symbol);
-    if (!key) return;
-    const exchange = bySymbol.get(key);
-    if (!exchange) {
-      order.push(key);
-      bySymbol.set(key, { ...position, symbol: key });
-      return;
-    }
-    bySymbol.set(key, {
-      ...exchange,
-      ...position,
-      symbol: key,
-      mark_price: position.mark_price ?? exchange.mark_price,
-      unrealized_pnl: position.unrealized_pnl ?? exchange.unrealized_pnl,
-      leverage: position.leverage ?? exchange.leverage,
-      margin_mode: position.margin_mode ?? exchange.margin_mode,
-      contracts: position.contracts ?? exchange.contracts,
-      contract_size: position.contract_size ?? exchange.contract_size,
-      broker_sync_at: position.broker_sync_at ?? exchange.broker_sync_at,
-      sync_status: position.sync_status ?? exchange.sync_status,
-      status: position.status ?? exchange.status,
-      source: position.source ?? exchange.source,
-      mode: position.mode ?? exchange.mode,
-      instId: position.instId ?? exchange.instId,
-      ccxt_symbol: position.ccxt_symbol ?? exchange.ccxt_symbol,
-      protective_orders: position.protective_orders ?? exchange.protective_orders,
-      orders: position.orders ?? exchange.orders,
-      market_context: position.market_context ?? exchange.market_context,
-      decision_context: position.decision_context ?? exchange.decision_context,
-      open_reason: position.open_reason ?? exchange.open_reason,
-    });
-  };
-
-  exchangePositions.forEach(putExchange);
-  journalPositions.forEach(putJournal);
-  return order.map((key) => bySymbol.get(key)).filter((item): item is Position => Boolean(item));
 }
 
 // ====================================================================
@@ -470,123 +308,6 @@ function SeverityBadge({ severity }: { severity: AlertItem["severity"] }) {
       tone
     )}>
       {severity}
-    </span>
-  );
-}
-
-export function AdaptivePolicyBadge({
-  controller,
-  experiment,
-  reviewController,
-  canary,
-}: {
-  controller?: AdaptivePolicyControllerStatus;
-  experiment?: ShadowScoringExperimentStatus;
-  reviewController?: ShadowScoreReviewControllerStatus;
-  canary?: ShadowScoreCanaryStatus;
-}) {
-  const strong = controller?.active_zones?.strong_min_score;
-  const gray = controller?.active_zones?.gray_min_score;
-  if (strong === undefined || gray === undefined) return null;
-  const status = controller?.status || "baseline";
-  const revision = controller?.revision ?? 0;
-  const experimentRoutingError = experiment?.active_for_routing === true;
-  const tone = controller?.state_error || status === "error" || experimentRoutingError
-    ? "border-ttcc-red/50 text-ttcc-red"
-    : status === "staged"
-      ? "border-ttcc-yellow/50 text-ttcc-yellow"
-      : status === "active" || revision > 0
-        ? "border-ttcc-green/40 text-ttcc-green"
-        : "border-ttcc-border text-ttcc-text-secondary";
-  const coverageFailures = controller?.strategy_coverage_failures?.length ?? 0;
-  const experimentValid = experiment?.score_coverage?.valid;
-  const experimentTotal = experiment?.score_coverage?.total;
-  const hasExperimentCoverage = experimentValid !== undefined && experimentTotal !== undefined;
-  const scoreDelta = experiment?.score_delta_v2_minus_v1?.average;
-  const readinessStatus = experiment?.review_eligibility?.status;
-  const readinessBlockers = experiment?.review_eligibility?.blocking_reasons ?? [];
-  const calibration = experiment?.threshold_calibration;
-  const calibrationCandidate = calibration?.candidate_thresholds;
-  const calibrationStrong = calibrationCandidate?.strong_min_score;
-  const calibrationGray = calibrationCandidate?.gray_min_score;
-  const hasCalibrationCandidate = calibrationStrong !== undefined
-    && calibrationGray !== undefined;
-  const calibrationValidationDelta = calibration
-    ?.objective_comparison_vs_active_v1?.validation_delta_v2_minus_v1;
-  const transitions = Object.entries(experiment?.zone_transitions ?? {})
-    .map(([transition, count]) => `${transition}:${count}`)
-    .join(", ");
-  const title = [
-    `Adaptive policy ${status}`,
-    `effective ${strong}/${gray}, revision ${revision}`,
-    controller?.effective_source ? `source ${controller.effective_source}` : "",
-    controller?.last_action ? `action ${controller.last_action}` : "",
-    controller?.last_reason ? `reason ${controller.last_reason}` : "",
-    coverageFailures ? `${coverageFailures} strategy coverage gate(s) pending` : "",
-    hasExperimentCoverage ? `V2 shadow coverage ${experimentValid}/${experimentTotal}` : "",
-    calibration?.status ? `V2 calibration ${calibration.status}` : "",
-    hasCalibrationCandidate ? `V2 candidate ${calibrationStrong}/${calibrationGray}` : "",
-    calibrationValidationDelta !== undefined && calibrationValidationDelta !== null
-      ? `V2 holdout objective delta ${calibrationValidationDelta}`
-      : "",
-    calibration?.sample_reasons?.length
-      ? `V2 calibration blockers ${calibration.sample_reasons.join(",")}`
-      : "",
-    reviewController?.status
-      ? `V2 review ${reviewController.status}`
-      : "",
-    reviewController?.candidate
-      ? `V2 review confirmations ${reviewController.candidate.confirmations ?? 0}/${reviewController.candidate.required_confirmations ?? 0}`
-      : "",
-    reviewController?.operator_approved === false
-      ? "V2 operator approved false"
-      : "",
-    reviewController?.active_for_routing === false
-      ? "V2 active for routing false"
-      : "",
-    canary?.status ? `V2 canary ${canary.status}` : "",
-    canary?.routing_enabled
-      ? `V2 canary allocation ${(canary.allocation_rate ?? 0) * 100}%, risk x${canary.risk_multiplier ?? 0}`
-      : "",
-    canary?.candidate_thresholds
-      ? `V2 canary zones ${canary.candidate_thresholds.strong_min_score ?? "--"}/${canary.candidate_thresholds.gray_min_score ?? "--"}`
-      : "",
-    canary?.candidate_fingerprint
-      ? `V2 candidate fingerprint ${canary.candidate_fingerprint.slice(0, 12)}`
-      : "",
-    canary?.approval_id ? `V2 approval ${canary.approval_id.slice(0, 12)}` : "",
-    canary?.rollback_metrics?.closed_trades !== undefined
-      ? `V2 canary closes ${canary.rollback_metrics.closed_trades}, LCB ${canary.rollback_metrics.average_r_lower_bound ?? "--"}, PF ${canary.rollback_metrics.profit_factor ?? "--"}, cumulative R ${canary.rollback_metrics.cumulative_r ?? 0}`
-      : "",
-    canary?.last_reason ? `V2 canary reason ${canary.last_reason}` : "",
-    readinessStatus ? `V2 readiness ${readinessStatus}` : "",
-    readinessBlockers.length ? `V2 blockers ${readinessBlockers.join(",")}` : "",
-    scoreDelta !== undefined && scoreDelta !== null ? `V2 score delta ${scoreDelta}` : "",
-    transitions ? `V2 zone transitions ${transitions}` : "",
-    experimentRoutingError ? "error V2 unexpectedly marked active for routing" : "",
-    controller?.state_error ? `error ${controller.state_error}` : "",
-  ].filter(Boolean).join(" | ");
-  const ariaLabel = [
-    `Adaptive policy strong ${strong}, gray ${gray}, revision ${revision}`,
-    hasExperimentCoverage ? `V2 coverage ${experimentValid} of ${experimentTotal}` : "",
-  ].filter(Boolean).join(", ");
-  return (
-    <span
-      className={cn(
-        "hidden h-5 shrink-0 items-center gap-1 rounded border px-1.5 font-mono text-[9px] font-semibold uppercase tabular md:inline-flex",
-        tone
-      )}
-      title={title}
-      aria-label={ariaLabel}
-    >
-      <SlidersHorizontal className="h-2.5 w-2.5" />
-      <span>ADP {strong}/{gray} R{revision}</span>
-      {canary?.routing_enabled ? (
-        <span className="border-l border-current/30 pl-1 text-ttcc-yellow">V2 CANARY</span>
-      ) : null}
-      {hasExperimentCoverage ? (
-        <span className="border-l border-current/30 pl-1">V2 {experimentValid}/{experimentTotal}</span>
-      ) : null}
     </span>
   );
 }
