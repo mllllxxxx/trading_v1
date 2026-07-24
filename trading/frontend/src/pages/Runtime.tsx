@@ -54,15 +54,15 @@ export function Runtime() {
   return (
     <div className="min-h-screen p-6 lg:p-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <section className="flex flex-col gap-4 border-b pb-6 lg:flex-row lg:items-end lg:justify-between">
+        <section className="flex flex-col gap-4 border-b border-ttcc-border-subtle pb-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-ttcc-border-subtle px-2.5 py-1 text-xs font-medium text-ttcc-text-secondary">
               <Activity className="h-3.5 w-3.5" />
               {t("runtime.monitorBadge")}
             </div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">{t("runtime.title")}</h1>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              <h1 className="text-3xl font-bold tracking-tight text-ttcc-text">{t("runtime.title")}</h1>
+              <p className="mt-2 max-w-2xl text-sm text-ttcc-text-secondary">
                 {t("runtime.subtitlePre")} <span className="font-mono">/live/status</span>
                 {t("runtime.subtitlePost")}
               </p>
@@ -72,7 +72,7 @@ export function Runtime() {
             type="button"
             onClick={() => loadStatus("refresh")}
             disabled={refreshing}
-            className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-ttcc-border-subtle px-4 py-2 text-sm font-medium text-ttcc-text-secondary transition-colors hover:bg-ttcc-surface-2 hover:text-ttcc-text disabled:opacity-50"
           >
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             {t("runtime.refresh")}
@@ -82,19 +82,19 @@ export function Runtime() {
         {loading ? (
           <div className="grid gap-3 md:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="h-24 animate-pulse rounded-md border bg-muted/40" />
+              <div key={item} className="h-24 animate-pulse rounded-lg border border-ttcc-border-subtle bg-ttcc-surface-2/40" />
             ))}
           </div>
         ) : null}
 
         {!loading && error ? (
-          <section className="rounded-md border border-amber-500/30 bg-amber-500/5 p-5">
-            <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-300">
+          <section className="rounded-lg border border-ttcc-yellow/30 bg-ttcc-yellow/5 p-5 transition-colors">
+            <div className="flex items-center gap-2 font-semibold text-ttcc-yellow">
               <AlertTriangle className="h-5 w-5" />
               {t("runtime.unavailableTitle")}
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">{error}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{t("runtime.unavailableHint")}</p>
+            <p className="mt-2 text-sm text-ttcc-text-secondary">{error}</p>
+            <p className="mt-2 text-xs text-ttcc-text-secondary">{t("runtime.unavailableHint")}</p>
           </section>
         ) : null}
 
@@ -123,10 +123,10 @@ export function Runtime() {
             </section>
 
             {status.brokers.length === 0 ? (
-              <section className="rounded-md border border-dashed p-8 text-center">
-                <ShieldOff className="mx-auto h-8 w-8 text-muted-foreground" />
-                <h2 className="mt-3 font-medium">{t("runtime.noProfilesTitle")}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">{t("runtime.noProfilesBody")}</p>
+              <section className="rounded-lg border border-dashed border-ttcc-border-subtle p-8 text-center transition-colors">
+                <ShieldOff className="mx-auto h-8 w-8 text-ttcc-text-secondary" />
+                <h2 className="mt-3 font-semibold text-ttcc-text">{t("runtime.noProfilesTitle")}</h2>
+                <p className="mt-1 text-sm text-ttcc-text-secondary">{t("runtime.noProfilesBody")}</p>
               </section>
             ) : (
               <section className="grid gap-4">
@@ -151,23 +151,23 @@ interface SummaryTileProps {
 
 function SummaryTile({ label, value, tone, icon: Icon }: SummaryTileProps) {
   return (
-    <div className="rounded-md border p-4">
+    <div className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface p-4 transition-colors">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs font-medium uppercase text-muted-foreground">{label}</span>
+        <span className="text-xs font-medium uppercase text-ttcc-text-secondary">{label}</span>
         <Icon
           className={cn(
             "h-4 w-4",
-            tone === "success" && "text-success",
-            tone === "danger" && "text-danger",
-            tone === "neutral" && "text-muted-foreground",
+            tone === "success" && "text-ttcc-green",
+            tone === "danger" && "text-ttcc-red",
+            tone === "neutral" && "text-ttcc-text-secondary",
           )}
         />
       </div>
       <div
         className={cn(
           "mt-3 text-2xl font-semibold",
-          tone === "success" && "text-success",
-          tone === "danger" && "text-danger",
+          tone === "success" && "text-ttcc-green",
+          tone === "danger" && "text-ttcc-red",
         )}
       >
         {value}
@@ -185,11 +185,11 @@ function BrokerRuntimeCard({ broker, globalHalted, t }: { broker: LiveBrokerStat
   const mandateCountdown = formatCountdown(mandate?.expires_at, t);
 
   return (
-    <article className="rounded-md border p-4">
+    <article className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface p-4 transition-colors">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-semibold capitalize">{brokerKey}</h2>
+            <h2 className="font-semibold capitalize text-ttcc-text">{brokerKey}</h2>
             <StatusPill
               label={broker.auth.oauth_token_present ? t("runtime.authPresent") : t("runtime.authMissing")}
               tone={broker.auth.oauth_token_present ? "success" : "neutral"}
@@ -200,7 +200,7 @@ function BrokerRuntimeCard({ broker, globalHalted, t }: { broker: LiveBrokerStat
             />
             {halted ? <StatusPill label={t("runtime.haltedPill")} tone="danger" /> : null}
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-ttcc-text-secondary">
             {broker.auth.is_live_broker ? t("runtime.recognizedProfile") : t("runtime.unknownProfile")} · {t("runtime.lastTick")}{" "}
             {formatLastTick(broker.runner?.last_tick, broker.runner?.last_tick_age_seconds, t)}
           </p>
@@ -222,12 +222,12 @@ function BrokerRuntimeCard({ broker, globalHalted, t }: { broker: LiveBrokerStat
               <KeyValue label={t("runtime.limits")} value={summarizeLimits(mandate.limits, t)} />
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">{t("runtime.noMandate")}</p>
+            <p className="text-sm text-ttcc-text-secondary">{t("runtime.noMandate")}</p>
           )}
         </RuntimePanel>
 
         <RuntimePanel title={t("runtime.riskStateTitle")} icon={risk.icon}>
-          <p className="text-sm text-muted-foreground">{risk.description}</p>
+          <p className="text-sm text-ttcc-text-secondary">{risk.description}</p>
         </RuntimePanel>
       </div>
     </article>
@@ -236,8 +236,8 @@ function BrokerRuntimeCard({ broker, globalHalted, t }: { broker: LiveBrokerStat
 
 function RuntimePanel({ title, icon: Icon, children }: { title: string; icon: typeof Activity; children: ReactNode }) {
   return (
-    <section className="rounded-md border bg-muted/20 p-3">
-      <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
+    <section className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface-2/20 p-3 transition-colors">
+      <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase text-ttcc-text-secondary">
         <Icon className="h-3.5 w-3.5" />
         {title}
       </div>
@@ -249,8 +249,8 @@ function RuntimePanel({ title, icon: Icon, children }: { title: string; icon: ty
 function KeyValue({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[11px] uppercase text-muted-foreground">{label}</div>
-      <div className="font-mono text-sm">{value || "-"}</div>
+      <div className="text-[11px] uppercase text-ttcc-text-secondary">{label}</div>
+      <div className="font-mono text-sm text-ttcc-text">{value || "-"}</div>
     </div>
   );
 }
@@ -259,11 +259,11 @@ function StatusPill({ label, tone }: { label: string; tone: "success" | "danger"
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium",
-        tone === "success" && "bg-success/10 text-success",
-        tone === "danger" && "bg-danger/10 text-danger",
-        tone === "warning" && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-        tone === "neutral" && "bg-muted text-muted-foreground",
+        "inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium",
+        tone === "success" && "bg-ttcc-green/10 text-ttcc-green",
+        tone === "danger" && "bg-ttcc-red/10 text-ttcc-red",
+        tone === "warning" && "bg-ttcc-yellow/10 text-ttcc-yellow",
+        tone === "neutral" && "bg-ttcc-surface-2 text-ttcc-text-secondary",
       )}
     >
       {label}

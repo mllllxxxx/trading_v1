@@ -23,7 +23,7 @@ import {
 
 interface Props {
   /** Shared `GET /live/status` snapshot, polled once by the parent (Agent.tsx).
-   * `null` until the first poll resolves. */
+   *  `null` until the first poll resolves. */
   status: LiveStatus | null;
   /** True when the status endpoint is not wired on this backend (404/501) — hide. */
   unavailable?: boolean;
@@ -138,17 +138,17 @@ function BrokerRow({
   }, [brokerKey, busy, runnerAlive, onRefresh]);
 
   return (
-    <div className="grid gap-2 rounded-lg border bg-muted/20 p-2.5">
+    <div className="grid gap-2 rounded-lg border bg-ttcc-surface-2/20 p-2.5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate text-xs font-semibold capitalize text-foreground">{brokerKey}</span>
+          <span className="truncate text-xs font-semibold capitalize text-ttcc-text">{brokerKey}</span>
           {authorized ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
               <ShieldCheck className="h-2.5 w-2.5" />
               Authorized
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-full bg-ttcc-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-ttcc-text-secondary">
               <CircleSlash className="h-2.5 w-2.5" />
               Not connected
             </span>
@@ -160,16 +160,16 @@ function BrokerRow({
           is a desktop-only CLI step (SPEC §4 headless behavior), so the web surface
           surfaces the discoverable instruction rather than driving the browser flow. */}
       {!authorized ? (
-        <div className="grid gap-1.5 rounded-md border border-dashed border-primary/30 bg-primary/5 p-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-primary">
+        <div className="grid gap-1.5 rounded-lg border border-dashed border-ttcc-accent/30 bg-ttcc-accent/5 p-2">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ttcc-accent">
             <PlugZap className="h-3 w-3 shrink-0" />
             Connect this profile to enable connector runtime
           </div>
-          <p className="text-[10px] leading-relaxed text-muted-foreground">
+          <p className="text-[10px] leading-relaxed text-ttcc-text-secondary">
             {authorizeInstruction}
           </p>
           {authorizeNote && (
-            <p className="text-[10px] leading-relaxed text-muted-foreground">
+            <p className="text-[10px] leading-relaxed text-ttcc-text-secondary">
               {authorizeNote}
             </p>
           )}
@@ -177,30 +177,30 @@ function BrokerRow({
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-md border bg-background/60 p-2">
-              <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                <CircleDot className={["h-2.5 w-2.5", runnerAlive ? "text-emerald-500" : "text-muted-foreground"].join(" ")} />
+            <div className="rounded-lg border bg-ttcc-surface/60 p-2">
+              <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-ttcc-text-secondary">
+                <CircleDot className={["h-2.5 w-2.5", runnerAlive ? "text-emerald-500" : "text-ttcc-text-secondary"].join(" ")} />
                 Runner
               </div>
-              <div className={["mt-0.5 text-xs font-semibold", runnerAlive ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"].join(" ")}>
+              <div className={["mt-0.5 text-xs font-semibold", runnerAlive ? "text-emerald-600 dark:text-emerald-400" : "text-ttcc-text-secondary"].join(" ")}>
                 {runnerAlive ? "Running" : "Stopped"}
               </div>
             </div>
-            <div className="rounded-md border bg-background/60 p-2">
-              <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="rounded-lg border bg-ttcc-surface/60 p-2">
+              <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-ttcc-text-secondary">
                 <Activity className="h-2.5 w-2.5" />
                 Last tick
               </div>
-              <div className="mt-0.5 text-xs font-medium text-foreground">
+              <div className="mt-0.5 text-xs font-medium text-ttcc-text">
                 {formatRelative(broker.runner?.last_tick)}
               </div>
             </div>
           </div>
 
           {mandate ? (
-            <div className="rounded-md border bg-background/60 p-2">
+            <div className="rounded-lg border bg-ttcc-surface/60 p-2">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-ttcc-text-secondary">
                   <ShieldCheck className="h-2.5 w-2.5" />
                   Active mandate
                 </div>
@@ -209,10 +209,10 @@ function BrokerRow({
                     className={[
                       "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
                       countdown.expired
-                        ? "bg-destructive/10 text-destructive"
+                        ? "bg-ttcc-red/10 text-ttcc-red"
                         : countdown.soon
                           ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                          : "bg-muted text-muted-foreground",
+                          : "bg-ttcc-surface-2 text-ttcc-text-secondary",
                     ].join(" ")}
                     title={`Expires ${new Date(mandate.expires_at).toLocaleString()}`}
                   >
@@ -221,24 +221,24 @@ function BrokerRow({
                   </span>
                 )}
               </div>
-              <div className="mt-0.5 font-mono text-[11px] text-foreground">
+              <div className="mt-0.5 font-mono text-[11px] text-ttcc-text">
                 {summarizeLimits(mandate.limits) || "limits unavailable"}
               </div>
             </div>
           ) : (
-            <div className="rounded-md border border-dashed bg-background/40 p-2 text-[10px] text-muted-foreground">
+            <div className="rounded-lg border border-dashed bg-ttcc-surface/40 p-2 text-[10px] text-ttcc-text-secondary">
               No active mandate. Ask the agent to propose one, then commit it before starting the connector runtime.
             </div>
           )}
 
           <div className="flex items-center justify-between gap-2">
             {halted ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-destructive">
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-ttcc-red">
                 <OctagonX className="h-3 w-3" />
                 Halted — runner controls disabled
               </span>
             ) : (
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[10px] text-ttcc-text-secondary">
                 {runnerAlive ? "Runtime active inside mandate" : "Idle"}
               </span>
             )}
@@ -249,8 +249,8 @@ function BrokerRow({
               className={[
                 "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition-colors disabled:opacity-40",
                 runnerAlive
-                  ? "border-destructive/40 text-destructive hover:bg-destructive/10"
-                  : "border-primary/40 text-primary hover:bg-primary/10",
+                  ? "border-ttcc-red/40 text-ttcc-red hover:bg-ttcc-red/10"
+                  : "border-ttcc-accent/40 text-ttcc-accent hover:bg-ttcc-accent/10",
               ].join(" ")}
               title={runnerAlive ? "Stop the persistent runner" : "Start the persistent runner"}
             >
@@ -290,13 +290,13 @@ export const RunnerStatus = memo(function RunnerStatus({ status, unavailable, ha
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex max-w-full items-center gap-1.5 justify-self-start rounded-lg bg-primary/10 px-2.5 py-1 text-left text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+        className="inline-flex max-w-full items-center gap-1.5 justify-self-start rounded-lg bg-ttcc-accent/10 px-2.5 py-1 text-left text-xs font-medium text-ttcc-accent transition-colors hover:bg-ttcc-accent/15"
         aria-label="Connector runtime status"
         aria-expanded={open}
       >
         <Activity className="h-3 w-3 shrink-0" />
         <span className="shrink-0">{i18n.t("runnerStatus.connectorRuntime")}</span>
-        <span className="truncate text-muted-foreground">
+        <span className="truncate text-ttcc-text-secondary">
           {authorizedCount > 0 ? `${authorizedCount} connected` : "no connector connected"}
         </span>
         {anyRunning && !isHalted && (
@@ -306,7 +306,7 @@ export const RunnerStatus = memo(function RunnerStatus({ status, unavailable, ha
           </span>
         )}
         {isHalted && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
+          <span className="inline-flex items-center gap-1 rounded-full bg-ttcc-red/10 px-1.5 py-0.5 text-[10px] font-medium text-ttcc-red">
             <OctagonX className="h-2.5 w-2.5" />
             halted
           </span>
@@ -315,7 +315,7 @@ export const RunnerStatus = memo(function RunnerStatus({ status, unavailable, ha
       </button>
 
       {open && (
-        <div className="grid gap-2 rounded-xl border border-primary/20 bg-background/95 p-3 shadow-sm">
+        <div className="grid gap-2 rounded-xl border border-ttcc-accent/20 bg-ttcc-surface/95 p-3 shadow-sm">
           {status.brokers.map((broker) => (
             <BrokerRow key={broker.auth.broker} broker={broker} halted={isHalted || broker.halted} onRefresh={onRefresh} />
           ))}

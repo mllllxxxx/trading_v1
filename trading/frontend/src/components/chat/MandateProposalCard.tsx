@@ -72,24 +72,24 @@ function ProfileTile({
   return (
     <div
       className={[
-        "rounded-xl border p-3 transition-colors",
+        "rounded-lg border p-3 transition-colors",
         active
-          ? "border-primary/60 bg-primary/5"
-          : "border-border/60 bg-muted/20 hover:border-primary/40",
+          ? "border-ttcc-accent/60 bg-ttcc-accent/5"
+          : "border-ttcc-border-subtle/60 bg-ttcc-surface-2/20 hover:border-ttcc-accent/40",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 font-mono text-[11px] font-semibold text-primary">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ttcc-accent/10 font-mono text-[11px] font-semibold text-ttcc-accent">
             {profile.ordinal}
           </span>
-          <span className="text-sm font-semibold text-foreground">{profile.label}</span>
+          <span className="text-sm font-semibold text-ttcc-text">{profile.label}</span>
         </div>
         <button
           type="button"
           onClick={onAdjustToggle}
           disabled={disabled}
-          className="inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+          className="inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px] font-medium text-ttcc-text-secondary transition-colors hover:text-ttcc-text disabled:opacity-40"
           title="Adjust this mandate"
         >
           <SlidersHorizontal className="h-3 w-3" />
@@ -99,29 +99,29 @@ function ProfileTile({
 
       <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
         <div className="col-span-2">
-          <dt className="text-muted-foreground">{i18n.t("mandate.universe")}</dt>
-          <dd className="font-medium text-foreground">{formatUniverse(profile.universe)}</dd>
+          <dt className="text-ttcc-text-secondary">{i18n.t("mandate.universe")}</dt>
+          <dd className="font-medium text-ttcc-text">{formatUniverse(profile.universe)}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">{i18n.t("mandate.maxOrder")}</dt>
-          <dd className="font-mono font-medium text-foreground">{formatUsd(profile.max_order_usd)}</dd>
+          <dt className="text-ttcc-text-secondary">{i18n.t("mandate.maxOrder")}</dt>
+          <dd className="font-mono font-medium text-ttcc-text">{formatUsd(profile.max_order_usd)}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">{i18n.t("mandate.dailyCap")}</dt>
-          <dd className="font-mono font-medium text-foreground">{profile.daily_trade_cap} trades/day</dd>
+          <dt className="text-ttcc-text-secondary">{i18n.t("mandate.dailyCap")}</dt>
+          <dd className="font-mono font-medium text-ttcc-text">{profile.daily_trade_cap} trades/day</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">{i18n.t("mandate.leverage")}</dt>
-          <dd className="font-medium text-foreground">{formatLeverage(profile.leverage)}</dd>
+          <dt className="text-ttcc-text-secondary">{i18n.t("mandate.leverage")}</dt>
+          <dd className="font-medium text-ttcc-text">{formatLeverage(profile.leverage)}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">{i18n.t("mandate.instruments")}</dt>
-          <dd className="font-medium text-foreground">{profile.instruments.join(", ") || "—"}</dd>
+          <dt className="text-ttcc-text-secondary">{i18n.t("mandate.instruments")}</dt>
+          <dd className="font-medium text-ttcc-text">{profile.instruments.join(", ") || "—"}</dd>
         </div>
       </dl>
 
       {profile.notes && (
-        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{profile.notes}</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-ttcc-text-secondary">{profile.notes}</p>
       )}
 
       {adjusting ? (
@@ -140,13 +140,13 @@ function ProfileTile({
               }
             }}
             placeholder="e.g. keep this but raise the daily cap to 10"
-            className="w-full rounded-lg border bg-background px-3 py-1.5 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border bg-ttcc-surface px-3 py-1.5 text-xs text-ttcc-text outline-none focus:ring-2 focus:ring-ttcc-accent/30"
           />
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={onAdjustCancel}
-              className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium text-ttcc-text-secondary transition-colors hover:text-ttcc-text"
             >
               <X className="h-3 w-3" />
               Cancel
@@ -155,7 +155,7 @@ function ProfileTile({
               type="button"
               onClick={submit}
               disabled={!adjustText.trim()}
-              className="inline-flex items-center gap-1 rounded-lg bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground transition-opacity disabled:opacity-40"
+              className="inline-flex items-center gap-1 rounded-lg bg-ttcc-accent px-2 py-1 text-[11px] font-medium text-ttcc-bg transition-colors disabled:opacity-40"
             >
               <Check className="h-3 w-3" />
               Send adjustment
@@ -167,7 +167,7 @@ function ProfileTile({
           type="button"
           onClick={onCommit}
           disabled={disabled}
-          className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-ttcc-accent px-3 py-1.5 text-xs font-medium text-ttcc-bg transition-colors hover:opacity-90 disabled:opacity-40"
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
           {busy ? "Committing…" : `Commit “${profile.label}”`}
@@ -237,7 +237,7 @@ export const MandateProposalCard = memo(function MandateProposalCard({ proposal,
             )}
             {dailyCap != null && <span className="shrink-0 font-mono text-[11px]">· {dailyCap}/day</span>}
             {expires && (
-              <span className="shrink-0 text-[10px] text-muted-foreground">
+              <span className="shrink-0 text-[10px] text-ttcc-text-secondary">
                 · expires {expires.toLocaleDateString()}
               </span>
             )}
@@ -252,22 +252,22 @@ export const MandateProposalCard = memo(function MandateProposalCard({ proposal,
   return (
     <div className="flex gap-3">
       <AgentAvatar />
-      <div className="flex-1 min-w-0 space-y-3 rounded-2xl border border-primary/20 bg-background/95 p-4 shadow-sm">
+      <div className="flex-1 min-w-0 space-y-3 rounded-2xl border border-ttcc-accent/20 bg-ttcc-surface/95 p-4 shadow-sm">
         <div className="flex items-start gap-2">
           {isReauth ? (
             <ShieldAlert className="h-4 w-4 shrink-0 text-amber-500" />
           ) : (
-            <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
+            <ShieldCheck className="h-4 w-4 shrink-0 text-ttcc-accent" />
           )}
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-semibold text-ttcc-text">
               {isReauth ? i18n.t("mandate.reauthMandate") : i18n.t("mandate.runtimeMandate")}
             </p>
             {proposal.intent_normalized && (
-              <p className="text-xs text-muted-foreground">{proposal.intent_normalized}</p>
+              <p className="text-xs text-ttcc-text-secondary">{proposal.intent_normalized}</p>
             )}
             {proposal.account && (
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-[11px] text-ttcc-text-secondary">
                 {proposal.account.broker} · {proposal.account.type} account · funded by {proposal.account.funded_by}
               </p>
             )}
@@ -296,7 +296,7 @@ export const MandateProposalCard = memo(function MandateProposalCard({ proposal,
           ))}
         </div>
 
-        <div className="grid gap-1.5 border-t border-border/60 pt-2 text-[11px] text-muted-foreground">
+        <div className="grid gap-1.5 border-t border-ttcc-border-subtle/60 pt-2 text-[11px] text-ttcc-text-secondary">
           {proposal.funding_note && (
             <p className="flex items-start gap-1.5">
               <Wallet className="mt-0.5 h-3 w-3 shrink-0" />
@@ -305,7 +305,7 @@ export const MandateProposalCard = memo(function MandateProposalCard({ proposal,
           )}
           {proposal.halt_note && (
             <p className="flex items-start gap-1.5">
-              <OctagonX className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />
+              <OctagonX className="mt-0.5 h-3 w-3 shrink-0 text-ttcc-red" />
               <span>{proposal.halt_note}</span>
             </p>
           )}

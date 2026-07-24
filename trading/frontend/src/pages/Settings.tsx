@@ -16,9 +16,9 @@ interface LLMFormState {
 }
 
 const fieldClass =
-  "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60";
-const labelClass = "text-sm font-medium";
-const hintClass = "text-xs text-muted-foreground";
+  "w-full rounded-lg border border-ttcc-border-subtle bg-ttcc-surface px-3 py-2 text-sm text-ttcc-text outline-none transition-colors focus:border-ttcc-accent focus:ring-2 focus:ring-ttcc-accent/30 disabled:cursor-not-allowed disabled:opacity-60";
+const labelClass = "text-sm font-semibold text-ttcc-text";
+const hintClass = "text-xs text-ttcc-text-secondary";
 
 function toForm(settings: LLMSettings): LLMFormState {
   return {
@@ -150,13 +150,13 @@ export function Settings() {
   };
 
   const localApiAccessSection = (
-    <form onSubmit={submitLocalApiKey} className="rounded-lg border bg-card p-5 shadow-sm">
+    <form onSubmit={submitLocalApiKey} className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface p-5 shadow-sm transition-colors">
       <div className="mb-4 space-y-1">
         <div className="flex items-center gap-2">
-          <KeyRound className="h-4 w-4 text-primary" />
-          <h2 className="text-base font-semibold">{"Local API access"}</h2>
+          <KeyRound className="h-4 w-4 text-ttcc-accent" />
+          <h2 className="text-base font-semibold text-ttcc-text">{"Local API access"}</h2>
         </div>
-        <p className="text-sm text-muted-foreground">{"For remote or private Web UI deployments, enter the server API key once in this browser. Localhost use can stay blank."}</p>
+        <p className="text-sm text-ttcc-text-secondary">{"For remote or private Web UI deployments, enter the server API key once in this browser. Localhost use can stay blank."}</p>
       </div>
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
         <label className="grid gap-2">
@@ -172,13 +172,13 @@ export function Settings() {
         </label>
         <button
           type="submit"
-          className="inline-flex items-center justify-center gap-2 self-end rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+          className="inline-flex items-center justify-center gap-2 self-end rounded-lg bg-ttcc-accent px-4 py-2 text-sm font-semibold text-ttcc-bg transition-colors hover:opacity-90"
         >
           <Save className="h-4 w-4" />
           {i18n.t("settings.save")}
         </button>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">{"Stored only in this browser. Leave blank to clear it."}</p>
+      <p className="mt-2 text-xs text-ttcc-text-secondary">{"Stored only in this browser. Leave blank to clear it."}</p>
     </form>
   );
 
@@ -186,14 +186,14 @@ export function Settings() {
     return (
       <div className="mx-auto max-w-5xl space-y-6 p-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{"Settings"}</h1>
-          <p className="max-w-3xl text-sm text-muted-foreground">{"Configure model credentials and market data source tokens for this local project."}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-ttcc-text">{"Settings"}</h1>
+          <p className="max-w-3xl text-sm text-ttcc-text-secondary">{"Configure model credentials and market data source tokens for this local project."}</p>
         </div>
         {localApiAccessSection}
-        <div className="flex min-h-32 items-center justify-center rounded-lg border bg-card p-5 text-sm text-muted-foreground">
+        <div className="flex min-h-32 items-center justify-center rounded-lg border border-ttcc-border-subtle bg-ttcc-surface p-5 text-sm text-ttcc-text-secondary">
           {settingsLoadError ? (
             <div className="text-center">
-              <div className="font-medium text-foreground">{"Settings are unavailable"}</div>
+              <div className="font-semibold text-ttcc-text">{"Settings are unavailable"}</div>
               <div className="mt-1">{settingsLoadError}</div>
             </div>
           ) : (
@@ -222,22 +222,22 @@ export function Settings() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{"Settings"}</h1>
-        <p className="max-w-3xl text-sm text-muted-foreground">{"Configure model credentials and market data source tokens for this local project."}</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-ttcc-text">{"Settings"}</h1>
+        <p className="max-w-3xl text-sm text-ttcc-text-secondary">{"Configure model credentials and market data source tokens for this local project."}</p>
       </div>
 
       {localApiAccessSection}
 
       <div className="space-y-2">
-        <h2 className="text-lg font-semibold tracking-tight">{"LLM Settings"}</h2>
-        <p className="max-w-3xl text-sm text-muted-foreground">{"Choose the model used by the agent and save it to the project-local agent/.env file."}</p>
+        <h2 className="text-lg font-semibold tracking-tight text-ttcc-text">{"LLM Settings"}</h2>
+        <p className="max-w-3xl text-sm text-ttcc-text-secondary">{"Choose the model used by the agent and save it to the project-local agent/.env file."}</p>
       </div>
 
       <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
-        <section className="rounded-lg border bg-card p-5 shadow-sm">
+        <section className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface p-5 shadow-sm transition-colors">
           <div className="mb-5 flex items-center gap-2">
-            <Server className="h-4 w-4 text-primary" />
-            <h2 className="text-base font-semibold">{"Connection"}</h2>
+            <Server className="h-4 w-4 text-ttcc-accent" />
+            <h2 className="text-base font-semibold text-ttcc-text">{"Connection"}</h2>
           </div>
 
           <div className="grid gap-4">
@@ -267,7 +267,7 @@ export function Settings() {
                 <button
                   type="button"
                   onClick={() => applyProviderDefaults()}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-ttcc-border-subtle px-3 py-2 text-sm text-ttcc-text-secondary transition-colors hover:bg-ttcc-surface-2 hover:text-ttcc-text"
                   title={"Use provider defaults"}
                 >
                   <RotateCcw className="h-4 w-4" />
@@ -293,7 +293,7 @@ export function Settings() {
                 {selectedProvider?.auth_type === "oauth" ? "OAuth" : "API key"}
               </span>
               <div className="relative">
-                <KeyRound className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <KeyRound className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ttcc-text-secondary" />
                 <input
                   type="password"
                   value={apiKey}
@@ -307,7 +307,7 @@ export function Settings() {
               <div className="flex items-center justify-between gap-3">
                 <span className={hintClass}>{keyStatus}</span>
                 {selectedProvider?.api_key_required ? (
-                  <label className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                  <label className="flex shrink-0 items-center gap-2 text-xs text-ttcc-text-secondary">
                     <input
                       type="checkbox"
                       checked={clearApiKey}
@@ -315,7 +315,7 @@ export function Settings() {
                         setClearApiKey(event.target.checked);
                         if (event.target.checked) setApiKey("");
                       }}
-                      className="h-3.5 w-3.5 accent-primary"
+                      className="h-3.5 w-3.5 accent-ttcc-accent"
                     />
                     {"Clear saved API key"}
                   </label>
@@ -325,10 +325,10 @@ export function Settings() {
           </div>
         </section>
 
-        <section className="rounded-lg border bg-card p-5 shadow-sm">
+        <section className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface p-5 shadow-sm transition-colors">
           <div className="mb-5 flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-primary" />
-            <h2 className="text-base font-semibold">{"Generation"}</h2>
+            <SlidersHorizontal className="h-4 w-4 text-ttcc-accent" />
+            <h2 className="text-base font-semibold text-ttcc-text">{"Generation"}</h2>
           </div>
 
           <div className="grid gap-4">
@@ -387,15 +387,15 @@ export function Settings() {
               <span className={hintClass}>{"How hard the model thinks before answering. Higher is more thorough but slower; leave Off for fastest replies."}</span>
             </label>
 
-            <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">{i18n.t("settings.saved")}: </span>
+            <div className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface-2/30 px-3 py-2 text-xs text-ttcc-text-secondary">
+              <span className="font-semibold text-ttcc-text">{i18n.t("settings.saved")}: </span>
               <span className="break-all font-mono">{settings.env_path}</span>
             </div>
 
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-ttcc-accent px-4 py-2 text-sm font-semibold text-ttcc-bg transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {saving ? i18n.t("settings.saving") : i18n.t("settings.save")}
@@ -404,13 +404,13 @@ export function Settings() {
         </section>
       </form>
 
-      <form onSubmit={submitDataSources} className="rounded-lg border bg-card p-5 shadow-sm">
+      <form onSubmit={submitDataSources} className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface p-5 shadow-sm transition-colors">
         <div className="mb-5 space-y-1">
           <div className="flex items-center gap-2">
-            <Database className="h-4 w-4 text-primary" />
-            <h2 className="text-base font-semibold">{"Data Source Settings"}</h2>
+            <Database className="h-4 w-4 text-ttcc-accent" />
+            <h2 className="text-base font-semibold text-ttcc-text">{"Data Source Settings"}</h2>
           </div>
-          <p className="text-sm text-muted-foreground">{"Configure optional market data credentials used by backtests and research agents."}</p>
+          <p className="text-sm text-ttcc-text-secondary">{"Configure optional market data credentials used by backtests and research agents."}</p>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
@@ -418,7 +418,7 @@ export function Settings() {
             <label className="grid gap-2">
               <span className={labelClass}>{"Tushare token"}</span>
               <div className="relative">
-                <KeyRound className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <KeyRound className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ttcc-text-secondary" />
                 <input
                   type="password"
                   value={tushareToken}
@@ -431,7 +431,7 @@ export function Settings() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className={hintClass}>{"Used for China A-share, futures, fund, and macro data. If unset, the project falls back to AKShare where available."}</span>
-                <label className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                <label className="flex shrink-0 items-center gap-2 text-xs text-ttcc-text-secondary">
                   <input
                     type="checkbox"
                     checked={clearTushareToken}
@@ -439,36 +439,36 @@ export function Settings() {
                       setClearTushareToken(event.target.checked);
                       if (event.target.checked) setTushareToken("");
                     }}
-                    className="h-3.5 w-3.5 accent-primary"
+                    className="h-3.5 w-3.5 accent-ttcc-accent"
                   />
                   {"Clear saved Tushare token"}
                 </label>
               </div>
             </label>
 
-            <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">{i18n.t("settings.saved")}: </span>
+            <div className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface-2/30 px-3 py-2 text-xs text-ttcc-text-secondary">
+              <span className="font-semibold text-ttcc-text">{i18n.t("settings.saved")}: </span>
               <span className="break-all font-mono">{dataSettings.env_path}</span>
             </div>
 
             <button
               type="submit"
               disabled={dataSaving}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-ttcc-accent px-4 py-2 text-sm font-semibold text-ttcc-bg transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {dataSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {dataSaving ? i18n.t("settings.saving") : "Save data source settings"}
             </button>
           </div>
 
-          <div className="rounded-md border bg-muted/20 p-4">
+          <div className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface-2/20 p-4 transition-colors">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="text-sm font-medium">{"BaoStock"}</span>
-              <span className={`rounded-full px-2 py-0.5 text-xs ${dataSettings.baostock_supported ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
+              <span className="text-sm font-semibold text-ttcc-text">{"BaoStock"}</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs ${dataSettings.baostock_supported ? "bg-ttcc-green/10 text-ttcc-green" : "bg-ttcc-yellow/10 text-ttcc-yellow"}`}>
                 {dataSettings.baostock_supported ? "Loader available" : "No project loader"}
               </span>
             </div>
-            <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="space-y-2 text-sm text-ttcc-text-secondary">
               <p>{dataSettings.baostock_message}</p>
               <p>
                 {dataSettings.baostock_installed

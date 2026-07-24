@@ -111,7 +111,7 @@ function buildEquityCurve(trades: Trade[]): { ts: string; cumulative: number }[]
 function EquitySparkline({ data, height = 120 }: { data: { ts: string; cumulative: number }[]; height?: number }) {
   if (data.length < 2) {
     return (
-      <div className="flex h-[120px] items-center justify-center rounded-md border bg-muted/30 text-xs text-muted-foreground">
+      <div className="flex h-[120px] items-center justify-center rounded-lg border bg-ttcc-surface-2/30 text-xs text-ttcc-text-secondary">
         Need ≥ 2 trades to render equity curve
       </div>
     );
@@ -176,19 +176,19 @@ function CalendarHeatmap({ data }: { data: Trade[] }) {
   }
   // Color: green intensity based on profit, red based on loss
   const getColor = (n: number, pnl: number) => {
-    if (n === 0) return "bg-muted/40";
+    if (n === 0) return "bg-ttcc-surface-2/40";
     if (pnl > 0) return "bg-green-500/70 hover:bg-green-500";
     if (pnl < 0) return "bg-red-500/70 hover:bg-red-500";
     return "bg-amber-500/50";
   };
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+      <div className="mb-2 flex items-center justify-between text-xs text-ttcc-text-secondary">
         <span>Last {days} days · 1 cell = 1 day</span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded bg-muted/40 border" /> no trade
-          <span className="h-3 w-3 rounded bg-green-500/70" /> win
-          <span className="h-3 w-3 rounded bg-red-500/70" /> loss
+          <span className="h-3 w-3 rounded-lg bg-ttcc-surface-2/40 border" /> no trade
+          <span className="h-3 w-3 rounded-lg bg-green-500/70" /> win
+          <span className="h-3 w-3 rounded-lg bg-red-500/70" /> loss
         </span>
       </div>
       <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${days}, minmax(0, 1fr))` }}>
@@ -297,20 +297,20 @@ export function TraderHistory() {
         {/* Header */}
         <header className="flex flex-col gap-4 border-b pb-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground">
+            <div className="inline-flex items-center gap-2 rounded-lg border px-2.5 py-1 text-xs font-medium text-ttcc-text-secondary">
               <HistoryIcon className="h-3.5 w-3.5" />
               {t("traderHistory.badge", "Trade history")}
             </div>
             <h1 className="text-3xl font-bold tracking-tight">
               {t("traderHistory.title", "Trade history")}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ttcc-text-secondary">
               {t("traderHistory.lastUpdate", "Auto-refresh every 30s · Newest first · Testnet only")}
             </p>
           </div>
           <a
             href="/trader"
-            className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition hover:bg-muted"
+            className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-ttcc-surface-2"
           >
             <ArrowLeft className="h-4 w-4" />
             {t("traderHistory.backToDashboard", "Back to Dashboard")}
@@ -318,7 +318,7 @@ export function TraderHistory() {
         </header>
 
         {error ? (
-          <section className="rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+          <section className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
             <div className="font-medium text-amber-700 dark:text-amber-300">{error}</div>
           </section>
         ) : null}
@@ -329,8 +329,8 @@ export function TraderHistory() {
             className={cn(
               "relative overflow-hidden rounded-xl border bg-gradient-to-br p-6 lg:p-8",
               isUp
-                ? "from-green-500/5 via-card to-card border-green-500/20"
-                : "from-red-500/5 via-card to-card border-red-500/20"
+                ? "from-green-500/5 via-ttcc-surface to-ttcc-surface border-green-500/20"
+                : "from-red-500/5 via-ttcc-surface to-ttcc-surface border-red-500/20"
             )}
           >
             <div className="pointer-events-none absolute -right-4 -top-4 opacity-[0.04]">
@@ -338,7 +338,7 @@ export function TraderHistory() {
             </div>
             <div className="relative grid gap-6 md:grid-cols-3">
               <div className="md:col-span-2 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ttcc-text-secondary">
                   <Banknote className="h-3.5 w-3.5" />
                   Total Realized PnL
                 </div>
@@ -347,30 +347,30 @@ export function TraderHistory() {
                   isUp ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                 )}>
                   {isUp ? "+" : ""}{totalPnl.toFixed(2)}
-                  <span className="ml-2 text-base font-medium text-muted-foreground">USD</span>
+                  <span className="ml-2 text-base font-medium text-ttcc-text-secondary">USD</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <PillBadge tone={isUp ? "ok" : "fail"}>{isUp ? "PROFIT" : "LOSS"}</PillBadge>
-                  <span className="text-muted-foreground">
-                    from <b className="text-foreground">{totalTrades}</b> closed trade{totalTrades !== 1 ? "s" : ""}
+                  <span className="text-ttcc-text-secondary">
+                    from <b className="text-ttcc-text">{totalTrades}</b> closed trade{totalTrades !== 1 ? "s" : ""}
                   </span>
                 </div>
               </div>
               <div className="space-y-3">
-                <div className="rounded-lg border bg-background/60 p-3 backdrop-blur">
+                <div className="rounded-lg border bg-ttcc-surface/60 p-3 backdrop-blur">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                    <span className="text-ttcc-text-secondary inline-flex items-center gap-1.5">
                       <GaugeCircle className="h-3 w-3" /> Winrate
                     </span>
                     <span className={cn(
                       "font-bold tabular-nums",
-                      winrate >= 50 ? "text-green-600 dark:text-green-400" : "text-foreground"
+                      winrate >= 50 ? "text-green-600 dark:text-green-400" : "text-ttcc-text"
                     )}>{fmtPct(winrate)}</span>
                   </div>
                 </div>
-                <div className="rounded-lg border bg-background/60 p-3 backdrop-blur">
+                <div className="rounded-lg border bg-ttcc-surface/60 p-3 backdrop-blur">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                    <span className="text-ttcc-text-secondary inline-flex items-center gap-1.5">
                       <TrendingUp className="h-3 w-3" /> Avg PnL / trade
                     </span>
                     <span className={cn(
@@ -379,9 +379,9 @@ export function TraderHistory() {
                     )}>{avgPnl >= 0 ? "+" : ""}{avgPnl.toFixed(2)}</span>
                   </div>
                 </div>
-                <div className="rounded-lg border bg-background/60 p-3 backdrop-blur">
+                <div className="rounded-lg border bg-ttcc-surface/60 p-3 backdrop-blur">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground inline-flex items-center gap-1.5">
+                    <span className="text-ttcc-text-secondary inline-flex items-center gap-1.5">
                       <Target className="h-3 w-3" /> Avg R:R
                     </span>
                     <span className="font-bold tabular-nums">1:{avgRr.toFixed(2)}</span>
@@ -395,12 +395,12 @@ export function TraderHistory() {
         {/* Equity curve + summary metrics */}
         {stats && (
           <section className="grid gap-4 lg:grid-cols-3">
-            <div className="rounded-lg border bg-card p-4 lg:col-span-2">
+            <div className="rounded-lg border bg-ttcc-surface p-4 lg:col-span-2">
               <div className="mb-3 flex items-center justify-between">
-                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <div className="text-xs font-semibold uppercase tracking-wide text-ttcc-text-secondary">
                   Equity curve
                 </div>
-                <div className="text-xs text-muted-foreground tabular-nums">
+                <div className="text-xs text-ttcc-text-secondary tabular-nums">
                   start: 0 → end: <span className={cn("font-semibold", isUp ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
                     {isUp ? "+" : ""}{totalPnl.toFixed(2)}
                   </span>
@@ -419,8 +419,8 @@ export function TraderHistory() {
 
         {/* Activity heatmap (last 60 days) */}
         {page && (
-          <section className="rounded-lg border bg-card p-4">
-            <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <section className="rounded-lg border bg-ttcc-surface p-4">
+            <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ttcc-text-secondary">
               <Calendar className="h-3.5 w-3.5" />
               Trading activity heatmap
             </div>
@@ -431,33 +431,33 @@ export function TraderHistory() {
         {/* Filters + table */}
         <section>
           <div className="mb-3 flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            <Filter className="h-4 w-4 text-ttcc-text-secondary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-ttcc-text-secondary">
               {t("traderHistory.closedTitle", "Closed trades")}
             </h2>
           </div>
-          <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border bg-card p-3">
-            <label className="text-xs text-muted-foreground">{t("traderHistory.symbol", "Symbol")}</label>
+          <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border bg-ttcc-surface p-3">
+            <label className="text-xs text-ttcc-text-secondary">{t("traderHistory.symbol", "Symbol")}</label>
             <select
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              className="rounded-md border bg-background px-2 py-1 text-sm"
+              className="rounded-lg border bg-ttcc-surface px-2 py-1 text-sm transition-colors"
             >
               {ALL_SYMBOLS.map((s) => (
                 <option key={s} value={s}>{s || "All"}</option>
               ))}
             </select>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">{t("traderHistory.result", "Result")}</span>
-              <div className="inline-flex rounded-md border bg-background p-0.5 text-xs">
+              <span className="text-xs text-ttcc-text-secondary">{t("traderHistory.result", "Result")}</span>
+              <div className="inline-flex rounded-lg border bg-ttcc-surface p-0.5 text-xs">
                 {([["", "All"], ["win", "Wins"], ["loss", "Losses"]] as const).map(([v, label]) => (
                   <button
                     key={v}
                     type="button"
                     onClick={() => setResult(v as "" | "win" | "loss")}
                     className={cn(
-                      "rounded px-2.5 py-1 font-medium transition-colors",
-                      result === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                      "rounded-lg px-2.5 py-1 font-medium transition-colors",
+                      result === v ? "bg-ttcc-accent text-ttcc-bg" : "text-ttcc-text-secondary hover:bg-ttcc-surface-2"
                     )}
                   >
                     {label}
@@ -465,11 +465,11 @@ export function TraderHistory() {
                 ))}
               </div>
             </div>
-            <label className="text-xs text-muted-foreground">{t("traderHistory.perPage", "Per page")}</label>
+            <label className="text-xs text-ttcc-text-secondary">{t("traderHistory.perPage", "Per page")}</label>
             <select
               value={limit}
               onChange={(e) => setLimit(parseInt(e.target.value) || 50)}
-              className="rounded-md border bg-background px-2 py-1 text-sm"
+              className="rounded-lg border bg-ttcc-surface px-2 py-1 text-sm transition-colors"
             >
               <option value={20}>20</option>
               <option value={50}>50</option>
@@ -478,21 +478,21 @@ export function TraderHistory() {
             <button
               type="button"
               onClick={applyFilters}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-ttcc-accent px-3 py-1 text-sm font-semibold text-ttcc-bg transition-colors hover:opacity-90"
             >
               {t("traderHistory.apply", "Apply")}
             </button>
             <button
               type="button"
               onClick={resetFilters}
-              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1 text-sm font-medium transition hover:bg-muted"
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-sm font-medium transition-colors hover:bg-ttcc-surface-2"
             >
               {t("traderHistory.reset", "Reset")}
             </button>
           </div>
 
           {loading && !page ? (
-            <div className="flex items-center justify-center gap-2 rounded-md border bg-card py-12 text-muted-foreground">
+            <div className="flex items-center justify-center gap-2 rounded-lg border bg-ttcc-surface py-12 text-ttcc-text-secondary">
               <Loader2 className="h-4 w-4 animate-spin" />
               {t("common.loading", "Loading…")}
             </div>
@@ -506,7 +506,7 @@ export function TraderHistory() {
 
           {/* Pagination */}
           {page ? (
-            <div className="mt-3 flex items-center justify-end gap-2 text-sm text-muted-foreground">
+            <div className="mt-3 flex items-center justify-end gap-2 text-sm text-ttcc-text-secondary">
               <span>
                 {t("traderHistory.showing", "Showing {{start}}-{{end}} of {{total}}", {
                   start: page.total === 0 ? 0 : page.offset + 1,
@@ -518,7 +518,7 @@ export function TraderHistory() {
                 type="button"
                 onClick={prevPage}
                 disabled={page.offset === 0}
-                className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-sm transition-colors disabled:opacity-40"
               >
                 <ArrowLeft className="h-3.5 w-3.5" /> {t("common.prev", "Prev")}
               </button>
@@ -526,7 +526,7 @@ export function TraderHistory() {
                 type="button"
                 onClick={nextPage}
                 disabled={page.offset + page.limit >= page.total}
-                className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-sm transition-colors disabled:opacity-40"
               >
                 {t("common.next", "Next")} <ArrowRight className="h-3.5 w-3.5" />
               </button>
@@ -537,7 +537,7 @@ export function TraderHistory() {
         {/* Performance breakdown */}
         {stats && (
           <section>
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ttcc-text-secondary">
               {t("traderHistory.breakdownTitle", "Performance breakdown")}
             </h2>
             <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -594,8 +594,8 @@ function SmallStat({
   const valueClass = tone === "good" ? "text-green-600 dark:text-green-400"
     : tone === "bad" ? "text-red-600 dark:text-red-400" : "";
   return (
-    <div className="rounded-md border bg-card p-3">
-      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="rounded-lg border bg-ttcc-surface p-3">
+      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-ttcc-text-secondary">
         {Icon ? <Icon className="h-3 w-3" /> : null}
         {label}
       </div>
@@ -626,14 +626,14 @@ function BreakdownCard({
 }) {
   const sorted = [...rows].sort((a, b) => (b[1].pnl ?? 0) - (a[1].pnl ?? 0));
   return (
-    <div className="rounded-md border bg-card p-4">
-      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</div>
+    <div className="rounded-lg border bg-ttcc-surface p-4">
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-ttcc-text-secondary">{title}</div>
       {sorted.length === 0 ? (
-        <div className="py-4 text-center text-sm text-muted-foreground">No data</div>
+        <div className="py-4 text-center text-sm text-ttcc-text-secondary">No data</div>
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <tr className="text-[10px] uppercase tracking-wide text-ttcc-text-secondary">
               {colHeaders.map((h, i) => (
                 <th key={i} className={cn("py-1 font-medium", i === pnlCol ? "text-right" : i === 0 ? "text-left" : "text-left")}>{h}</th>
               ))}
@@ -679,15 +679,15 @@ function ClosedTradesTableFull({
 }) {
   if (trades.length === 0) {
     return (
-      <div className="rounded-md border bg-card px-3 py-6 text-center text-sm text-muted-foreground">
+      <div className="rounded-lg border bg-ttcc-surface px-3 py-6 text-center text-sm text-ttcc-text-secondary">
         No closed trades yet (or no match for current filter)
       </div>
     );
   }
   return (
-    <div className="rounded-md border bg-card">
+    <div className="rounded-lg border bg-ttcc-surface">
       <table className="w-full text-sm">
-        <thead className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+        <thead className="border-b bg-ttcc-surface-2/30 text-xs uppercase tracking-wide text-ttcc-text-secondary">
           <tr>
             <th className="px-3 py-2 text-left font-medium">#</th>
             <th className="px-3 py-2 text-left font-medium">Closed</th>
@@ -713,14 +713,14 @@ function ClosedTradesTableFull({
             const tone = reason.includes("profit") || reason.includes("tp") ? "tp"
               : reason.includes("stop") || reason.includes("sl") ? "sl" : "neutral";
             return (
-              <tr key={i} className="border-t hover:bg-muted/30">
+              <tr key={i} className="border-t hover:bg-ttcc-surface-2/30 transition-colors">
                 <td
-                  className="px-3 py-2 font-mono text-xs font-bold tabular text-primary"
+                  className="px-3 py-2 font-mono text-xs font-bold tabular text-ttcc-accent"
                   title={`Trade ${tradeNumber}${totalTrades ? ` of ${totalTrades}` : ""}`}
                 >
                   #{tradeNumber}
                 </td>
-                <td className="px-3 py-2 text-muted-foreground">{fmtTime(t.closed_at)}</td>
+                <td className="px-3 py-2 text-ttcc-text-secondary">{fmtTime(t.closed_at)}</td>
                 <td className="px-3 py-2 font-medium">{t.symbol}</td>
                 <td className="px-3 py-2"><PillBadge tone={t.side === "buy" ? "long" : "short"}>{t.side.toUpperCase()}</PillBadge></td>
                 <td className="px-3 py-2 text-right tabular-nums">{t.entry}</td>
@@ -735,14 +735,14 @@ function ClosedTradesTableFull({
                   <PillBadge tone={tone}>{reason}</PillBadge>
                   {openReason ? (
                     <div
-                      className="mt-1 max-w-[340px] truncate text-[11px] text-muted-foreground"
+                      className="mt-1 max-w-[340px] truncate text-[11px] text-ttcc-text-secondary"
                       title={openReason}
                     >
                       {openReason}
                     </div>
                   ) : null}
                 </td>
-                <td className="px-3 py-2 text-muted-foreground">
+                <td className="px-3 py-2 text-ttcc-text-secondary">
                   {(() => {
                     try {
                       const ms = new Date(t.closed_at).getTime() - new Date(t.opened_at).getTime();

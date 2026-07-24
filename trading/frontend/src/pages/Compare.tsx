@@ -257,16 +257,16 @@ export function Compare() {
       {/* Selectors */}
       <div className="flex gap-4 items-end">
         <div className="flex-1">
-          <label className="text-xs text-muted-foreground block mb-1">{i18n.t("compare.baseline")}</label>
-          <select value={leftId} onChange={(e) => setLeftId(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" title={leftRun?.prompt || leftId}>
+          <label className="text-xs text-ttcc-text-secondary block mb-1">{i18n.t("compare.baseline")}</label>
+          <select value={leftId} onChange={(e) => setLeftId(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 transition-colors" title={leftRun?.prompt || leftId}>
             <option value="">{i18n.t("compare.select")}</option>
             {runs.map((r) => <option key={r.run_id} value={r.run_id}>{runLabel(r)} ({r.status})</option>)}
           </select>
         </div>
-        <ArrowRight className="h-5 w-5 text-muted-foreground mb-2 shrink-0" />
+        <ArrowRight className="h-5 w-5 text-ttcc-text-secondary mb-2 shrink-0" />
         <div className="flex-1">
-          <label className="text-xs text-muted-foreground block mb-1">{i18n.t("compare.compare")}</label>
-          <select value={rightId} onChange={(e) => setRightId(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" title={rightRun?.prompt || rightId}>
+          <label className="text-xs text-ttcc-text-secondary block mb-1">{i18n.t("compare.compare")}</label>
+          <select value={rightId} onChange={(e) => setRightId(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 transition-colors" title={rightRun?.prompt || rightId}>
             <option value="">{i18n.t("compare.select")}</option>
             {runs.map((r) => <option key={r.run_id} value={r.run_id}>{runLabel(r)} ({r.status})</option>)}
           </select>
@@ -277,7 +277,7 @@ export function Compare() {
       {loading && !hasData && (
         <div className="space-y-6">
           <div className="border rounded-xl p-4">
-            <h2 className="text-sm font-medium text-muted-foreground mb-2">{i18n.t("compare.equityDrawdown")}</h2>
+            <h2 className="text-sm font-semibold text-ttcc-text-secondary mb-2">{i18n.t("compare.equityDrawdown")}</h2>
             <SkeletonChart height={320} />
           </div>
           <div className="border rounded-xl overflow-hidden">
@@ -289,7 +289,7 @@ export function Compare() {
       {/* Equity curve overlay */}
       {(leftCurve.length > 0 || rightCurve.length > 0) && (
         <div className="border rounded-xl p-4">
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">{i18n.t("compare.equityDrawdown")}</h2>
+          <h2 className="text-sm font-semibold text-ttcc-text-secondary mb-2">{i18n.t("compare.equityDrawdown")}</h2>
           <EquityChartOverlay
             leftCurve={leftCurve}
             rightCurve={rightCurve}
@@ -304,11 +304,11 @@ export function Compare() {
         <div className="border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">{i18n.t("compare.metric")}</th>
-                <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">{i18n.t("compare.baselineCol")}</th>
-                <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">{i18n.t("compare.compareCol")}</th>
-                <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">{i18n.t("compare.delta")}</th>
+              <tr className="border-b bg-ttcc-surface-2/40">
+                <th className="text-left px-4 py-2.5 text-ttcc-text-secondary font-medium">{i18n.t("compare.metric")}</th>
+                <th className="text-right px-4 py-2.5 text-ttcc-text-secondary font-medium">{i18n.t("compare.baselineCol")}</th>
+                <th className="text-right px-4 py-2.5 text-ttcc-text-secondary font-medium">{i18n.t("compare.compareCol")}</th>
+                <th className="text-right px-4 py-2.5 text-ttcc-text-secondary font-medium">{i18n.t("compare.delta")}</th>
               </tr>
             </thead>
             <tbody>
@@ -316,7 +316,7 @@ export function Compare() {
                 const lv = resolveMetric(leftData, key);
                 const rv = resolveMetric(rightData, key);
                 return (
-                  <tr key={key} className="border-b last:border-0 hover:bg-muted/20">
+                  <tr key={key} className="border-b last:border-0 hover:bg-ttcc-surface-2/20 transition-colors">
                     <td className="px-4 py-2.5 font-medium">{label}</td>
                     <td className="px-4 py-2.5 text-right font-mono tabular-nums">{fmt(lv, type)}</td>
                     <td className="px-4 py-2.5 text-right font-mono tabular-nums">{fmt(rv, type)}</td>
@@ -330,7 +330,7 @@ export function Compare() {
       )}
 
       {!hasData && !loading && (
-        <div className="text-center py-16 text-muted-foreground">
+        <div className="text-center py-16 text-ttcc-text-secondary">
           <GitCompare className="h-12 w-12 mx-auto mb-3 opacity-20" />
           <p className="text-sm">{i18n.t("compare.selectTwoRuns")}</p>
         </div>

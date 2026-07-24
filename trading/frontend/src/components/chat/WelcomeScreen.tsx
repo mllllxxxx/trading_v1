@@ -179,15 +179,15 @@ export function WelcomeScreen({ onExample }: Props) {
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8 text-center">
       {/* Header */}
       <div className="space-y-3">
-        <div className="h-16 w-16 mx-auto rounded-2xl bg-gradient-to-br from-primary/80 to-info/80 flex items-center justify-center shadow-lg">
+        <div className="h-16 w-16 mx-auto rounded-2xl bg-gradient-to-br from-ttcc-accent/80 to-info/80 flex items-center justify-center shadow-lg">
           <Bot className="h-8 w-8 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">{t('welcome.title')}</h2>
-          <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto leading-relaxed">
+          <h2 className="text-2xl font-bold tracking-tight text-ttcc-text">{t('welcome.title')}</h2>
+          <p className="text-xs text-ttcc-text-secondary mt-1 max-w-sm mx-auto leading-relaxed">
             vibe trading with your professional financial agent team
           </p>
-          <p className="text-sm text-muted-foreground mt-2 max-w-md leading-relaxed mx-auto">
+          <p className="text-sm text-ttcc-text-secondary mt-2 max-w-md leading-relaxed mx-auto">
             Describe a trading strategy to get started.
           </p>
         </div>
@@ -198,7 +198,7 @@ export function WelcomeScreen({ onExample }: Props) {
         {CAPABILITY_CHIPS.map((chip) => (
           <span
             key={chip}
-            className="px-2.5 py-1 text-xs rounded-full border border-border/60 text-muted-foreground bg-muted/30"
+            className="px-2.5 py-1 text-xs rounded-full border border-ttcc-border-subtle/60 text-ttcc-text-secondary bg-ttcc-surface-2/30"
           >
             {chip}
           </span>
@@ -207,11 +207,11 @@ export function WelcomeScreen({ onExample }: Props) {
 
       {/* Example categories grid */}
       <div className="w-full max-w-2xl text-left space-y-4">
-        <p className="text-xs text-muted-foreground px-1">{t('welcome.tryExample')}</p>
+        <p className="text-xs text-ttcc-text-secondary px-1">{t('welcome.tryExample')}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {CATEGORIES.map((cat) => (
             <div key={cat.label} className="space-y-2">
-              <div className={`flex items-center gap-1.5 text-xs font-medium px-1 ${cat.color.split(" ").filter(c => c.startsWith("text-")).join(" ")}`}>
+              <div className={`flex items-center gap-1.5 text-xs font-semibold px-1 ${cat.color.split(" ").filter(c => c.startsWith("text-")).join(" ")}`}>
                 {cat.icon}
                 <span>{cat.label}</span>
               </div>
@@ -220,12 +220,12 @@ export function WelcomeScreen({ onExample }: Props) {
                   <button
                     key={ex.title}
                     onClick={() => onExample(ex.prompt)}
-                    className={`block w-full text-left px-3 py-2.5 rounded-xl border transition-colors ${cat.color}`}
+                    className={`block w-full text-left px-3 py-2.5 rounded-lg border transition-colors ${cat.color}`}
                   >
-                    <span className="text-sm font-medium text-foreground leading-snug">
+                    <span className="text-sm font-medium text-ttcc-text leading-snug">
                       {ex.title}
                     </span>
-                    <span className="block text-xs text-muted-foreground mt-0.5 leading-snug">
+                    <span className="block text-xs text-ttcc-text-secondary mt-0.5 leading-snug">
                       {ex.desc}
                     </span>
                   </button>

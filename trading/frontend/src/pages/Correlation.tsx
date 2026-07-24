@@ -34,7 +34,7 @@ export function Correlation() {
     <div className="flex flex-col gap-6 p-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <BarChart3 className="h-6 w-6 text-primary" />
+        <BarChart3 className="h-6 w-6 text-ttcc-accent" />
         <h1 className="text-2xl font-bold">{i18n.t("correlation.title")}</h1>
       </div>
 
@@ -47,9 +47,9 @@ export function Correlation() {
             value={codes}
             onChange={(e) => setCodes(e.target.value)}
             placeholder="BTC-USDT,ETH-USDT,SPY"
-            className="w-full px-3 py-2 rounded-md border bg-background text-sm"
+            className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm transition-colors"
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-ttcc-text-secondary">
             Comma-separated ticker symbols, e.g. BTC-USDT,ETH-USDT,AAPL,SPY
           </p>
         </div>
@@ -62,10 +62,10 @@ export function Correlation() {
                 <button
                   key={w}
                   onClick={() => setDays(w)}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                     days === w
-                      ? "bg-primary text-primary-foreground"
-                      : "border-muted-foreground/30 hover:border-primary"
+                      ? "bg-ttcc-accent text-ttcc-bg"
+                      : "border-ttcc-text-muted/30 hover:border-ttcc-accent"
                   }`}
                 >
                   {w}d
@@ -81,10 +81,10 @@ export function Correlation() {
                 <button
                   key={m}
                   onClick={() => setMethod(m)}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors capitalize ${
+                  className={`px-3 py-1.5 rounded-lg text-sm border transition-colors capitalize ${
                     method === m
-                      ? "bg-primary text-primary-foreground"
-                      : "border-muted-foreground/30 hover:border-primary"
+                      ? "bg-ttcc-accent text-ttcc-bg"
+                      : "border-ttcc-text-muted/30 hover:border-ttcc-accent"
                   }`}
                 >
                   {m}
@@ -97,7 +97,7 @@ export function Correlation() {
         <button
           onClick={compute}
           disabled={loading}
-          className="self-start px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+          className="self-start px-4 py-2 rounded-lg bg-ttcc-accent text-ttcc-bg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {loading ? i18n.t("correlation.loading") : i18n.t("correlation.compute")}
         </button>
@@ -105,7 +105,7 @@ export function Correlation() {
 
       {/* Error */}
       {error && (
-        <div className="text-sm text-danger border border-danger/30 rounded p-3 bg-danger/5">
+        <div className="text-sm text-ttcc-red border border-ttcc-red/30 rounded-lg p-3 bg-ttcc-red/5">
           {error}
         </div>
       )}

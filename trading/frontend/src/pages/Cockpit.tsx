@@ -114,8 +114,8 @@ export function Cockpit() {
         <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {loading && positions.length === 0 ? (
             <>
-              <div className="h-28 rounded bg-ttcc-surface/50 border border-ttcc-border/40 animate-pulse" />
-              <div className="h-28 rounded bg-ttcc-surface/50 border border-ttcc-border/40 animate-pulse" />
+              <div className="h-28 rounded-lg bg-ttcc-surface/50 border border-ttcc-border/40 animate-pulse" />
+              <div className="h-28 rounded-lg bg-ttcc-surface/50 border border-ttcc-border/40 animate-pulse" />
             </>
           ) : positions.length === 0 ? (
             <div className="col-span-full">
@@ -139,14 +139,14 @@ export function Cockpit() {
       </div>
 
       {/* 3. Bottom Panel Tabbed Workspace */}
-      <div className="flex flex-col flex-1 min-h-[400px] border border-ttcc-border bg-ttcc-surface/20 rounded-md overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-[400px] border border-ttcc-border bg-ttcc-surface/20 rounded-lg overflow-hidden">
         {/* Workspace Tab Header */}
         <div className="flex items-center justify-between border-b border-ttcc-border bg-ttcc-surface px-1 shrink-0">
           <div className="flex">
             <button
               onClick={() => setActiveTab("history")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors border-r border-ttcc-border/40",
+                "flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all duration-150 border-r border-ttcc-border/40",
                 activeTab === "history"
                   ? "bg-ttcc-bg text-ttcc-accent border-b border-b-ttcc-accent"
                   : "text-ttcc-text-secondary hover:text-ttcc-text hover:bg-ttcc-surface-2"
@@ -158,7 +158,7 @@ export function Cockpit() {
             <button
               onClick={() => setActiveTab("confluence")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors border-r border-ttcc-border/40",
+                "flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all duration-150 border-r border-ttcc-border/40",
                 activeTab === "confluence"
                   ? "bg-ttcc-bg text-ttcc-accent border-b border-b-ttcc-accent"
                   : "text-ttcc-text-secondary hover:text-ttcc-text hover:bg-ttcc-surface-2"
@@ -170,7 +170,7 @@ export function Cockpit() {
             <button
               onClick={() => setActiveTab("correlation")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors border-r border-ttcc-border/40",
+                "flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all duration-150 border-r border-ttcc-border/40",
                 activeTab === "correlation"
                   ? "bg-ttcc-bg text-ttcc-accent border-b border-b-ttcc-accent"
                   : "text-ttcc-text-secondary hover:text-ttcc-text hover:bg-ttcc-surface-2"
@@ -182,7 +182,7 @@ export function Cockpit() {
             <button
               onClick={() => setActiveTab("settings")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors border-r border-ttcc-border/40",
+                "flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all duration-150 border-r border-ttcc-border/40",
                 activeTab === "settings"
                   ? "bg-ttcc-bg text-ttcc-accent border-b border-b-ttcc-accent"
                   : "text-ttcc-text-secondary hover:text-ttcc-text hover:bg-ttcc-surface-2"
@@ -238,7 +238,7 @@ function TeamLeaderboard({
     return (
       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 rounded border border-ttcc-border/40 bg-ttcc-surface/50 animate-pulse" />
+          <div key={i} className="h-24 rounded-lg border border-ttcc-border/40 bg-ttcc-surface/50 animate-pulse" />
         ))}
       </div>
     );
@@ -266,7 +266,7 @@ function TeamLeaderboard({
           <div
             key={team.team_id}
             className={cn(
-              "rounded border bg-ttcc-surface px-3 py-2.5",
+              "rounded-lg border bg-ttcc-surface px-3 py-2.5 transition-colors",
               teamBorderClass(team.team_id)
             )}
           >
@@ -293,7 +293,7 @@ function TeamLeaderboard({
                   {team.preferred_playbook_ids?.[0] ?? team.method}
                 </div>
               </div>
-              <span className="inline-flex shrink-0 items-center gap-1 rounded border border-ttcc-border bg-ttcc-bg px-1.5 py-0.5 font-mono text-[10px] text-ttcc-text-secondary">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-ttcc-border bg-ttcc-bg px-1.5 py-0.5 font-mono text-[10px] text-ttcc-text-secondary">
                 <Target className="h-3 w-3" />
                 {formatPct(team.target_risk_pct_equity)}
               </span>
@@ -327,7 +327,7 @@ function TeamMetric({
   tone: "good" | "warn" | "bad";
 }) {
   return (
-    <div className="rounded border border-ttcc-border/60 bg-ttcc-surface-2 px-2 py-1">
+    <div className="rounded-lg border border-ttcc-border/60 bg-ttcc-surface-2 px-2 py-1 transition-colors">
       <div className="text-[8px] font-semibold uppercase tracking-wider text-ttcc-text-muted">{label}</div>
       <div className={cn(
         "mt-0.5 truncate font-mono text-[11px] font-bold tabular",
@@ -348,8 +348,8 @@ function HistoryTab({ trades, loading }: { trades: ClosedTrade[]; loading: boole
   if (loading && !trades.length) {
     return (
       <div className="space-y-2 p-2 animate-pulse">
-        <div className="h-5 bg-ttcc-surface rounded w-full" />
-        <div className="h-5 bg-ttcc-surface rounded w-full" />
+        <div className="h-5 bg-ttcc-surface rounded-lg w-full" />
+        <div className="h-5 bg-ttcc-surface rounded-lg w-full" />
       </div>
     );
   }
@@ -377,7 +377,7 @@ function WatchlistGrid({
     return (
       <div className="grid gap-2 grid-cols-2 md:grid-cols-4 p-1 animate-pulse">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-16 bg-ttcc-surface rounded" />
+          <div key={i} className="h-16 bg-ttcc-surface rounded-lg" />
         ))}
       </div>
     );
@@ -392,7 +392,7 @@ function WatchlistGrid({
         return (
           <div
             key={symbol}
-            className="flex flex-col justify-between rounded border border-ttcc-border bg-ttcc-surface p-2.5"
+            className="flex flex-col justify-between rounded-lg border border-ttcc-border bg-ttcc-surface p-2.5 transition-colors"
           >
             <div className="flex items-center justify-between">
               <span className="font-mono font-bold text-ttcc-text">
@@ -400,7 +400,7 @@ function WatchlistGrid({
               </span>
               <span
                 className={cn(
-                  "font-mono text-[10px] font-bold px-1 py-0.5 rounded",
+                  "font-mono text-[10px] font-bold px-1 py-0.5 rounded-lg transition-colors",
                   up
                     ? "bg-ttcc-green/10 text-ttcc-green border border-ttcc-green/20"
                     : "bg-ttcc-red/10 text-ttcc-red border border-ttcc-red/20"
@@ -455,7 +455,7 @@ function CorrelationPanel() {
         Compute Asset Correlation Coefficient
       </div>
 
-      <div className="grid gap-2 border border-ttcc-border bg-ttcc-surface/30 p-2.5 rounded">
+      <div className="grid gap-2 border border-ttcc-border bg-ttcc-surface/30 p-2.5 rounded-lg">
         <div className="flex flex-col gap-1">
           <label className="font-semibold text-ttcc-text-secondary">Asset Codes</label>
           <input
@@ -463,7 +463,7 @@ function CorrelationPanel() {
             value={codes}
             onChange={(e) => setCodes(e.target.value)}
             placeholder="BTC-USDT,ETH-USDT"
-            className="rounded border border-ttcc-border bg-ttcc-bg px-2 py-1 text-xs text-ttcc-text outline-none focus:border-ttcc-accent/60"
+            className="rounded-lg border border-ttcc-border bg-ttcc-bg px-2 py-1 text-xs text-ttcc-text outline-none transition-colors focus:border-ttcc-accent/60"
           />
         </div>
 
@@ -477,9 +477,9 @@ function CorrelationPanel() {
                   type="button"
                   onClick={() => setDays(w)}
                   className={cn(
-                    "px-2 py-0.5 rounded border text-[10px]",
+                    "px-2 py-0.5 rounded-lg border text-[10px] transition-colors",
                     days === w
-                      ? "bg-ttcc-accent text-white border-ttcc-accent"
+                      ? "bg-ttcc-accent text-ttcc-bg border-ttcc-accent"
                       : "border-ttcc-border bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text"
                   )}
                 >
@@ -498,9 +498,9 @@ function CorrelationPanel() {
                   type="button"
                   onClick={() => setMethod(m)}
                   className={cn(
-                    "px-2 py-0.5 rounded border text-[10px] capitalize",
+                    "px-2 py-0.5 rounded-lg border text-[10px] capitalize transition-colors",
                     method === m
-                      ? "bg-ttcc-accent text-white border-ttcc-accent"
+                      ? "bg-ttcc-accent text-ttcc-bg border-ttcc-accent"
                       : "border-ttcc-border bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text"
                   )}
                 >
@@ -513,7 +513,7 @@ function CorrelationPanel() {
           <button
             onClick={handleCompute}
             disabled={loading}
-            className="mt-auto h-7 px-3 rounded bg-ttcc-accent text-white font-bold hover:opacity-90 disabled:opacity-40 flex items-center gap-1.5"
+            className="mt-auto h-7 px-3 rounded-lg bg-ttcc-accent text-ttcc-bg font-bold transition-colors hover:opacity-90 disabled:opacity-40 flex items-center gap-1.5"
           >
             {loading ? <Loader2 className="h-3 w-3" /> : <Save className="h-3.5 w-3.5" />}
             Compute
@@ -524,7 +524,7 @@ function CorrelationPanel() {
       {error && <div className="text-ttcc-red font-semibold">{error}</div>}
 
       {labels.length > 0 && (
-        <div className="border border-ttcc-border bg-ttcc-surface/20 rounded p-2">
+        <div className="border border-ttcc-border bg-ttcc-surface/20 rounded-lg p-2">
           <CorrelationMatrix labels={labels} matrix={matrix} height={280} />
         </div>
       )}
@@ -607,7 +607,7 @@ function CockpitSettings() {
             type="text"
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="rounded border border-ttcc-border bg-ttcc-bg px-2.5 py-1 text-xs text-ttcc-text outline-none"
+            className="rounded-lg border border-ttcc-border bg-ttcc-bg px-2.5 py-1 text-xs text-ttcc-text outline-none transition-colors"
           />
         </div>
 
@@ -618,7 +618,7 @@ function CockpitSettings() {
             step="0.1"
             value={temp}
             onChange={(e) => setTemp(parseFloat(e.target.value))}
-            className="rounded border border-ttcc-border bg-ttcc-bg px-2.5 py-1 text-xs text-ttcc-text outline-none"
+            className="rounded-lg border border-ttcc-border bg-ttcc-bg px-2.5 py-1 text-xs text-ttcc-text outline-none transition-colors"
           />
         </div>
 
@@ -629,7 +629,7 @@ function CockpitSettings() {
             value={tushare}
             onChange={(e) => setTushare(e.target.value)}
             placeholder={dataSourceSettings?.tushare_token_configured ? "******** (configured)" : "unconfigured"}
-            className="rounded border border-ttcc-border bg-ttcc-bg px-2.5 py-1 text-xs text-ttcc-text outline-none font-mono"
+            className="rounded-lg border border-ttcc-border bg-ttcc-bg px-2.5 py-1 text-xs text-ttcc-text outline-none transition-colors font-mono"
           />
         </div>
 
@@ -637,7 +637,7 @@ function CockpitSettings() {
           <button
             type="submit"
             disabled={saving || llmLoading}
-            className="h-7 w-24 rounded bg-ttcc-accent text-white font-bold hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-1"
+            className="h-7 w-24 rounded-lg bg-ttcc-accent text-ttcc-bg font-bold transition-colors hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-1"
           >
             {saving ? <Loader2 className="h-3 w-3" /> : <Save className="h-3.5 w-3.5" />}
             Save
