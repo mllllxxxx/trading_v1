@@ -127,14 +127,14 @@ function HistoryTab({
           <Skeleton className="h-6" />
         </div>
       ) : trades.length === 0 ? (
-        <div className="flex h-24 items-center justify-center text-[11px] text-ttcc-text-secondary">
+        <div className="flex h-24 items-center justify-center text-[11px] text-ttcc-text-muted">
           No closed trades yet
         </div>
       ) : (
         <ClosedTradesTable trades={slice} startIndex={safePage * HISTORY_PAGE_SIZE} totalTrades={trades.length} />
       )}
       {trades.length > HISTORY_PAGE_SIZE ? (
-        <div className="flex items-center justify-between border-t border-ttcc-border bg-ttcc-surface px-2.5 py-1.5 text-[10px] text-ttcc-text-secondary tabular">
+        <div className="flex items-center justify-between border-t border-ttcc-border-subtle bg-ttcc-surface/50 px-2.5 py-1.5 text-[10px] text-ttcc-text-secondary tabular">
           <span>
             page {safePage + 1}/{totalPages} · {trades.length} trades
           </span>
@@ -143,7 +143,7 @@ function HistoryTab({
               type="button"
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={safePage === 0}
-              className="rounded border border-ttcc-border bg-ttcc-surface-2 px-1.5 py-0.5 disabled:opacity-40"
+              className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface-2/50 px-1.5 py-0.5 disabled:opacity-40"
             >
               prev
             </button>
@@ -151,7 +151,7 @@ function HistoryTab({
               type="button"
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={safePage >= totalPages - 1}
-              className="rounded border border-ttcc-border bg-ttcc-surface-2 px-1.5 py-0.5 disabled:opacity-40"
+              className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface-2/50 px-1.5 py-0.5 disabled:opacity-40"
             >
               next
             </button>
@@ -241,7 +241,7 @@ function AlertsTab() {
   }
   if (!alerts.length) {
     return (
-      <div className="flex h-24 items-center justify-center text-[11px] text-ttcc-text-secondary">
+      <div className="flex h-24 items-center justify-center text-[11px] text-ttcc-text-muted">
         No alerts in the last ~1000 events
       </div>
     );
@@ -256,7 +256,7 @@ function AlertsTab() {
           <li
             key={id}
             className={cn(
-              "flex items-start gap-2 border-b border-ttcc-border/40 px-2.5 py-1.5 last:border-b-0",
+              "flex items-start gap-2 border-b border-ttcc-border-subtle/40 px-2.5 py-1.5 last:border-b-0",
               isNew && "ttcc-row-in"
             )}
           >
@@ -285,7 +285,7 @@ function SeverityBadge({ severity }: { severity: AlertItem["severity"] }) {
     : "bg-ttcc-blue/15 text-ttcc-blue border-ttcc-blue/40";
   return (
     <span className={cn(
-      "mt-0.5 inline-flex h-5 w-12 shrink-0 items-center justify-center rounded border text-[9px] font-bold uppercase tracking-wider",
+      "mt-0.5 inline-flex h-5 w-12 shrink-0 items-center justify-center rounded-lg border text-[9px] font-bold uppercase tracking-wider",
       tone
     )}>
       {severity}
@@ -357,7 +357,7 @@ export function Trader() {
             {syncStatus?.status ? (
               <span
                 className={cn(
-                  "rounded border px-1 py-0.5 font-mono uppercase",
+                  "rounded-lg border px-1 py-0.5 font-mono uppercase",
                   syncStatus.status === "in_sync"
                     ? "border-ttcc-green/30 text-ttcc-green"
                     : "border-ttcc-yellow/40 text-ttcc-yellow"

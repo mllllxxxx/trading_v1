@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { BrainCircuit, ChevronRight, LayoutGrid, X } from "lucide-react";
+import {
+  Activity,
+  BarChart3,
+  Bot,
+  BrainCircuit,
+  ChevronRight,
+  History,
+  LayoutGrid,
+  Layers,
+  Moon,
+  Settings,
+  Sun,
+  Zap,
+} from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useAgentStore } from "@/stores/agent";
 import { useTraderStatusStore, statusPayloadError } from "@/stores/traderStatus";
@@ -74,68 +87,94 @@ function finiteNumberOrNull(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-// ============= MiniNav — compact nav strip for non-trader routes =============
+// ============= Sidebar — persistent icon-only nav (Linear/Vercel style) =============
 
-type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; accent?: boolean };
+type SidebarNavItem = {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
 
-function MiniNav({ pathname, onClose }: { pathname: string; onClose: () => void }) {
-  const items: NavItem[] = [
-    { to: "/", label: "Home", icon: LayoutGrid },
-    { to: "/agent", label: "Agent", icon: LayoutGrid },
-    { to: "/trader", label: "Trader", icon: LayoutGrid, accent: true },
-    { to: "/runtime", label: "Runtime", icon: LayoutGrid },
-    { to: "/berkshire", label: "Berkshire", icon: BrainCircuit, accent: true },
-    { to: "/alpha-zoo", label: "Alpha Zoo", icon: LayoutGrid },
-    { to: "/correlation", label: "Correlation", icon: LayoutGrid },
-    { to: "/settings", label: "Settings", icon: LayoutGrid },
-    { to: "/trader/history", label: "Journal", icon: LayoutGrid },
-  ];
+const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
+  { to: "/", label: "Home / Trader", icon: LayoutGrid },
+  { to: "/agent", label: "Agent", icon: Bot },
+  { to: "/berkshire", label: "Berkshire", icon: BrainCircuit },
+  { to: "/alpha-zoo", label: "Alpha Zoo", icon: Layers },
+  { to: "/correlation", label: "Correlation", icon: BarChart3 },
+  { to: "/runtime", label: "Runtime", icon: Activity },
+  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/trader/history", label: "Journal", icon: History },
+];
+
+/**
+ * Active-route predicate for the sidebar.
+ *
+ * The "/" item represents both Home and the main Trader view, so it is
+ * active on "/", "/trader", and any "/trader/*" sub-route EXCEPT
+ * "/trader/history" (which has its own dedicated nav item). Every other
+ * item is active on an exact match or a nested path below it.
+ */
+function isNavActive(to: string, pathname: string): boolean {
+  if (to === "/") {
+    if (pathname === "/" || pathname === "/trader") return true;
+    if (pathname.startsWith("/trader/") && !pathname.startsWith("/trader/history")) return true;
+    return false;
+  }
+  return pathname === to || pathname.startsWith(to + "/");
+}
+
+function Sidebar({ pathname, dark, onToggleTheme }: {
+  pathname: string;
+  dark: boolean;
+  onToggleTheme: () => void;
+}) {
   return (
-    <div className="absolute inset-0 z-40 flex bg-black/40" onClick={onClose}>
-      <nav
-        className="flex w-64 flex-col gap-1 border-r border-ttcc-border-subtle bg-ttcc-surface p-3 tt-glass shadow-tt-lg"
-        onClick={(e) => e.stopPropagation()}
+    <aside className="z-30 flex w-14 shrink-0 flex-col items-center gap-1 border-r border-ttcc-border-subtle bg-ttcc-bg py-2">
+      {/* Brand */}
+      <a
+        href="/"
+        title="Trading Command Center"
+        className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-ttcc-accent/90 text-ttcc-bg shadow-tt-glow transition-transform hover:scale-105 tt-focus"
       >
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ttcc-text-secondary">
-            Navigation
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1 text-ttcc-text-secondary hover:bg-ttcc-surface-2 hover:text-ttcc-text tt-focus"
-            title="Close"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        {items.map((it) => {
+        <Zap className="h-4 w-4" />
+      </a>
+
+      {/* Nav items */}
+      <nav className="flex flex-1 flex-col items-center gap-1" aria-label="Primary">
+        {SIDEBAR_NAV_ITEMS.map((it) => {
           const Icon = it.icon;
-          const active = it.to === "/" ? pathname === "/" : pathname.startsWith(it.to);
+          const active = isNavActive(it.to, pathname);
           return (
             <a
               key={it.to}
               href={it.to}
+              title={it.label}
+              aria-label={it.label}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors tt-focus",
+                "flex w-9 h-9 items-center justify-center rounded-lg tt-focus transition-all",
                 active
-                  ? "border-ttcc-accent/50 bg-ttcc-accent/15 text-ttcc-accent tt-glow-accent"
-                  : "border-ttcc-border-subtle bg-ttcc-surface-2 text-ttcc-text-secondary hover:text-ttcc-text",
-                it.accent && !active && "ring-1 ring-ttcc-accent/20"
+                  ? "bg-ttcc-accent/15 text-ttcc-accent tt-glow-accent"
+                  : "text-ttcc-text-muted hover:text-ttcc-text hover:bg-ttcc-surface-2/50"
               )}
             >
-              <Icon className="h-3.5 w-3.5" />
-              <span>{it.label}</span>
-              {it.accent ? (
-                <span className="ml-auto rounded-md border border-ttcc-accent/40 bg-ttcc-accent/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-ttcc-accent">
-                  here
-                </span>
-              ) : null}
+              <Icon className="h-4 w-4" />
             </a>
           );
         })}
       </nav>
-    </div>
+
+      {/* Theme toggle */}
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        title={dark ? "Switch to light theme" : "Switch to dark theme"}
+        aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
+        className="flex w-9 h-9 items-center justify-center rounded-lg text-ttcc-text-muted hover:text-ttcc-text hover:bg-ttcc-surface-2/50 transition-all tt-focus"
+      >
+        {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+      </button>
+    </aside>
   );
 }
 
@@ -154,7 +193,6 @@ export function TerminalLayout() {
   const { status, tickers, loading, error: statusError, refreshAgeMs, startPolling, stopPolling } = useTraderStatusStore();
 
   const [confirmKill, setConfirmKill] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
   const [showSide, setShowSide] = useState(true);
 
   const isTraderRoute = pathname === "/" || pathname === "/trader" || pathname.startsWith("/trader/");
@@ -243,123 +281,114 @@ export function TerminalLayout() {
 
   return (
     <div className={cn(
-      "ttcc-root relative flex h-screen flex-col bg-ttcc-bg text-ttcc-text antialiased",
+      "ttcc-root relative flex h-screen bg-ttcc-bg text-ttcc-text antialiased",
       "before:fixed before:inset-0 before:pointer-events-none before:bg-[radial-gradient(ellipse_at_top,_rgba(167,139,250,0.03),_transparent_60%)]",
       !dark && "ring-1 ring-inset ring-ttcc-border/30"
     )}>
-      <ConnectionBanner status={sseStatus} retryAttempt={sseRetryAttempt} />
+      {/* Persistent icon sidebar — always visible on every route */}
+      <Sidebar pathname={pathname} dark={dark} onToggleTheme={toggle} />
 
-      <TopBar
-        tickers={tickers}
-        symbols={TICKER_SYMBOLS}
-        refreshAgeMs={refreshAgeMs}
-        running={running}
-        killActive={killActive}
-        modelName={modelName}
-        capitalUsd={currentCapital}
-        pnlTodayUsd={totalPnl}
-        accountSourceLabel={accountMetrics.sourceLabel}
-        accountSyncedAt={accountMetrics.syncedAt}
-        onKillToggle={() => setConfirmKill(true)}
-      />
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <ConnectionBanner status={sseStatus} retryAttempt={sseRetryAttempt} />
 
-      <div className="relative flex flex-1 min-h-0 overflow-hidden">
-        {/* Nav button + side panels — LeftPanel collapses to icon strip
-            when `showSide=false` or when not on a trader route. */}
-        {isTraderRoute ? (
-          showSide ? (
-            <LeftPanel
-              totalPnl={totalPnl}
-              currentCapital={currentCapital}
-              startingCapital={startingCapital}
-              winrate={winrate}
-              wins={wins}
-              losses={losses}
-              totalTrades={totalTrades}
-              consecutiveLosses={consecutiveLosses}
-              openPositions={openPositions}
-              maxPositions={MAX_POSITIONS}
-              symbols={symbols}
-              modelName={modelName}
-              avgLatency={avgLatency}
-              recentDecisionCount={recentDecisionCount}
-              lastUpdate={status?.timestamp ?? null}
-              running={running}
-              killActive={killActive}
-              accountSourceLabel={accountMetrics.sourceLabel}
-              accountSyncedAt={accountMetrics.syncedAt}
-              accountAvailableBalance={accountMetrics.availableBalance}
-              accountMarginUsed={accountMetrics.marginUsed}
-              cost={stats.daily_llm_cost ?? null}
-              onKillToggle={() => setConfirmKill(true)}
-            />
-          ) : (
-            <aside className="flex w-9 shrink-0 flex-col items-center gap-2 border-r border-ttcc-border-subtle bg-ttcc-bg py-2">
-              <button
-                type="button"
-                onClick={() => setShowSide(true)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-ttcc-border-subtle bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text transition-colors tt-focus"
-                title="Show metrics panel"
+        <TopBar
+          tickers={tickers}
+          symbols={TICKER_SYMBOLS}
+          refreshAgeMs={refreshAgeMs}
+          running={running}
+          killActive={killActive}
+          modelName={modelName}
+          capitalUsd={currentCapital}
+          pnlTodayUsd={totalPnl}
+          accountSourceLabel={accountMetrics.sourceLabel}
+          accountSyncedAt={accountMetrics.syncedAt}
+          onKillToggle={() => setConfirmKill(true)}
+        />
+
+        <div className="relative flex flex-1 min-h-0 overflow-hidden">
+          {/* LeftPanel collapses to an icon strip when `showSide=false`
+              or when not on a trader route. */}
+          {isTraderRoute ? (
+            showSide ? (
+              <LeftPanel
+                totalPnl={totalPnl}
+                currentCapital={currentCapital}
+                startingCapital={startingCapital}
+                winrate={winrate}
+                wins={wins}
+                losses={losses}
+                totalTrades={totalTrades}
+                consecutiveLosses={consecutiveLosses}
+                openPositions={openPositions}
+                maxPositions={MAX_POSITIONS}
+                symbols={symbols}
+                modelName={modelName}
+                avgLatency={avgLatency}
+                recentDecisionCount={recentDecisionCount}
+                lastUpdate={status?.timestamp ?? null}
+                running={running}
+                killActive={killActive}
+                accountSourceLabel={accountMetrics.sourceLabel}
+                accountSyncedAt={accountMetrics.syncedAt}
+                accountAvailableBalance={accountMetrics.availableBalance}
+                accountMarginUsed={accountMetrics.marginUsed}
+                cost={stats.daily_llm_cost ?? null}
+                onKillToggle={() => setConfirmKill(true)}
+              />
+            ) : (
+              <aside className="flex w-9 shrink-0 flex-col items-center gap-2 border-r border-ttcc-border-subtle bg-ttcc-bg py-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSide(true)}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-ttcc-border-subtle bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text transition-colors tt-focus"
+                  title="Show metrics panel"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+                <span className="font-mono text-[9px] uppercase tracking-wider text-ttcc-text-muted [writing-mode:vertical-rl] rotate-180">
+                  pnl · cap · kill
+                </span>
+              </aside>
+            )
+          ) : null}
+
+          {/* Center = route content */}
+          <main className="flex-1 min-w-0 overflow-y-auto relative">
+            {statusError ? (
+              <div
+                role="alert"
+                className="absolute inset-x-3 top-3 z-40 rounded-lg border border-ttcc-red/50 bg-ttcc-red/5 px-3 py-2 text-[11px] text-ttcc-red shadow-lg backdrop-blur tt-glow-red"
+                title={statusError}
               >
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-              <span className="font-mono text-[9px] uppercase tracking-wider text-ttcc-text-muted [writing-mode:vertical-rl] rotate-180">
-                pnl · cap · kill
-              </span>
-            </aside>
-          )
-        ) : null}
-
-        {/* Center = route content */}
-        <main className="flex-1 min-w-0 overflow-y-auto relative">
-          {statusError ? (
-            <div
-              role="alert"
-              className="absolute inset-x-3 top-3 z-40 rounded-lg border border-ttcc-red/50 bg-ttcc-red/5 px-3 py-2 text-[11px] text-ttcc-red shadow-lg backdrop-blur tt-glow-red"
-              title={statusError}
-            >
-              <span className="font-semibold uppercase tracking-wider">Trader data unavailable:</span>{" "}
-              <span className="break-words">{statusError}</span>
-            </div>
-          ) : null}
-          <Outlet context={outletContext} />
-
-          {loading && !status ? (
-            <div className="flex h-full items-center justify-center text-[11px] text-ttcc-text-secondary">
-              <div className="flex items-center gap-2 rounded-lg px-3 py-2 tt-skeleton">
-                <span className="tt-live-dot" />
-                loading terminal data…
+                <span className="font-semibold uppercase tracking-wider">Trader data unavailable:</span>{" "}
+                <span className="break-words">{statusError}</span>
               </div>
-            </div>
+            ) : null}
+            <Outlet context={outletContext} />
+
+            {loading && !status ? (
+              <div className="flex h-full items-center justify-center text-[11px] text-ttcc-text-secondary">
+                <div className="flex items-center gap-2 rounded-lg px-3 py-2 tt-skeleton">
+                  <span className="tt-live-dot" />
+                  loading terminal data…
+                </div>
+              </div>
+            ) : null}
+          </main>
+
+          {isTraderRoute ? (
+            <RightPanel decisions={llmDecisions} />
           ) : null}
-        </main>
+        </div>
 
-        {isTraderRoute ? (
-          <RightPanel decisions={llmDecisions} />
-        ) : null}
-
-        {/* Mini-nav overlay (any route). */}
-        {navOpen ? <MiniNav pathname={pathname} onClose={() => setNavOpen(false)} /> : null}
+        <BottomBar
+          recentTrades={recentClosed}
+          lastTs={lastTs}
+          scanIntervalS={SCAN_INTERVAL_S}
+          running={running}
+          refreshAgeMs={refreshAgeMs}
+        />
       </div>
-
-      <BottomBar
-        onOpenNav={() => setNavOpen(true)}
-        recentTrades={recentClosed}
-        lastTs={lastTs}
-        scanIntervalS={SCAN_INTERVAL_S}
-        running={running}
-        refreshAgeMs={refreshAgeMs}
-      />
-
-      {/* Theme toggle — relocated for better discoverability. */}
-      <button
-        type="button"
-        onClick={toggle}
-        className="absolute bottom-12 right-2 z-30 rounded-lg border border-ttcc-border-subtle bg-ttcc-surface px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-ttcc-text-secondary opacity-40 hover:opacity-100 transition-opacity tt-focus"
-        title={dark ? "Switch to light theme" : "Switch to dark theme"}
-      >
-        {dark ? "dark" : "light"}
-      </button>
 
       <ConfirmKillDialog
         open={confirmKill}

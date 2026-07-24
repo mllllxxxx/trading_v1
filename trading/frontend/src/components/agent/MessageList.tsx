@@ -67,16 +67,16 @@ export function MessageList({
   const { t } = useTranslation();
 
   return (
-    <div ref={listRef} className="flex-1 overflow-auto p-6 scroll-smooth relative">
+    <div ref={listRef} className="flex-1 overflow-auto p-6 scroll-smooth relative bg-ttcc-bg">
       <div className="max-w-3xl mx-auto space-y-4">
         {sessionLoading && (
           <div className="space-y-4 py-4">
             {[1, 2, 3].map(i => (
               <div key={i} className="flex gap-3 animate-pulse">
-                <div className="h-8 w-8 rounded-full bg-muted shrink-0" />
+                <div className="h-8 w-8 rounded-full bg-ttcc-surface-2 shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-muted rounded w-3/4" />
-                  <div className="h-3 bg-muted/60 rounded w-1/2" />
+                  <div className="h-4 bg-ttcc-surface-2 rounded w-3/4" />
+                  <div className="h-3 bg-ttcc-surface-3 rounded w-1/2" />
                 </div>
               </div>
             ))}
@@ -127,8 +127,8 @@ export function MessageList({
         {status === "streaming" && !reasoningActive && !streamingText && toolCalls.length === 0 && !messages.some((m) => m.type === "swarm_status" && m.swarmStatus?.status === "running") && (
           <div className="flex gap-3">
             <AgentAvatar />
-            <div className="flex-1 min-w-0 flex items-center gap-2 text-xs text-muted-foreground pt-1">
-              <Loader2 className="h-3 w-3 animate-spin text-primary shrink-0" />
+            <div className="flex-1 min-w-0 flex items-center gap-2 text-xs text-ttcc-text-secondary pt-1">
+              <Loader2 className="h-3 w-3 animate-spin text-ttcc-accent shrink-0" />
               <span>{t('agent.agentWorking')}</span>
             </div>
           </div>
@@ -139,15 +139,15 @@ export function MessageList({
             <AgentAvatar />
             <div className="flex-1 min-w-0 space-y-1.5">
               {reasoningActive && !streamingText && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin text-primary shrink-0" />
+                <div className="flex items-center gap-2 text-xs text-ttcc-text-secondary">
+                  <Loader2 className="h-3 w-3 animate-spin text-ttcc-accent shrink-0" />
                   <span>{t('agent.reasoning')}</span>
                 </div>
               )}
               {streamingText && (
                 <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed">
                   {streamingText}
-                  <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 animate-pulse align-middle" />
+                  <span className="inline-block w-0.5 h-4 bg-ttcc-accent ml-0.5 animate-pulse align-middle" />
                 </div>
               )}
               {status === "streaming" && toolCalls.length > 0 && (
@@ -159,10 +159,10 @@ export function MessageList({
 
         {status === "streaming" && (
           <div className="flex items-center gap-2 px-1 pt-1">
-            <div className="h-0.5 flex-1 rounded-full bg-primary/20 overflow-hidden">
-              <div className="h-full w-1/3 bg-primary rounded-full animate-[pulse-slide_2s_ease-in-out_infinite]" />
+            <div className="h-0.5 flex-1 rounded-full bg-ttcc-accent/20 overflow-hidden">
+              <div className="h-full w-1/3 bg-ttcc-accent rounded-full animate-[pulse-slide_2s_ease-in-out_infinite]" />
             </div>
-            <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{t('agent.running')}</span>
+            <span className="text-[10px] text-ttcc-text-secondary shrink-0 tabular-nums">{t('agent.running')}</span>
           </div>
         )}
 
@@ -171,7 +171,7 @@ export function MessageList({
       {showScrollBtn && (
         <button
           onClick={onScrollToBottom}
-          className="sticky bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg hover:opacity-90 transition-opacity z-10"
+          className="sticky bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-1.5 rounded-full bg-ttcc-accent text-ttcc-bg text-xs font-medium shadow-lg hover:opacity-90 transition-opacity z-10"
         >
           <ArrowDown className="h-3 w-3" /> {t('agent.newMessages')}
         </button>

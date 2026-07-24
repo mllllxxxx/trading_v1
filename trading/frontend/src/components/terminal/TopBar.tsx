@@ -1,13 +1,13 @@
-import { Brain, ShieldAlert, ShieldCheck, Zap } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { cn, LiveDot, fmtAge } from "@/components/terminal/primitives";
+import { cn } from "@/components/terminal/primitives";
 import { Ticker, type TickerEntry } from "@/components/terminal/Ticker";
 
 /**
  * TopBar — sticky header for the Trading Command Center.
  *
- * Layout: brand · ticker scroll · capital stats · kill switch · model name · live indicator
+ * Layout: brand · ticker scroll · capital · pnl · kill switch
  */
 export function TopBar({
   tickers,
@@ -38,12 +38,18 @@ export function TopBar({
 }) {
   const { t } = useTranslation();
   const pnlUp = pnlTodayUsd >= 0;
+  // refreshAgeMs / running / modelName are surfaced by StatusBar and
+  // LeftPanel elsewhere; they are intentionally unused here but kept in
+  // the signature for layout-side wiring stability.
+  void refreshAgeMs;
+  void running;
+  void modelName;
   const accountSource = accountSourceLabel || t("terminal.currentCapitalAccount");
   const accountTitle = accountSyncedAt
     ? t("terminal.currentCapitalTitleAt", { source: accountSource, time: accountSyncedAt })
     : t("terminal.currentCapitalTitle", { source: accountSource });
   return (
-    <header className="tt-glass flex h-11 items-center gap-0 shrink-0">
+    <header className="tt-glass flex h-12 items-center shrink-0">
       {/* Brand */}
       <div className="flex h-full items-center gap-2 px-3 shrink-0">
         <Link
@@ -54,20 +60,22 @@ export function TopBar({
         >
           <Zap className="h-3.5 w-3.5" />
         </Link>
-        <div className="flex flex-col leading-none">
-          <span className="text-[13px] font-bold tracking-tight text-ttcc-text">VIBE·TRADE</span>
-          <span className="text-[9px] uppercase tracking-[0.12em] text-ttcc-text-secondary">{t("terminal.commandCenter")}</span>
-        </div>
+        <span className="text-[13px] font-bold tracking-tight text-ttcc-text">VIBE·TRADE</span>
       </div>
 
       {/* Ticker scroll */}
       <Ticker tickers={tickers} symbols={symbols} />
 
-      {/* Right cluster: stats + controls */}
-      <div className="flex h-full items-center gap-1.5 px-3 shrink-0">
+      {/* Right cluster: capital · pnl · kill switch */}
+      <div className="flex h-full items-center gap-2 px-3 shrink-0">
         {/* Capital */}
-        <div className="flex items-center gap-1.5 rounded-lg bg-ttcc-surface-2/50 px-2 py-0.5" title={accountTitle}>
-          <span className="text-[9px] font-semibold uppercase tracking-wider text-ttcc-text-muted">{t("terminal.cap")}</span>
+        <div
+          className="flex items-center gap-1.5 rounded-lg bg-ttcc-surface-2/40 px-2.5 py-1"
+          title={accountTitle}
+        >
+          <span className="text-[9px] font-semibold uppercase tracking-wider text-ttcc-text-muted">
+            {t("terminal.cap")}
+          </span>
           <span className="font-mono text-[11px] font-semibold text-ttcc-text tabular">
             ${capitalUsd.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </span>
@@ -81,7 +89,7 @@ export function TopBar({
         {/* PnL today */}
         <div
           className={cn(
-            "flex items-center gap-1.5 rounded-lg px-2 py-0.5",
+            "flex items-center gap-1.5 rounded-lg px-2.5 py-1",
             pnlUp ? "bg-ttcc-green/10 text-ttcc-green tt-glow-green" : "bg-ttcc-red/10 text-ttcc-red tt-glow-red"
           )}
           title={t("terminal.todayPnl")}
@@ -97,7 +105,7 @@ export function TopBar({
           type="button"
           onClick={onKillToggle}
           className={cn(
-            "tt-focus flex items-center gap-1.5 rounded-lg px-2 py-0.5 transition-colors",
+            "tt-focus flex items-center gap-1.5 rounded-lg px-2 py-1 transition-colors",
             killActive
               ? "bg-ttcc-red/15 text-ttcc-red tt-glow-red"
               : "bg-ttcc-green/10 text-ttcc-green"
@@ -110,24 +118,6 @@ export function TopBar({
           </span>
           {killActive ? <span className="tt-live-dot !h-1.5 !w-1.5" /> : null}
         </button>
-
-        {/* Model */}
-        <div className="flex items-center gap-1.5 rounded-lg bg-ttcc-surface-2/50 px-2 py-0.5" title={t("terminal.modelLabel", { name: modelName })}>
-          <Brain className="h-3 w-3 text-ttcc-blue" />
-          <span className="font-mono text-[10px] text-ttcc-text-secondary tabular truncate max-w-[120px]">{modelName}</span>
-        </div>
-
-        {/* Refresh indicator */}
-        <div className="flex items-center gap-1.5 rounded-lg bg-ttcc-surface-2/50 px-2 py-0.5" title={t("terminal.pollingStatus")}>
-          <LiveDot idle={!running} />
-          <span className="font-mono text-[10px] text-ttcc-text-secondary tabular">
-            {running ? t("terminal.live") : t("terminal.idle")}
-          </span>
-          <span className="text-ttcc-text-muted/40">·</span>
-          <span className="font-mono text-[10px] text-ttcc-text-secondary tabular">
-            {fmtAge(new Date(Date.now() - refreshAgeMs).toISOString())}
-          </span>
-        </div>
       </div>
     </header>
   );

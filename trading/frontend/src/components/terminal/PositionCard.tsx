@@ -856,10 +856,10 @@ export function RrBadge({ rr }: { rr: number }) {
 
 export function EmptyPositions() {
   return (
-    <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-ttcc-border-subtle bg-ttcc-surface/40 text-[11px] text-ttcc-text-secondary">
-      <Activity className="mb-1 h-4 w-4 opacity-40" />
-      <span>No open positions</span>
-      <span className="text-[10px] opacity-60">scanner running - waiting for signal</span>
+    <div className="tt-hero-gradient flex flex-col items-center justify-center rounded-lg border border-ttcc-border-subtle bg-ttcc-surface/30 py-12">
+      <Activity className="mb-1 h-10 w-10 text-ttcc-text-muted/40 transition-all duration-150 hover:tt-glow-accent" />
+      <span className="text-ttcc-text-secondary text-[13px] font-medium">No open positions</span>
+      <span className="text-ttcc-text-muted text-[11px]">scanner running - waiting for signal</span>
     </div>
   );
 }

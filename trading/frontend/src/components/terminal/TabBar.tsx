@@ -26,7 +26,7 @@ export function TabBar<K extends string>({
   right?: React.ReactNode;
 }) {
   return (
-    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-ttcc-border bg-ttcc-bg/95 px-2 py-1.5 backdrop-blur">
+    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-ttcc-border-subtle bg-ttcc-bg/80 px-2 py-1.5 backdrop-blur-sm">
       <div className="flex items-center gap-1">
         {tabs.map((t) => {
           const isActive = t.key === active;
@@ -37,16 +37,16 @@ export function TabBar<K extends string>({
               type="button"
               onClick={() => onChange(t.key)}
               className={cn(
-                "flex items-center gap-1.5 rounded border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider transition-colors",
+                "flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider rounded-lg transition-all duration-150",
                 isActive
-                  ? "border-ttcc-accent/60 bg-ttcc-accent/15 text-ttcc-accent"
-                  : "border-ttcc-border bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text hover:border-ttcc-text-secondary/40"
+                  ? "bg-ttcc-accent/10 text-ttcc-accent"
+                  : "text-ttcc-text-secondary hover:text-ttcc-text hover:bg-ttcc-surface-2/40"
               )}
             >
               {Icon ? <Icon className="h-3 w-3" /> : null}
               {t.label}
               {t.badge ? (
-                <span className="font-mono text-[10px] tabular opacity-80">{t.badge}</span>
+                <span className="font-mono text-[10px] tabular opacity-70">{t.badge}</span>
               ) : null}
             </button>
           );

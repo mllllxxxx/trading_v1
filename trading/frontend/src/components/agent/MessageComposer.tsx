@@ -108,14 +108,14 @@ export function MessageComposer({
   const { t } = useTranslation();
 
   return (
-    <form onSubmit={onSubmit} className="border-t p-4 bg-background/80 backdrop-blur-sm">
+    <form onSubmit={onSubmit} className="border-t border-ttcc-border-subtle tt-glass p-4">
       <div className="max-w-3xl mx-auto space-y-2">
         {swarmPreset && (
           <div className="flex items-center gap-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs font-medium">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-ttcc-accent/10 text-ttcc-accent text-xs font-medium">
               <Users className="h-3 w-3" />
               {swarmPreset.title}
-              <button type="button" onClick={onClearSwarmPreset} className="hover:text-destructive transition-colors">
+              <button type="button" onClick={onClearSwarmPreset} className="hover:text-ttcc-red transition-colors">
                 <X className="h-3 w-3" />
               </button>
             </span>
@@ -123,10 +123,10 @@ export function MessageComposer({
         )}
         {goalComposerActive && (
           <div className="flex items-center gap-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-medium">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-ttcc-accent/10 text-ttcc-accent text-xs font-medium">
               <Target className="h-3 w-3" />
               New Research Goal
-              <button type="button" onClick={onClearGoalComposer} className="hover:text-destructive transition-colors">
+              <button type="button" onClick={onClearGoalComposer} className="hover:text-ttcc-red transition-colors">
                 <X className="h-3 w-3" />
               </button>
             </span>
@@ -156,17 +156,17 @@ export function MessageComposer({
         />
         {attachment && (
           <div className="flex items-center gap-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-medium">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-ttcc-accent/10 text-ttcc-accent text-xs font-medium">
               <Paperclip className="h-3 w-3" />
               {attachment.filename}
-              <button type="button" onClick={onClearAttachment} className="hover:text-destructive transition-colors">
+              <button type="button" onClick={onClearAttachment} className="hover:text-ttcc-red transition-colors">
                 <X className="h-3 w-3" />
               </button>
             </span>
           </div>
         )}
         {uploading && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs text-ttcc-text-secondary">
             <Loader2 className="h-3 w-3 animate-spin" />
             Uploading...
           </div>
@@ -174,7 +174,7 @@ export function MessageComposer({
         {liveActive && (
           <div className="flex items-center gap-2">
             {liveIsHalted ? (
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-ttcc-red/10 px-2.5 py-1 text-xs font-medium text-ttcc-red">
                 <OctagonX className="h-3 w-3" />
                 Connector runtime halted
               </span>
@@ -183,7 +183,7 @@ export function MessageComposer({
                 type="button"
                 onClick={onHaltLive}
                 disabled={halting}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/5 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-ttcc-red/40 bg-ttcc-red/5 px-2.5 py-1 text-xs font-medium text-ttcc-red transition-colors hover:bg-ttcc-red/10 disabled:opacity-40"
                 title="Instantly halt connector runtime activity"
               >
                 {halting ? <Loader2 className="h-3 w-3 animate-spin" /> : <OctagonX className="h-3 w-3" />}
@@ -198,17 +198,17 @@ export function MessageComposer({
               type="button"
               onClick={onToggleUploadMenu}
               disabled={status === "streaming" || uploading}
-              className="w-9 h-9 rounded-full border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40 shrink-0"
+              className="w-9 h-9 rounded-full border border-ttcc-border-subtle flex items-center justify-center text-ttcc-text-secondary hover:text-ttcc-text hover:bg-ttcc-surface-2/50 transition-colors disabled:opacity-40 shrink-0"
               title="More options"
             >
               <Plus className="h-4 w-4" />
             </button>
             {showUploadMenu && (
-              <div className="absolute bottom-full left-0 mb-2 w-52 rounded-xl border bg-background/95 backdrop-blur-sm shadow-lg py-1 z-50">
+              <div className="absolute bottom-full left-0 mb-2 w-52 tt-glass shadow-tt-lg rounded-xl py-1 z-50">
                 <button
                   type="button"
                   onClick={() => { fileInputRef.current?.click(); onToggleUploadMenu(); }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-ttcc-surface-2/50 transition-colors flex items-center gap-2"
                 >
                   <Paperclip className="h-4 w-4" />
                   Upload PDF document
@@ -222,7 +222,7 @@ export function MessageComposer({
                     onClearGoalComposer();
                     inputRef.current?.focus();
                   }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-ttcc-surface-2/50 transition-colors flex items-center gap-2"
                 >
                   <Target className="h-4 w-4" />
                   Research Goal
@@ -235,7 +235,7 @@ export function MessageComposer({
                     onRunPrompt("auto");
                     inputRef.current?.focus();
                   }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-ttcc-surface-2/50 transition-colors flex items-center gap-2"
                 >
                   <Users className="h-4 w-4" />
                   Agent Swarm
@@ -247,7 +247,7 @@ export function MessageComposer({
                     onToggleUploadMenu();
                     onRunPrompt(CONNECTOR_CHECK_PROMPT);
                   }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-ttcc-surface-2/50 transition-colors flex items-center gap-2"
                 >
                   <Landmark className="h-4 w-4" />
                   Check Trading Connector
@@ -258,7 +258,7 @@ export function MessageComposer({
                     onToggleUploadMenu();
                     onRunPrompt(CONNECTOR_PORTFOLIO_PROMPT);
                   }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-ttcc-surface-2/50 transition-colors flex items-center gap-2"
                 >
                   <Landmark className="h-4 w-4" />
                   Analyze Connector Portfolio
@@ -294,14 +294,14 @@ export function MessageComposer({
                 ? "Describe the research goal to attach to this session"
                 : "e.g. Create a dual MA crossover strategy for 000001.SZ, backtest 2024"
             }
-            className="flex-1 px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow resize-none max-h-32 overflow-y-auto"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-ttcc-border-subtle bg-ttcc-surface text-sm focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 transition-shadow resize-none max-h-32 overflow-y-auto"
             disabled={status === "streaming"}
           />
           {messages.length > 0 && (
             <button
               type="button"
               onClick={onExport}
-              className="px-3 py-2.5 rounded-xl border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="px-3 py-2.5 rounded-xl border border-ttcc-border-subtle text-ttcc-text-secondary hover:text-ttcc-text hover:bg-ttcc-surface-2/50 transition-colors"
               title={t('agent.exportChat')}
             >
               <Download className="h-4 w-4" />
@@ -311,7 +311,7 @@ export function MessageComposer({
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+              className="px-4 py-2.5 rounded-xl bg-ttcc-red text-ttcc-bg text-sm font-medium hover:opacity-90 transition-opacity"
               title={t('agent.stopGeneration')}
             >
               <Square className="h-4 w-4" />
@@ -320,7 +320,7 @@ export function MessageComposer({
             <button
               type="submit"
               disabled={goalComposerActive ? !input.trim() : (!input.trim() && !attachment)}
-              className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity"
+              className="px-4 py-2.5 rounded-xl bg-ttcc-accent text-ttcc-bg text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity"
             >
               <Send className="h-4 w-4" />
             </button>
