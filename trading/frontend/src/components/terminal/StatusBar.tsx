@@ -26,26 +26,26 @@ export function StatusBar({
   const nextS = Math.max(0, scanIntervalS - pollS);
   const nextLabel = nextS >= 60 ? `${Math.floor(nextS / 60)}m${nextS % 60 ? ` ${nextS % 60}s` : ""}` : `${nextS}s`;
   return (
-    <div className="flex items-center gap-3 font-mono text-[10px] text-ttcc-text-secondary tabular px-3">
+    <div className="flex items-center gap-3 font-mono text-[11px] text-ttcc-text-secondary tabular px-4">
       <span className="flex items-center gap-1">
-        <span className="text-ttcc-text-muted">last scan</span>
+        <span className="text-ttcc-text-muted/80">last scan</span>
         <span className="text-ttcc-text">{lastAge} ago</span>
       </span>
-      <span className="text-ttcc-text-muted/40">·</span>
+      <span className="text-ttcc-text-muted/20">·</span>
       <span className="flex items-center gap-1">
-        <span className="text-ttcc-text-muted">next</span>
+        <span className="text-ttcc-text-muted/80">next</span>
         <span className="text-ttcc-text">{nextLabel}</span>
       </span>
-      <span className="text-ttcc-text-muted/40">·</span>
+      <span className="text-ttcc-text-muted/20">·</span>
       <span className="flex items-center gap-1">
-        <span className="text-ttcc-text-muted">poll</span>
+        <span className="text-ttcc-text-muted/80">poll</span>
         <span className={cn(running ? "text-ttcc-green" : "text-ttcc-text-muted")}>
           {running ? `${pollS}s` : "stopped"}
         </span>
       </span>
-      <span className="text-ttcc-text-muted/40">·</span>
+      <span className="text-ttcc-text-muted/20">·</span>
       <span className="flex items-center gap-1">
-        <span className="text-ttcc-text-muted">interval</span>
+        <span className="text-ttcc-text-muted/80">interval</span>
         <span className="text-ttcc-text">{scanIntervalS}s</span>
       </span>
     </div>

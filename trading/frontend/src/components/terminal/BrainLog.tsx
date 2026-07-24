@@ -38,12 +38,12 @@ export function BrainLog({ decisions, maxRows = 30 }: { decisions: BrainDecision
     return (
       <div className="rounded-lg border border-ttcc-border-subtle bg-ttcc-surface">
         <PanelLabel icon={Brain} tone="info">Brain log</PanelLabel>
-        <div className="px-2.5 py-6 text-center text-[11px] text-ttcc-text-muted">
+        <div className="px-2.5 py-8 text-center text-[12px] text-ttcc-text-muted">
           <div className="flex justify-center mb-2">
-            <Brain className="h-6 w-6 text-ttcc-blue/40 tt-glow-accent" />
+            <Brain className="h-8 w-8 text-ttcc-blue/40 tt-glow-accent" />
           </div>
           <div className="font-medium text-ttcc-text-secondary">No LLM activity in last ~1000 events</div>
-          <div className="mt-1 text-[10px]">Regime conflict or weak confluence — LLM skipped to save tokens.</div>
+          <div className="mt-1 text-[11px]">Regime conflict or weak confluence — LLM skipped to save tokens.</div>
         </div>
       </div>
     );
@@ -54,7 +54,7 @@ export function BrainLog({ decisions, maxRows = 30 }: { decisions: BrainDecision
       <PanelLabel
         icon={Brain}
         tone="info"
-        right={<span className="font-mono text-[10px] tabular text-ttcc-text-muted">{rows.length}</span>}
+        right={<span className="font-mono text-[11px] tabular text-ttcc-text-muted">{rows.length}</span>}
       >
         Brain log
       </PanelLabel>
@@ -66,7 +66,7 @@ export function BrainLog({ decisions, maxRows = 30 }: { decisions: BrainDecision
             <li
               key={id}
               className={cn(
-                "border-b border-ttcc-border-subtle/40 px-2.5 py-1.5 last:border-b-0",
+                "border-b border-ttcc-border-subtle/40 px-3 py-2 last:border-b-0",
                 "hover:bg-ttcc-surface-2/30 transition-colors",
                 isNew && "ttcc-row-in"
               )}
@@ -120,7 +120,7 @@ function BrainRow({ d }: { d: BrainDecision }) {
   return (
     <div className="flex flex-col gap-0.5">
       <div className="flex items-center gap-1.5 text-[11px]">
-        <span className="font-mono tabular text-[10px] text-ttcc-text-muted shrink-0">{fmtTime(d.ts)}</span>
+        <span className="font-mono tabular text-[11px] text-ttcc-text-muted shrink-0">{fmtTime(d.ts)}</span>
         <PillBadge tone={tone} mono>{action}</PillBadge>
         {confidence !== null ? (
           <span className="font-mono text-[10px] tabular text-ttcc-text-secondary">
@@ -129,7 +129,7 @@ function BrainRow({ d }: { d: BrainDecision }) {
         ) : null}
       </div>
       <div
-        className="text-[11px] text-ttcc-text-secondary truncate"
+        className="text-[12px] text-ttcc-text-secondary truncate"
         title={reasoning}
       >
         {reasoning}

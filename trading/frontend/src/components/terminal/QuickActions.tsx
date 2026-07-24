@@ -23,19 +23,19 @@ export function QuickActions() {
   ];
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       {actions.map(({ to, label, icon: Icon, hint }) => (
         <Link
           key={to}
           to={to}
           className={cn(
-            "group flex items-center gap-1.5 rounded border border-ttcc-border bg-ttcc-surface px-2 py-0.5",
-            "text-[10px] font-semibold uppercase tracking-wider text-ttcc-text-secondary",
-            "hover:border-ttcc-blue/50 hover:bg-ttcc-blue/10 hover:text-ttcc-blue transition-colors"
+            "group flex items-center gap-1.5 rounded-lg px-2.5 py-1",
+            "text-[11px] font-semibold uppercase tracking-wider text-ttcc-text-secondary",
+            "hover:bg-ttcc-blue/10 hover:text-ttcc-blue hover:shadow-tt-sm transition-all duration-150"
           )}
           title={hint}
         >
-          <Icon className="h-3 w-3" />
+          <Icon className="h-3.5 w-3.5" />
           <span>{label}</span>
         </Link>
       ))}

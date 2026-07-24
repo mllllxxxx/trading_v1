@@ -118,7 +118,7 @@ export function LeftPanel({
   return (
     <aside
       className={cn(
-        "relative flex w-[280px] shrink-0 flex-col gap-2 overflow-y-auto bg-ttcc-bg p-2",
+        "relative flex w-[300px] shrink-0 flex-col gap-3 overflow-y-auto bg-ttcc-bg p-3",
         "before:absolute before:right-0 before:top-0 before:h-full before:w-px",
         "before:bg-gradient-to-b before:from-transparent before:via-ttcc-border/50 before:to-transparent",
         "before:pointer-events-none before:content-['']"
@@ -133,7 +133,7 @@ export function LeftPanel({
       >
         <div className={cn("rounded-lg px-2 py-1.5 -mx-0.5", pnlFlashCls)}>
           <div className={cn(
-            "font-mono text-[28px] font-bold leading-none tabular tracking-tight",
+            "font-mono text-[32px] font-bold leading-none tabular tracking-tighter",
             isUp ? "text-ttcc-green" : "text-ttcc-red"
           )}>
             {isUp ? "+" : ""}{totalPnl.toFixed(2)}
@@ -141,7 +141,7 @@ export function LeftPanel({
           </div>
           <div className="mt-1.5 flex items-center gap-2 text-[10px] tabular">
             <span className={cn(
-              "inline-flex items-center gap-0.5 rounded-lg border px-1.5 py-0.5 font-mono font-semibold",
+              "inline-flex items-center gap-0.5 rounded-lg border px-1.5 py-0.5 font-mono font-bold",
               isUp ? "border-ttcc-green/40 bg-ttcc-green/10 text-ttcc-green"
               : "border-ttcc-red/40 bg-ttcc-red/10 text-ttcc-red"
             )}>
@@ -152,16 +152,16 @@ export function LeftPanel({
         </div>
       </MetricCard>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         <MetricCard label={t("terminal.capital")} icon={Wallet} dense tone="muted">
-          <NumberCell value={`$${currentCapital.toFixed(2)}`} size="lg" bold />
+          <NumberCell value={`$${currentCapital.toFixed(2)}`} size="lg" bold tracking-tight />
           <div className="mt-1 flex items-baseline justify-between text-[10px] tabular">
             <span className="text-ttcc-text-secondary">{t("terminal.sinceStart")}</span>
             <span className={cn("font-mono", isUp ? "text-ttcc-green" : "text-ttcc-red")}>
               {isUp ? "+" : ""}{totalPnl.toFixed(2)}
             </span>
           </div>
-          <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 border-t border-ttcc-border-subtle/60 pt-1 text-[9px] tabular">
+          <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 border-t border-ttcc-border-subtle/60 pt-1 text-[10px] tabular">
             <span className="text-ttcc-text-secondary">{t("terminal.source")}</span>
             <span className="truncate text-right font-mono uppercase text-ttcc-text-muted" title={accountSyncedAt || undefined}>
               {accountSourceLabel || t("terminal.journalFallback")}
@@ -188,10 +188,10 @@ export function LeftPanel({
             bold
             tone={winrate >= 50 ? "bull" : "default"}
           />
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-ttcc-surface-2">
+          <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-ttcc-surface-2">
             <div
               className={cn(
-                "h-full rounded-full bg-ttcc-green transition-all duration-300",
+                "h-full rounded-full bg-ttcc-green transition-all duration-500",
                 winrate >= 50 && "tt-glow-green"
               )}
               style={{ width: `${Math.min(100, winrate)}%` }}
@@ -208,7 +208,7 @@ export function LeftPanel({
         </MetricCard>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         <MetricCard label={t("terminal.open")} icon={Activity} dense tone={openTone}>
           <div className="flex items-baseline gap-1">
             <NumberCell
@@ -238,7 +238,7 @@ export function LeftPanel({
       </div>
 
       {/* SYSTEM section */}
-      <div className="mt-2">
+      <div className="mt-3">
         <PanelLabel icon={Power} tone="muted">{t("terminal.system")}</PanelLabel>
         <div className="mt-1.5 flex flex-col gap-2">
           <MetricCard label={t("terminal.killSwitch")} dense tone={killActive ? "bear" : "bull"}>
@@ -254,7 +254,7 @@ export function LeftPanel({
             >
               <span className="flex items-center gap-1.5">
                 {killActive ? <ShieldAlert className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}
-                <span className="font-mono text-[10px] font-semibold uppercase tracking-wider">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider">
                   {killActive ? t("terminal.activeHalted") : t("terminal.armed")}
                 </span>
               </span>
@@ -269,13 +269,13 @@ export function LeftPanel({
               {symbols.slice(0, 10).map((s) => (
                 <span
                   key={s}
-                  className="rounded border border-ttcc-border-subtle bg-ttcc-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-ttcc-text-secondary"
+                  className="rounded-md border border-ttcc-border-subtle bg-ttcc-surface-2 px-1.5 py-0.5 font-mono text-[11px] font-medium text-ttcc-text-secondary"
                 >
                   {s.replace("-USDT", "")}
                 </span>
               ))}
               {symbols.length > 10 ? (
-                <span className="font-mono text-[10px] text-ttcc-text-muted">+{symbols.length - 10}</span>
+                <span className="font-mono text-[11px] text-ttcc-text-muted">+{symbols.length - 10}</span>
               ) : null}
             </div>
             <div className="mt-1 text-[10px] text-ttcc-text-secondary tabular">
@@ -287,13 +287,13 @@ export function LeftPanel({
             <div className="flex items-center gap-1.5">
               <span className="font-mono text-[11px] font-medium tabular text-ttcc-text truncate">{modelName}</span>
             </div>
-            <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] tabular">
+            <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] tabular">
               <span className="text-ttcc-text-secondary">{t("terminal.latency")}</span>
-              <span className="text-right font-mono text-ttcc-text">{avgLatency}</span>
+              <span className="text-right font-mono font-medium text-ttcc-text">{avgLatency}</span>
               <span className="text-ttcc-text-secondary">{t("terminal.decisionsToday")}</span>
-              <span className="text-right font-mono text-ttcc-text">{recentDecisionCount}</span>
+              <span className="text-right font-mono font-medium text-ttcc-text">{recentDecisionCount}</span>
               <span className="text-ttcc-text-secondary">{t("terminal.lastUpdate")}</span>
-              <span className="text-right font-mono text-ttcc-text">
+              <span className="text-right font-mono font-medium text-ttcc-text">
                 {lastUpdate ? lastUpdate.substring(11, 19) : "—"}
               </span>
             </div>
@@ -301,17 +301,17 @@ export function LeftPanel({
 
           <MetricCard label={t("terminal.llmSpend")} dense tone={cost?.cap_reached ? "bear" : (cost?.pct_of_cap ?? 0) >= 80 ? "warn" : "muted"} icon={Cpu}>
             <div className="flex items-baseline justify-between">
-              <span className="font-mono text-base font-bold tabular text-ttcc-text leading-none">
+              <span className="font-mono text-lg font-bold tabular text-ttcc-text leading-none">
                 ${cost?.cost_usd?.toFixed(4) ?? "0.0000"}
               </span>
               <span className="font-mono text-[10px] tabular text-ttcc-text-secondary">
                 / ${cost?.cap_usd?.toFixed(2) ?? "0.10"}
               </span>
             </div>
-            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ttcc-surface-2">
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-ttcc-surface-2">
               <div
                 className={cn(
-                  "h-full rounded-full transition-all duration-300",
+                  "h-full rounded-full transition-all duration-500",
                   cost?.cap_reached
                     ? "bg-ttcc-red tt-glow-red"
                     : (cost?.pct_of_cap ?? 0) >= 80
@@ -321,7 +321,7 @@ export function LeftPanel({
                 style={{ width: `${Math.min(100, cost?.pct_of_cap ?? 0)}%` }}
               />
             </div>
-            <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] tabular text-ttcc-text-secondary">
+            <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] tabular text-ttcc-text-secondary">
               <span>{t("terminal.calls")}</span>
               <span className="text-right font-mono text-ttcc-text">
                 {cost?.calls ?? 0}/{cost?.call_cap ?? 120}
@@ -352,20 +352,20 @@ export function LeftPanel({
       </div>
 
       {/* SETTINGS collapse */}
-      <div className="mt-2">
+      <div className="mt-3">
         <button
           type="button"
           onClick={() => setShowSettings((v) => !v)}
           className="flex w-full items-center justify-between gap-2 rounded-lg bg-ttcc-surface/50 px-2 py-1.5 hover:bg-ttcc-surface transition-colors"
         >
-          <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ttcc-text-secondary">
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ttcc-text-secondary">
             {showSettings ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
             <SettingsIcon className="h-3 w-3" />
             {t("terminal.settings")}
           </span>
         </button>
         {showSettings ? (
-          <div className="mt-1.5 flex flex-col gap-1 rounded-lg bg-ttcc-surface/50 p-2 text-[11px]">
+          <div className="mt-1.5 flex flex-col gap-1 rounded-lg bg-ttcc-surface/50 p-2 text-[12px]">
             <Link
               to="/settings"
               className="flex items-center justify-between rounded-lg px-2 py-1 hover:bg-ttcc-surface-2/30 transition-colors"
@@ -399,7 +399,7 @@ export function LeftPanel({
         ) : null}
       </div>
 
-      <div className="mt-2 px-2 text-[9px] uppercase tracking-[0.12em] text-ttcc-text-muted/50">
+      <div className="mt-2 px-2 pt-2 pb-1 text-[10px] uppercase tracking-[0.12em] text-ttcc-text-muted/50">
         {t("terminal.versionTestnet")}
       </div>
     </aside>

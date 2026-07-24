@@ -53,12 +53,12 @@ export function RightPanel({
         <button
           type="button"
           onClick={() => setCollapsed(false)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-ttcc-border-subtle bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text hover:tt-glow-accent transition-all"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-ttcc-border-subtle bg-ttcc-surface text-ttcc-text-secondary hover:text-ttcc-text hover:tt-glow-accent transition-all"
           title="Expand right panel"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
-        <span className="font-mono text-[9px] uppercase tracking-wider text-ttcc-text-muted [writing-mode:vertical-rl] rotate-180">
+        <span className="font-mono text-[10px] uppercase tracking-wider text-ttcc-text-muted [writing-mode:vertical-rl] rotate-180">
           chat · brain · alpha · pipeline
         </span>
       </aside>
@@ -75,7 +75,7 @@ export function RightPanel({
   return (
     <aside
       className={cn(
-        "relative flex w-[380px] shrink-0 flex-col overflow-hidden bg-ttcc-bg",
+        "relative flex w-[400px] shrink-0 flex-col overflow-hidden bg-ttcc-bg",
         "before:absolute before:left-0 before:top-0 before:h-full before:w-px",
         "before:bg-gradient-to-b before:from-transparent before:via-ttcc-border/50 before:to-transparent",
         "before:pointer-events-none before:content-['']"
@@ -83,7 +83,7 @@ export function RightPanel({
     >
       {/* Sidebar Header & Collapser */}
       <div className="tt-glass flex items-center justify-between px-2.5 py-1.5 shrink-0">
-        <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-ttcc-text-secondary">
+        <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-ttcc-text-secondary">
           AI Co-pilot Console
         </span>
         <button
@@ -97,7 +97,7 @@ export function RightPanel({
       </div>
 
       {/* Tab Selectors */}
-      <div className="flex bg-ttcc-surface/40 shrink-0 p-1 gap-0.5">
+      <div className="flex bg-ttcc-surface/40 shrink-0 p-1 gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -107,7 +107,7 @@ export function RightPanel({
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-1 px-1 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wider",
+                "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg transition-all text-[11px] font-bold uppercase tracking-wider",
                 active
                   ? "bg-ttcc-accent/10 text-ttcc-accent tt-glow-accent"
                   : "text-ttcc-text-secondary hover:text-ttcc-text hover:bg-ttcc-surface/30"
@@ -136,7 +136,7 @@ export function RightPanel({
 
         {activeTab === "brain" && (
           <div className="p-2 h-full overflow-y-auto">
-            <div className="mb-2 text-[10px] uppercase font-bold text-ttcc-text-secondary tracking-wider px-1">
+            <div className="mb-2 text-[11px] uppercase font-bold text-ttcc-text-muted tracking-wider px-2">
               Live LLM Decision Streams
             </div>
             <BrainLog decisions={decisions} />
@@ -145,7 +145,7 @@ export function RightPanel({
 
         {activeTab === "alpha" && (
           <div className="p-2 h-full overflow-y-auto">
-            <div className="mb-2 text-[10px] uppercase font-bold text-ttcc-text-secondary tracking-wider px-1">
+            <div className="mb-2 text-[11px] uppercase font-bold text-ttcc-text-muted tracking-wider px-2">
               Top Alpha Formulas
             </div>
             <AlphaZooMini topRows={topAlphas} />
@@ -154,7 +154,7 @@ export function RightPanel({
 
         {activeTab === "pipeline" && (
           <div className="p-2 h-full overflow-y-auto">
-            <div className="mb-2 text-[10px] uppercase font-bold text-ttcc-text-secondary tracking-wider px-1">
+            <div className="mb-2 text-[11px] uppercase font-bold text-ttcc-text-muted tracking-wider px-2">
               Project Feature Designs
             </div>
             <FeaturePipeline />
