@@ -26,7 +26,7 @@ function CopyButton({ text }: { text: string }) {
       className="absolute top-2 right-2 p-1.5 rounded-lg bg-ttcc-surface-2/80 hover:bg-ttcc-surface-2 text-ttcc-text-secondary hover:text-ttcc-text opacity-0 group-hover:opacity-100 transition-colors"
       title={copied ? i18n.t("messageBubble.copied") : i18n.t("messageBubble.copy")}
     >
-      {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? <Check className="h-3.5 w-3.5 text-ttcc-green" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   );
 }
@@ -89,9 +89,9 @@ export const MessageBubble = memo(function MessageBubble({ msg, onRetry }: Props
       <div className="flex gap-3">
         <AgentAvatar />
         <div className="space-y-2">
-          <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/5 px-4 py-3">
-            <XCircle className="h-4 w-4 text-danger shrink-0 mt-0.5" />
-            <p className="text-sm text-danger leading-relaxed">{msg.content}</p>
+          <div className="flex items-start gap-2 rounded-lg border border-ttcc-red/30 bg-ttcc-red/5 px-4 py-3">
+            <XCircle className="h-4 w-4 text-ttcc-red shrink-0 mt-0.5" />
+            <p className="text-sm text-ttcc-red leading-relaxed">{msg.content}</p>
           </div>
           {onRetry && (
             <button

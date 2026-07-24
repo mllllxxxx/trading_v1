@@ -55,15 +55,15 @@ describe("MetricsCard", () => {
 
   it("applies sentiment colors", () => {
     render(<MetricsCard metrics={{ sharpe: 1.5 }} />);
-    // sharpe >= 1.0 → positive → text-success
+    // sharpe >= 1.0 → positive → text-ttcc-green
     const el = screen.getByText("+1.50");
-    expect(el.className).toContain("text-success");
+    expect(el.className).toContain("text-ttcc-green");
   });
 
   it("applies negative sentiment for bad values", () => {
     render(<MetricsCard metrics={{ max_drawdown: -0.3 }} />);
-    // max_drawdown <= -0.2 → negative → text-danger
+    // max_drawdown <= -0.2 → negative → text-ttcc-red
     const el = screen.getByText("-30.00%");
-    expect(el.className).toContain("text-danger");
+    expect(el.className).toContain("text-ttcc-red");
   });
 });

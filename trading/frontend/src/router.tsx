@@ -37,7 +37,7 @@ const NotFoundPage = lazy(() =>
 
 function PageLoader() {
   return (
-    <div className="flex h-[60vh] items-center justify-center text-muted-foreground">
+    <div className="flex h-[60vh] items-center justify-center text-ttcc-text-secondary">
       Loading…
     </div>
   );

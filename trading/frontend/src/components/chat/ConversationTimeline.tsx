@@ -54,10 +54,10 @@ export const ConversationTimeline = memo(function ConversationTimeline({ message
           key={idx}
           onClick={() => scrollTo(idx)}
           className={cn(
-            "rounded-full transition-all shrink-0",
+            "rounded-full transition-colors shrink-0",
             idx === activeIdx
-              ? "w-3 h-3 bg-primary shadow-sm shadow-primary/30"
-              : "w-2 h-2 bg-muted-foreground/25 hover:bg-muted-foreground/50"
+              ? "w-3 h-3 bg-ttcc-accent shadow-sm shadow-ttcc-accent/30"
+              : "w-2 h-2 bg-ttcc-text-muted/25 hover:bg-ttcc-text-muted/50"
           )}
           title={messages[idx].content.slice(0, 40)}
         />

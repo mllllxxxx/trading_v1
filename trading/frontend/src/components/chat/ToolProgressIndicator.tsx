@@ -71,9 +71,9 @@ function ToolRow({ entry, stepIndex, totalSteps, isHeader, connector = "none", e
   const message = progress?.message || "";
 
   const icon = entry.status === "error"
-    ? <XCircle className="h-3 w-3 text-danger shrink-0" />
+    ? <XCircle className="h-3 w-3 text-ttcc-red shrink-0" />
     : entry.status === "ok"
-      ? <CheckCircle2 className="h-3 w-3 text-success shrink-0" />
+      ? <CheckCircle2 className="h-3 w-3 text-ttcc-green shrink-0" />
       : hasDeterminate
         ? <ProgressRing current={progress!.current!} total={progress!.total!} />
         : <Loader2 className="h-3 w-3 animate-spin text-ttcc-accent shrink-0" />;
@@ -189,7 +189,7 @@ export function ToolProgressIndicator({ toolCalls }: Props): JSX.Element | null 
   // through the aggregate.
   const anyError = toolCalls.some((tc) => tc.status === "error");
   const aggregateIcon = anyError
-    ? <XCircle className="h-3 w-3 text-danger shrink-0" />
+    ? <XCircle className="h-3 w-3 text-ttcc-red shrink-0" />
     : <Loader2 className="h-3 w-3 animate-spin text-ttcc-accent shrink-0" />;
 
   // Display rule: ≤3 running → show all; >3 → first 2 + "… +N more".

@@ -150,13 +150,13 @@ export function RunDetail() {
   if (!run) return (
     <div className="p-8 space-y-2">
       <p className="text-red-500 font-medium">{i18n.t("runDetail.runNotFound")}</p>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-ttcc-text-secondary">
         {i18n.t("runDetail.runNotFoundDesc")}, or your browser may not have API access configured.
         Check that the API authentication key is set in Settings if accessing remotely.
       </p>
       <button
         onClick={() => navigate(-1)}
-        className="text-sm text-primary hover:underline inline-flex items-center gap-1.5"
+        className="text-sm text-ttcc-accent hover:underline inline-flex items-center gap-1.5 transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> {i18n.t("runDetail.goBack")}
       </button>
@@ -249,16 +249,16 @@ export function RunDetail() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            className="p-1 rounded-lg hover:bg-ttcc-surface-2/50 transition-colors text-ttcc-text-secondary hover:text-ttcc-text"
             title={i18n.t("runDetail.goBack")}
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          {ok ? <CheckCircle2 className="h-5 w-5 text-success" /> : <XCircle className="h-5 w-5 text-danger" />}
-          <h1 className="font-mono text-sm font-medium">{runId}</h1>
-          {run.elapsed_seconds && <span className="text-xs text-muted-foreground">{run.elapsed_seconds.toFixed(1)}s</span>}
+          {ok ? <CheckCircle2 className="h-5 w-5 text-ttcc-green" /> : <XCircle className="h-5 w-5 text-ttcc-red" />}
+          <h2 className="font-mono text-sm font-medium">{runId}</h2>
+          {run.elapsed_seconds && <span className="text-xs text-ttcc-text-secondary">{run.elapsed_seconds.toFixed(1)}s</span>}
         </div>
-        {run.prompt && <p className="text-sm text-muted-foreground">{run.prompt}</p>}
+        {run.prompt && <p className="text-sm text-ttcc-text-secondary">{run.prompt}</p>}
         {run.metrics && <MetricsCard metrics={run.metrics as Record<string, number>} />}
 
         <div className="flex items-center gap-1">
@@ -267,8 +267,8 @@ export function RunDetail() {
               key={id}
               onClick={() => setTab(id)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-                tab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors",
+                tab === id ? "bg-ttcc-accent text-ttcc-bg" : "text-ttcc-text-secondary hover:bg-ttcc-surface-2/50"
               )}
             >
               <Icon className="h-3.5 w-3.5" /> {label}
@@ -279,7 +279,7 @@ export function RunDetail() {
             {run.trade_log && run.trade_log.length > 0 && (
               <button
                 onClick={() => downloadCsv(`trades_${runId}.csv`, buildTradesCsv(run.trade_log!))}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-muted transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-ttcc-text-secondary hover:bg-ttcc-surface-2/50 transition-colors"
                 title={i18n.t("runDetail.downloadTradesCsv")}
               >
                 <Download className="h-3.5 w-3.5" /> Download Trades CSV
@@ -288,7 +288,7 @@ export function RunDetail() {
             {run.metrics && (
               <button
                 onClick={() => downloadCsv(`metrics_${runId}.csv`, buildMetricsCsv(run.metrics!))}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-muted transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-ttcc-text-secondary hover:bg-ttcc-surface-2/50 transition-colors"
                 title={i18n.t("runDetail.downloadMetricsCsv")}
               >
                 <Download className="h-3.5 w-3.5" /> Download Metrics CSV
@@ -345,12 +345,12 @@ function RunCardTab({ card }: { card: RunCard }) {
       </div>
 
       {warnings.length > 0 && (
-        <section className="rounded-md border border-amber-500/25 bg-amber-500/5 p-3">
+        <section className="rounded-lg border border-amber-500/25 bg-amber-500/5 p-3">
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300">
             <AlertTriangle className="h-4 w-4" />
             Warnings
           </div>
-          <ul className="space-y-1 text-xs text-muted-foreground">
+          <ul className="space-y-1 text-xs text-ttcc-text-secondary">
             {warnings.map((warning, index) => <li key={index}>{warning}</li>)}
           </ul>
         </section>
@@ -371,11 +371,11 @@ function RunCardTab({ card }: { card: RunCard }) {
         </RunCardPanel>
         <RunCardPanel title={i18n.t("runDetail.validationPayload")} icon={ShieldCheck}>
           {card.validation ? (
-            <pre className="max-h-80 overflow-auto rounded-md bg-muted/40 p-3 text-xs leading-relaxed">
+            <pre className="max-h-80 overflow-auto rounded-lg bg-ttcc-surface-2/40 p-3 text-xs leading-relaxed">
               {JSON.stringify(card.validation, null, 2)}
             </pre>
           ) : (
-            <p className="text-sm text-muted-foreground">{i18n.t("runDetail.noValidationPayload")}</p>
+            <p className="text-sm text-ttcc-text-secondary">{i18n.t("runDetail.noValidationPayload")}</p>
           )}
         </RunCardPanel>
       </div>
@@ -385,7 +385,7 @@ function RunCardTab({ card }: { card: RunCard }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-muted-foreground">
+                <tr className="border-b text-left text-ttcc-text-secondary">
                   <th className="py-2 pr-4">{i18n.t("runDetail.path")}</th>
                   <th className="py-2 pr-4">{i18n.t("runDetail.size")}</th>
                   <th className="py-2">{i18n.t("runDetail.sha256")}</th>
@@ -395,15 +395,15 @@ function RunCardTab({ card }: { card: RunCard }) {
                 {artifacts.map((artifact) => (
                   <tr key={`${artifact.path}-${artifact.sha256}`} className="border-b last:border-0">
                     <td className="py-2 pr-4 font-mono text-xs">{artifact.path}</td>
-                    <td className="py-2 pr-4 tabular-nums text-muted-foreground">{formatBytes(artifact.size_bytes)}</td>
-                    <td className="py-2 font-mono text-xs text-muted-foreground">{shortHash(artifact.sha256)}</td>
+                    <td className="py-2 pr-4 tabular-nums text-ttcc-text-secondary">{formatBytes(artifact.size_bytes)}</td>
+                    <td className="py-2 font-mono text-xs text-ttcc-text-secondary">{shortHash(artifact.sha256)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">{i18n.t("runDetail.noArtifactChecksums")}</p>
+          <p className="text-sm text-ttcc-text-secondary">{i18n.t("runDetail.noArtifactChecksums")}</p>
         )}
       </RunCardPanel>
     </div>
@@ -412,8 +412,8 @@ function RunCardTab({ card }: { card: RunCard }) {
 
 function RunCardStat({ label, value, tone = "normal" }: { label: string; value: string; tone?: "normal" | "warning" }) {
   return (
-    <div className="rounded-md border bg-card p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
+    <div className="rounded-lg border bg-ttcc-surface p-3">
+      <div className="text-xs text-ttcc-text-secondary">{label}</div>
       <div className={cn("mt-1 truncate text-sm font-medium", tone === "warning" ? "text-amber-700 dark:text-amber-300" : "")}>{value}</div>
     </div>
   );
@@ -421,9 +421,9 @@ function RunCardStat({ label, value, tone = "normal" }: { label: string; value: 
 
 function RunCardPanel({ title, icon: Icon, children }: { title: string; icon: typeof FileCheck2; children: ReactNode }) {
   return (
-    <section className="rounded-md border bg-card p-4">
+    <section className="rounded-lg border bg-ttcc-surface p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className="h-4 w-4 text-ttcc-text-secondary" />
         {title}
       </div>
       {children}
@@ -434,14 +434,14 @@ function RunCardPanel({ title, icon: Icon, children }: { title: string; icon: ty
 function KeyValueTable({ data, empty, monospaceValues = false }: { data: Record<string, unknown>; empty: string; monospaceValues?: boolean }) {
   const entries = Object.entries(data).filter(([, value]) => value !== undefined && value !== null && value !== "");
   if (entries.length === 0) {
-    return <p className="text-sm text-muted-foreground">{empty}</p>;
+    return <p className="text-sm text-ttcc-text-secondary">{empty}</p>;
   }
   return (
     <table className="w-full table-fixed text-sm">
       <tbody>
         {entries.map(([key, value]) => (
           <tr key={key} className="border-b last:border-0">
-            <td className="w-36 py-2 pr-4 align-top text-muted-foreground">{key}</td>
+            <td className="w-36 py-2 pr-4 align-top text-ttcc-text-secondary">{key}</td>
             <td className={cn("py-2 align-top", monospaceValues ? "break-all font-mono text-xs" : "break-words text-right tabular-nums")}>{formatRunCardValue(value)}</td>
           </tr>
         ))}
@@ -506,7 +506,7 @@ function ChartTab({
 
   if (chartSymbols.length === 0 && entries.length === 0 && !hasEquity) {
     return (
-      <div className="p-8 text-center text-muted-foreground space-y-2">
+      <div className="p-8 text-center text-ttcc-text-secondary space-y-2">
         <p className="text-sm">{i18n.t("runDetail.noChartData")}</p>
         <p className="text-xs">{i18n.t("runDetail.noChartDataDesc")}</p>
       </div>
@@ -516,16 +516,16 @@ function ChartTab({
   return (
     <div className="p-4 space-y-4">
       {chartSymbols.length > 0 && (
-        <div className="rounded-md border bg-card p-3">
+        <div className="rounded-lg border bg-ttcc-surface p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="chart-symbol-select">
+            <label className="text-xs font-medium text-ttcc-text-secondary" htmlFor="chart-symbol-select">
               {i18n.t("runDetail.symbol")}
             </label>
             <select
               id="chart-symbol-select"
               value={chartPickerSymbol}
               onChange={(event) => onPickSymbol(event.target.value)}
-              className="h-8 rounded-md border bg-background px-2 text-sm"
+              className="h-8 rounded-lg border bg-ttcc-surface px-2 text-sm"
             >
               {chartSymbols.map((symbol) => (
                 <option key={symbol} value={symbol}>{symbol}</option>
@@ -533,7 +533,7 @@ function ChartTab({
             </select>
             <button
               onClick={() => onCurrentOnly(chartPickerSymbol)}
-              className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+              className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-ttcc-surface-2/50 transition-colors"
               disabled={!chartPickerSymbol || !!loadingSymbols[chartPickerSymbol]}
             >
               {loadingSymbols[chartPickerSymbol] ? <Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" /> : null}
@@ -541,14 +541,14 @@ function ChartTab({
             </button>
             <button
               onClick={() => onAddSymbol(chartPickerSymbol)}
-              className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+              className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-ttcc-surface-2/50 transition-colors"
               disabled={!chartPickerSymbol || !!loadingSymbols[chartPickerSymbol]}
             >
               {i18n.t("runDetail.addSymbol")}
             </button>
             <button
               onClick={() => void onLoadAll()}
-              className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+              className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-ttcc-surface-2/50 transition-colors"
               disabled={bulkLoading}
             >
               {bulkLoading ? <Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" /> : null}
@@ -557,7 +557,7 @@ function ChartTab({
             {bulkLoading && (
               <button
                 onClick={onCancelLoadAll}
-                className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-ttcc-surface-2/50 transition-colors"
               >
                 {i18n.t("runDetail.cancelLoad")}
               </button>
@@ -569,7 +569,7 @@ function ChartTab({
                 <button
                   key={symbol}
                   onClick={() => onRemoveSymbol(symbol)}
-                  className="rounded-md bg-muted px-2 py-1 text-xs hover:bg-muted/80"
+                  className="rounded-lg bg-ttcc-surface-2 px-2 py-1 text-xs hover:bg-ttcc-surface-2/80 transition-colors"
                 >
                   {symbol} x
                 </button>
@@ -578,19 +578,19 @@ function ChartTab({
           )}
           {bulkLoading && (
             <div className="mt-3 space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <div className="flex justify-between text-xs text-ttcc-text-secondary">
                 <span>{i18n.t("runDetail.loadingCharts")}</span>
                 <span>{bulkProgress.done}/{bulkProgress.total}</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-muted">
-                <div className="h-full bg-primary transition-all" style={{ width: `${progressPercent}%` }} />
+              <div className="h-2 overflow-hidden rounded-full bg-ttcc-surface-2">
+                <div className="h-full bg-ttcc-accent transition-all" style={{ width: `${progressPercent}%` }} />
               </div>
             </div>
           )}
         </div>
       )}
       {entries.length === 0 && (
-        <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <div className="rounded-lg border border-dashed p-6 text-center text-sm text-ttcc-text-secondary">
           {Object.keys(loadingSymbols).length > 0 ? i18n.t("runDetail.loadingSelectedChart") : i18n.t("runDetail.pickSymbolToLoad")}
         </div>
       )}
@@ -612,12 +612,12 @@ function ChartTab({
 
 function TradesTab({ run }: { run: RunData }) {
   const trades = run.trade_log || [];
-  if (trades.length === 0) return <div className="p-8 text-muted-foreground text-sm">{i18n.t("runDetail.noTrades")}</div>;
+  if (trades.length === 0) return <div className="p-8 text-ttcc-text-secondary text-sm">{i18n.t("runDetail.noTrades")}</div>;
   return (
     <div className="p-4">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-left text-muted-foreground">
+          <tr className="border-b text-left text-ttcc-text-secondary">
             <th className="py-2 pr-4">{i18n.t("runDetail.time")}</th>
             <th className="py-2 pr-4">{i18n.t("runDetail.code2")}</th>
             <th className="py-2 pr-4">{i18n.t("runDetail.side")}</th>
@@ -628,13 +628,13 @@ function TradesTab({ run }: { run: RunData }) {
         </thead>
         <tbody>
           {trades.map((tr, i) => (
-            <tr key={i} className="border-b last:border-0 hover:bg-muted/20">
+            <tr key={i} className="border-b last:border-0 hover:bg-ttcc-surface-2/20 transition-colors">
               <td className="py-2 pr-4 font-mono text-xs">{tr.time || tr.timestamp}</td>
               <td className="py-2 pr-4">{tr.code}</td>
-              <td className={cn("py-2 pr-4 font-medium", tr.side === "BUY" ? "text-success" : "text-danger")}>{tr.side}</td>
+              <td className={cn("py-2 pr-4 font-medium", tr.side === "BUY" ? "text-ttcc-green" : "text-ttcc-red")}>{tr.side}</td>
               <td className="py-2 pr-4 tabular-nums">{tr.price}</td>
               <td className="py-2 pr-4 tabular-nums">{tr.qty}</td>
-              <td className="py-2 text-muted-foreground">{tr.reason}</td>
+              <td className="py-2 text-ttcc-text-secondary">{tr.reason}</td>
             </tr>
           ))}
         </tbody>
@@ -646,15 +646,15 @@ function TradesTab({ run }: { run: RunData }) {
 function CodeTab({ code }: { code: Record<string, string> }) {
   const files = Object.entries(code);
   const [active, setActive] = useState(files[0]?.[0] || "");
-  if (files.length === 0) return <div className="p-8 text-muted-foreground text-sm">{i18n.t("runDetail.noCodeFiles")}</div>;
+  if (files.length === 0) return <div className="p-8 text-ttcc-text-secondary text-sm">{i18n.t("runDetail.noCodeFiles")}</div>;
   return (
     <div className="flex flex-col h-full">
       <div className="flex gap-1 p-2 border-b">
         {files.map(([name]) => (
-          <button key={name} onClick={() => setActive(name)} className={cn("px-3 py-1 rounded text-xs font-mono", active === name ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{name}</button>
+          <button key={name} onClick={() => setActive(name)} className={cn("px-3 py-1 rounded-lg text-xs font-mono transition-colors", active === name ? "bg-ttcc-accent text-ttcc-bg" : "text-ttcc-text-secondary hover:bg-ttcc-surface-2/50")}>{name}</button>
         ))}
       </div>
-      <div className="flex-1 overflow-auto p-3 text-[11px] leading-relaxed bg-muted/20 [&_pre]:m-0 [&_pre]:bg-transparent [&_code]:text-[11px]">
+      <div className="flex-1 overflow-auto p-3 text-[11px] leading-relaxed bg-ttcc-surface-2/20 [&_pre]:m-0 [&_pre]:bg-transparent [&_code]:text-[11px]">
         <ReactMarkdown rehypePlugins={rehypePlugins}>
           {`\`\`\`python\n${code[active] || ""}\n\`\`\``}
         </ReactMarkdown>

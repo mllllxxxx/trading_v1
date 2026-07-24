@@ -21,7 +21,7 @@ interface ProgressBarProps {
  *
  * Visual pattern mirrors AlphaZoo's progress bar
  * (`frontend/src/pages/AlphaZoo.tsx:854-859`):
- *   `bg-muted rounded-full overflow-hidden` track + `bg-primary
+ *   `bg-ttcc-surface-2 rounded-full overflow-hidden` track + `bg-ttcc-accent
  *   transition-all duration-300` fill.
  *
  * Accessibility: a native `<progress>` element carries the semantics
@@ -54,17 +54,17 @@ export function ProgressBar({
       />
       <div
         className={cn(
-          "bg-muted rounded-full overflow-hidden flex-1",
+          "bg-ttcc-surface-2 rounded-full overflow-hidden flex-1",
           heightClass,
         )}
       >
         <div
-          className="h-full bg-primary transition-all duration-300"
+          className="h-full bg-ttcc-accent transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>
       {showCount && (
-        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+        <span className="text-[10px] text-ttcc-text-secondary tabular-nums shrink-0">
           {clamped}/{total}
         </span>
       )}

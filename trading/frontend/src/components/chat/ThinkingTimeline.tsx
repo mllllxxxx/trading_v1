@@ -74,9 +74,9 @@ export const ThinkingTimeline = memo(function ThinkingTimeline({ messages, isLat
         {isRunning ? (
           <Loader2 className="h-3 w-3 text-ttcc-accent animate-spin shrink-0" />
         ) : hasError ? (
-          <XCircle className="h-3 w-3 text-danger shrink-0" />
+          <XCircle className="h-3 w-3 text-ttcc-red shrink-0" />
         ) : (
-          <CheckCircle2 className="h-3 w-3 text-success/70 shrink-0" />
+          <CheckCircle2 className="h-3 w-3 text-ttcc-green/70 shrink-0" />
         )}
         <span className={cn("text-ttcc-text-secondary", isRunning && "text-ttcc-text")}>
           {summaryText}
@@ -106,9 +106,9 @@ export const ThinkingTimeline = memo(function ThinkingTimeline({ messages, isLat
               {step.status === "running" ? (
                 <Loader2 className="h-3 w-3 text-ttcc-accent animate-spin shrink-0" />
               ) : step.status === "error" ? (
-                <XCircle className="h-3 w-3 text-danger shrink-0" />
+                <XCircle className="h-3 w-3 text-ttcc-red shrink-0" />
               ) : (
-                <Circle className="h-3 w-3 text-success/50 shrink-0" fill="currentColor" />
+                <Circle className="h-3 w-3 text-ttcc-green/50 shrink-0" fill="currentColor" />
               )}
 
               {/* Label */}

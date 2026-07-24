@@ -19,17 +19,17 @@ describe("ProgressBar", () => {
 
   it("clamps current to [0, total]", () => {
     const { container: c1 } = render(<ProgressBar current={-5} total={10} />);
-    const fill1 = c1.querySelector(".bg-primary") as HTMLElement;
+    const fill1 = c1.querySelector(".bg-ttcc-accent") as HTMLElement;
     expect(fill1.style.width).toBe("0%");
 
     const { container: c2 } = render(<ProgressBar current={20} total={10} />);
-    const fill2 = c2.querySelector(".bg-primary") as HTMLElement;
+    const fill2 = c2.querySelector(".bg-ttcc-accent") as HTMLElement;
     expect(fill2.style.width).toBe("100%");
   });
 
   it("computes correct width percentage", () => {
     const { container } = render(<ProgressBar current={3} total={10} />);
-    const fill = container.querySelector(".bg-primary") as HTMLElement;
+    const fill = container.querySelector(".bg-ttcc-accent") as HTMLElement;
     expect(fill.style.width).toBe("30%");
   });
 
@@ -45,13 +45,13 @@ describe("ProgressBar", () => {
 
   it("uses h-1 height class by default (xs)", () => {
     const { container } = render(<ProgressBar current={3} total={10} />);
-    const track = container.querySelector(".bg-muted");
+    const track = container.querySelector(".bg-ttcc-surface-2");
     expect(track?.classList.contains("h-1")).toBe(true);
   });
 
   it("uses h-2 height class when height=sm", () => {
     const { container } = render(<ProgressBar current={3} total={10} height="sm" />);
-    const track = container.querySelector(".bg-muted");
+    const track = container.querySelector(".bg-ttcc-surface-2");
     expect(track?.classList.contains("h-2")).toBe(true);
   });
 });

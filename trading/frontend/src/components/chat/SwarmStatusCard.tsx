@@ -31,18 +31,18 @@ function statusTone(status: SwarmAgentDisplayStatus): string {
     case "done":
       return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
     case "failed":
-      return "bg-destructive/10 text-destructive";
+      return "bg-ttcc-red/10 text-ttcc-red";
     case "blocked":
       return "bg-amber-500/10 text-amber-600 dark:text-amber-400";
     case "retry":
       return "bg-sky-500/10 text-sky-600 dark:text-sky-400";
     case "running":
-      return "bg-primary/10 text-primary";
+      return "bg-ttcc-accent/10 text-ttcc-accent";
     case "cancelled":
-      return "bg-muted text-muted-foreground";
+      return "bg-ttcc-surface-2 text-ttcc-text-secondary";
     case "waiting":
     default:
-      return "bg-muted text-muted-foreground";
+      return "bg-ttcc-surface-2 text-ttcc-text-secondary";
   }
 }
 
@@ -71,15 +71,15 @@ function runTone(status: SwarmRunStatus["status"]): string {
     case "completed":
       return "text-emerald-600 dark:text-emerald-400";
     case "failed":
-      return "text-destructive";
+      return "text-ttcc-red";
     case "cancelled":
-      return "text-muted-foreground";
+      return "text-ttcc-text-secondary";
     case "running":
-      return "text-primary";
+      return "text-ttcc-accent";
     case "pending":
     case "unknown":
     default:
-      return "text-muted-foreground";
+      return "text-ttcc-text-secondary";
   }
 }
 
@@ -92,18 +92,18 @@ export const SwarmStatusCard = memo(function SwarmStatusCard({ status }: Props) 
 
   return (
     <div className="flex gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ttcc-accent/10 text-ttcc-accent">
         <Users className="h-4 w-4" />
       </div>
-      <div className="min-w-0 flex-1 rounded-lg border bg-background p-3 shadow-sm">
+      <div className="min-w-0 flex-1 rounded-lg border border-ttcc-border-subtle bg-ttcc-surface p-3 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="truncate text-sm font-semibold text-foreground">{status.preset}</span>
+            <span className="truncate text-sm font-semibold text-ttcc-text">{status.preset}</span>
             <span className={["shrink-0 text-xs font-medium capitalize", runTone(status.status)].join(" ")}>
               {status.status.replace(/_/g, " ")}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[11px] text-ttcc-text-secondary">
             <Clock className="h-3 w-3" />
             <span>{t('swarmStatus.agents', { done, total: total || 0 })}</span>
           </div>
@@ -117,14 +117,14 @@ export const SwarmStatusCard = memo(function SwarmStatusCard({ status }: Props) 
             showCount
             ariaLabel="Swarm agent progress"
           />
-          <div className="text-right font-mono text-[11px] text-muted-foreground">
+          <div className="text-right font-mono text-[11px] text-ttcc-text-secondary">
             {t('swarmStatus.layer', { current: layerCurrent, total: layerTotal })}
           </div>
         </div>
 
         <div className="mt-3 overflow-x-auto">
           <div className="min-w-[620px]">
-            <div className="grid grid-cols-[10rem_7rem_9rem_5rem_4rem_minmax(0,1fr)] gap-2 border-b pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="grid grid-cols-[10rem_7rem_9rem_5rem_4rem_minmax(0,1fr)] gap-2 border-b border-ttcc-border-subtle pb-1 text-[10px] font-semibold uppercase tracking-wide text-ttcc-text-secondary">
               <span>{t('swarmStatus.agent')}</span>
               <span>{t('swarmStatus.status')}</span>
               <span>{t('swarmStatus.tool')}</span>
@@ -139,8 +139,8 @@ export const SwarmStatusCard = memo(function SwarmStatusCard({ status }: Props) 
                   className="grid grid-cols-[10rem_7rem_9rem_5rem_4rem_minmax(0,1fr)] gap-2 py-2 text-xs"
                 >
                   <div className="min-w-0">
-                    <div className="truncate font-medium text-foreground">{agent.agentId}</div>
-                    {agent.role && <div className="truncate text-[10px] text-muted-foreground">{agent.role}</div>}
+                    <div className="truncate font-medium text-ttcc-text">{agent.agentId}</div>
+                    {agent.role && <div className="truncate text-[10px] text-ttcc-text-secondary">{agent.role}</div>}
                   </div>
                   <div>
                     <span className={["inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium capitalize", statusTone(agent.status)].join(" ")}>
@@ -148,22 +148,22 @@ export const SwarmStatusCard = memo(function SwarmStatusCard({ status }: Props) 
                       {agent.status}
                     </span>
                   </div>
-                  <div className="truncate font-mono text-[11px] text-muted-foreground" title={agent.tool || ""}>
+                  <div className="truncate font-mono text-[11px] text-ttcc-text-secondary" title={agent.tool || ""}>
                     {agent.tool ? localizeToolName(agent.tool, agent.tool) : "-"}
                   </div>
-                  <div className="text-right font-mono text-[11px] text-muted-foreground">
+                  <div className="text-right font-mono text-[11px] text-ttcc-text-secondary">
                     {formatElapsed(agent.elapsed_s)}
                   </div>
-                  <div className="text-right font-mono text-[11px] text-muted-foreground">
+                  <div className="text-right font-mono text-[11px] text-ttcc-text-secondary">
                     {agent.iterations ?? "-"}
                   </div>
-                  <div className={["truncate text-[11px]", agent.error ? "text-destructive" : "text-muted-foreground"].join(" ")} title={agent.error || agent.lastText || ""}>
+                  <div className={["truncate text-[11px]", agent.error ? "text-ttcc-red" : "text-ttcc-text-secondary"].join(" ")} title={agent.error || agent.lastText || ""}>
                     {agent.error || agent.lastText || "-"}
                   </div>
                 </div>
               ))}
               {status.agents.length === 0 && (
-                <div className="py-3 text-xs text-muted-foreground">
+                <div className="py-3 text-xs text-ttcc-text-secondary">
                   {t('swarmStatus.waitingForEvents')}
                 </div>
               )}
