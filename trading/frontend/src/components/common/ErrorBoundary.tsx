@@ -15,7 +15,7 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return this.props.fallback ?? (
-        <div className="flex items-center gap-2 p-4 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
+        <div className="flex items-center gap-2 p-4 rounded-lg border border-ttcc-red/30 bg-ttcc-red/5 text-sm text-ttcc-red">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>{this.state.error?.message || i18n.t("errorBoundary.somethingWrong")}</span>
         </div>

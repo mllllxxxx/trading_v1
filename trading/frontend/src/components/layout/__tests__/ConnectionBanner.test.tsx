@@ -26,6 +26,6 @@ describe("ConnectionBanner", () => {
   it("has warning styling", () => {
     const { container } = render(<ConnectionBanner status="reconnecting" retryAttempt={1} />);
     const banner = container.firstChild as HTMLElement;
-    expect(banner.className).toMatch(/warning/);
+    expect(banner.className).toMatch(/ttcc-yellow/);
   });
 });

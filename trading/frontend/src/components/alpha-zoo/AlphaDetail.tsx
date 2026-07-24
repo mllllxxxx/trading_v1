@@ -45,7 +45,7 @@ export function AlphaDetail({ alphaId }: AlphaDetailProps) {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center text-muted-foreground">
+      <div className="p-8 flex items-center justify-center text-ttcc-text-secondary">
         <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" /> Loading {alphaId}…
       </div>
     );
@@ -54,14 +54,14 @@ export function AlphaDetail({ alphaId }: AlphaDetailProps) {
   if (error || !detail) {
     return (
       <div className="p-8 max-w-3xl mx-auto space-y-4">
-        <Link to="/alpha-zoo" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+        <Link to="/alpha-zoo" className="text-sm text-ttcc-text-secondary hover:text-ttcc-text inline-flex items-center gap-1 transition-colors">
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to Alpha Zoo
         </Link>
-        <div className="border rounded-xl p-6 bg-card">
+        <div className="border rounded-xl p-6 bg-ttcc-surface">
           <h2 className="font-semibold text-sm mb-1 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-warning" aria-hidden="true" /> Could not load alpha
+            <AlertTriangle className="h-4 w-4 text-ttcc-yellow" aria-hidden="true" /> Could not load alpha
           </h2>
-          <p className="text-sm text-muted-foreground">{error || "Unknown error"}</p>
+          <p className="text-sm text-ttcc-text-secondary">{error || "Unknown error"}</p>
         </div>
       </div>
     );
@@ -82,14 +82,14 @@ export function AlphaDetail({ alphaId }: AlphaDetailProps) {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <Link
           to="/alpha-zoo"
-          className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+          className="text-sm text-ttcc-text-secondary hover:text-ttcc-text inline-flex items-center gap-1 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to Alpha Zoo
         </Link>
         <button
           type="button"
           onClick={() => navigate(benchHref)}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-ttcc-accent text-ttcc-bg text-xs font-medium hover:opacity-90 transition-colors"
         >
           <Play className="h-3.5 w-3.5" aria-hidden="true" /> Run benchmark
         </button>
@@ -101,26 +101,26 @@ export function AlphaDetail({ alphaId }: AlphaDetailProps) {
           <h1 className="font-mono text-xl md:text-2xl font-bold tracking-tight">
             {a.id}
           </h1>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-ttcc-accent/10 text-ttcc-accent font-medium">
             {a.zoo}
           </span>
         </div>
         {nickname && (
-          <p className="text-sm text-muted-foreground">{nickname}</p>
+          <p className="text-sm text-ttcc-text-secondary">{nickname}</p>
         )}
       </div>
 
       {/* Formula */}
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">{i18n.t("alphaZoo.formula")}</h2>
-        <pre className="border rounded-xl bg-muted/30 p-4 overflow-x-auto text-xs leading-relaxed">
+        <h2 className="text-sm font-medium text-ttcc-text-secondary">{i18n.t("alphaZoo.formula")}</h2>
+        <pre className="border rounded-xl bg-ttcc-surface-2/30 p-4 overflow-x-auto text-xs leading-relaxed">
           <code>{formulaLatex || "(no formula provided)"}</code>
         </pre>
       </section>
 
       {/* Metadata */}
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">{i18n.t("alphaZoo.metadata")}</h2>
+        <h2 className="text-sm font-medium text-ttcc-text-secondary">{i18n.t("alphaZoo.metadata")}</h2>
         <div className="border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <tbody>
@@ -139,12 +139,12 @@ export function AlphaDetail({ alphaId }: AlphaDetailProps) {
 
       {/* Source code */}
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">{i18n.t("alphaZoo.sourceCode")}</h2>
-        <details className="border rounded-xl bg-card group">
-          <summary className="cursor-pointer px-4 py-3 text-sm font-medium hover:bg-muted/40 select-none">
+        <h2 className="text-sm font-medium text-ttcc-text-secondary">{i18n.t("alphaZoo.sourceCode")}</h2>
+        <details className="border rounded-xl bg-ttcc-surface group">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium hover:bg-ttcc-surface-2/40 select-none transition-colors">
             View source ({(detail.source_code || "").split("\n").length} lines)
           </summary>
-          <pre className="border-t bg-muted/30 p-4 overflow-x-auto text-xs leading-relaxed">
+          <pre className="border-t bg-ttcc-surface-2/30 p-4 overflow-x-auto text-xs leading-relaxed">
             <code>{detail.source_code || "(no source available)"}</code>
           </pre>
         </details>
@@ -155,8 +155,8 @@ export function AlphaDetail({ alphaId }: AlphaDetailProps) {
 
 function MetaRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
-    <tr className={cn(!last && "border-b", "hover:bg-muted/20")}>
-      <td className="px-4 py-2 text-xs text-muted-foreground w-1/3">{label}</td>
+    <tr className={cn(!last && "border-b", "hover:bg-ttcc-surface-2/20 transition-colors")}>
+      <td className="px-4 py-2 text-xs text-ttcc-text-secondary w-1/3">{label}</td>
       <td className="px-4 py-2 text-xs font-mono break-all">{value}</td>
     </tr>
   );

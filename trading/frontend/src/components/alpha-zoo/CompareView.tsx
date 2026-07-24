@@ -130,28 +130,28 @@ export function CompareView() {
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       <Link
         to="/alpha-zoo"
-        className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        className="text-sm text-ttcc-text-secondary hover:text-ttcc-text inline-flex items-center gap-1 transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to Alpha Zoo
       </Link>
 
       <div className="space-y-1">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
+        <div className="flex items-center gap-2 text-xs text-ttcc-text-secondary uppercase tracking-wide">
           <ArrowLeftRight className="h-3.5 w-3.5" aria-hidden="true" /> Head-to-head compare
         </div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
           Compare alphas side by side
         </h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
+        <p className="text-sm text-ttcc-text-secondary max-w-2xl">
           Benches just the alphas you pick on a universe and period, then ranks
           them by IC / IR with the gap to the leader — far faster than benching a
           whole zoo when you only care about a shortlist.
         </p>
       </div>
 
-      <form onSubmit={startCompare} className="border rounded-xl p-4 bg-card space-y-3">
+      <form onSubmit={startCompare} className="border rounded-xl p-4 bg-ttcc-surface space-y-3">
         <div>
-          <label htmlFor="compare-ids" className="text-xs text-muted-foreground block mb-1">
+          <label htmlFor="compare-ids" className="text-xs text-ttcc-text-secondary block mb-1">
             Alpha ids{ids.length > 0 ? ` (${ids.length} selected)` : ""}
           </label>
           <textarea
@@ -161,9 +161,9 @@ export function CompareView() {
             disabled={busy}
             rows={2}
             placeholder="alpha101_1, alpha101_2, gtja191_5"
-            className="w-full px-3 py-2 rounded-lg border bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+            className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 disabled:opacity-50 transition-colors"
           />
-          <p className="text-[11px] text-muted-foreground mt-1">
+          <p className="text-[11px] text-ttcc-text-secondary mt-1">
             Separate ids with commas or spaces. Tip: tick alphas in the catalogue
             and hit “Compare” to prefill this.
           </p>
@@ -171,13 +171,13 @@ export function CompareView() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label htmlFor="compare-universe" className="text-xs text-muted-foreground block mb-1">Universe</label>
+            <label htmlFor="compare-universe" className="text-xs text-ttcc-text-secondary block mb-1">Universe</label>
             <select
               id="compare-universe"
               value={universe}
               onChange={(e) => setUniverse(e.target.value)}
               disabled={busy}
-              className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+              className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 disabled:opacity-50 transition-colors"
             >
               {UNIVERSE_OPTIONS.map((u) => (
                 <option key={u.value} value={u.value}>
@@ -187,24 +187,24 @@ export function CompareView() {
             </select>
           </div>
           <div>
-            <label htmlFor="compare-period" className="text-xs text-muted-foreground block mb-1">Period</label>
+            <label htmlFor="compare-period" className="text-xs text-ttcc-text-secondary block mb-1">Period</label>
             <input
               id="compare-period"
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
               disabled={busy}
               placeholder="2020-2025"
-              className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+              className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 disabled:opacity-50 transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="compare-sort" className="text-xs text-muted-foreground block mb-1">{i18n.t("alphaZoo.rankBy")}</label>
+            <label htmlFor="compare-sort" className="text-xs text-ttcc-text-secondary block mb-1">{i18n.t("alphaZoo.rankBy")}</label>
             <select
               id="compare-sort"
               value={sort}
               onChange={(e) => setSort(e.target.value)}
               disabled={busy}
-              className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+              className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 disabled:opacity-50 transition-colors"
             >
               {SORT_OPTIONS.map((s) => (
                 <option key={s.value} value={s.value}>
@@ -219,7 +219,7 @@ export function CompareView() {
           <button
             type="submit"
             disabled={busy || ids.length < 2}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-ttcc-accent text-ttcc-bg text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
           >
             {busy ? (
               <>
@@ -232,12 +232,12 @@ export function CompareView() {
             )}
           </button>
           {ids.length < 2 && (
-            <span className="text-xs text-muted-foreground">{i18n.t("alphaZoo.pickAtLeast2")}</span>
+            <span className="text-xs text-ttcc-text-secondary">{i18n.t("alphaZoo.pickAtLeast2")}</span>
           )}
         </div>
 
         {formError && (
-          <p className="text-xs text-red-600 dark:text-red-400" role="alert">
+          <p className="text-xs text-ttcc-red" role="alert">
             {formError}
           </p>
         )}
@@ -263,8 +263,8 @@ function CompareProgressPanel({
     ? Math.min(100, Math.round((progress.n_done / progress.n_total) * 100))
     : 0;
   return (
-    <div className="border rounded-xl p-4 bg-card space-y-3">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+    <div className="border rounded-xl p-4 bg-ttcc-surface space-y-3">
+      <div className="flex items-center justify-between text-xs text-ttcc-text-secondary">
         <span className="flex items-center gap-1.5">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
           {jobId ? `Job ${jobId.slice(0, 12)}…` : "Submitting…"}
@@ -275,14 +275,14 @@ function CompareProgressPanel({
           </span>
         )}
       </div>
-      <div className="h-2 rounded-full bg-muted overflow-hidden">
+      <div className="h-2 rounded-full bg-ttcc-surface-2 overflow-hidden">
         <div
-          className="h-full bg-primary transition-all duration-300"
+          className="h-full bg-ttcc-accent transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>
       {progress?.current_alpha_id && (
-        <p className="text-xs text-muted-foreground font-mono truncate">
+        <p className="text-xs text-ttcc-text-secondary font-mono truncate">
           Computing: {progress.current_alpha_id}
         </p>
       )}
@@ -295,15 +295,15 @@ function CompareResultPanel({ result }: { result: AlphaCompareResult }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-        <span className="inline-flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+        <span className="inline-flex items-center gap-1.5 font-medium text-ttcc-green">
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Winner:{" "}
           <span className="font-mono">{result.winner}</span>
         </span>
-        <span className="text-muted-foreground">
+        <span className="text-ttcc-text-secondary">
           {result.n_compared} compared · ranked by {result.sort} · {result.universe} · {result.period}
         </span>
         {result.n_skipped > 0 && (
-          <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1 text-ttcc-yellow">
             <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" /> {result.n_skipped} skipped
           </span>
         )}
@@ -313,7 +313,7 @@ function CompareResultPanel({ result }: { result: AlphaCompareResult }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm" aria-label="Alpha comparison ranking">
             <thead>
-              <tr className="border-b bg-muted/40 text-muted-foreground text-xs">
+              <tr className="border-b bg-ttcc-surface-2/40 text-ttcc-text-secondary text-xs">
                 <th className="text-right px-3 py-2">#</th>
                 <th className="text-left px-3 py-2">Alpha</th>
                 <th className="text-left px-3 py-2 hidden sm:table-cell">Zoo</th>
@@ -330,26 +330,26 @@ function CompareResultPanel({ result }: { result: AlphaCompareResult }) {
                 <tr
                   key={`${r.zoo}:${r.id}`}
                   className={cn(
-                    "border-b last:border-0 hover:bg-muted/20",
-                    r.rank === 1 && "bg-emerald-500/5",
+                    "border-b last:border-0 hover:bg-ttcc-surface-2/20 transition-colors",
+                    r.rank === 1 && "bg-ttcc-green/5",
                   )}
                 >
                   <td className="px-3 py-2 text-right font-mono tabular-nums">{r.rank}</td>
                   <td className="px-3 py-2 font-mono text-xs">
                     <Link
                       to={`/alpha-zoo/${encodeURIComponent(r.id)}`}
-                      className="text-primary hover:underline"
+                      className="text-ttcc-accent hover:underline transition-colors"
                     >
                       {r.id}
                     </Link>
                   </td>
-                  <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">{r.zoo}</td>
+                  <td className="px-3 py-2 text-xs text-ttcc-text-secondary hidden sm:table-cell">{r.zoo}</td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtNum(r.ic_mean, 4)}</td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums hidden md:table-cell">{fmtNum(r.ic_std, 4)}</td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtNum(r.ir, 3)}</td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums hidden md:table-cell">{fmtNum(r.ic_positive_ratio, 3)}</td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums hidden lg:table-cell">{r.ic_count}</td>
-                  <td className="px-3 py-2 text-right font-mono tabular-nums text-muted-foreground">
+                  <td className="px-3 py-2 text-right font-mono tabular-nums text-ttcc-text-secondary">
                     {r.rank === 1 ? "—" : fmtNum(Number(r[deltaKey]), 4)}
                   </td>
                 </tr>
@@ -360,7 +360,7 @@ function CompareResultPanel({ result }: { result: AlphaCompareResult }) {
       </div>
 
       {result.skipped.length > 0 && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-ttcc-text-secondary">
           <span className="font-medium">Skipped:</span>{" "}
           {result.skipped.map((s) => `${s.id} (${s.reason})`).join("; ")}
         </p>

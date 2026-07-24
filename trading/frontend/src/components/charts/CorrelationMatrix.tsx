@@ -102,7 +102,7 @@ export function CorrelationMatrix({ labels, matrix, height = 500 }: Props) {
   }, [labels, matrix]);
 
   if (labels.length === 0) {
-    return <div className="text-muted-foreground text-sm p-4">No correlation data</div>;
+    return <div className="text-ttcc-text-secondary text-sm p-4">No correlation data</div>;
   }
   return <div ref={ref} style={{ height }} />;
 }

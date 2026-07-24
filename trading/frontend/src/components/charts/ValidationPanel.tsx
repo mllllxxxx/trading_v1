@@ -10,10 +10,10 @@ function Badge({ value, good }: { value: string; good: boolean | null }) {
   return (
     <span
       className={cn(
-        "inline-block px-2 py-0.5 rounded-full text-xs font-semibold",
-        good === true && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-        good === false && "bg-red-500/15 text-red-600 dark:text-red-400",
-        good === null && "bg-zinc-500/10 text-zinc-500",
+        "inline-block px-2 py-0.5 rounded-lg text-xs font-semibold transition-colors",
+        good === true && "bg-ttcc-green/15 text-ttcc-green",
+        good === false && "bg-ttcc-red/15 text-ttcc-red",
+        good === null && "bg-ttcc-text-muted/10 text-ttcc-text-muted",
       )}
     >
       {value}
@@ -24,9 +24,9 @@ function Badge({ value, good }: { value: string; good: boolean | null }) {
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="text-center py-2">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
+      <p className="text-[10px] text-ttcc-text-secondary uppercase tracking-wide">{label}</p>
       <p className="text-sm font-bold font-mono tabular-nums">{value}</p>
-      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
+      {sub && <p className="text-[10px] text-ttcc-text-secondary">{sub}</p>}
     </div>
   );
 }
@@ -36,7 +36,7 @@ function pctFmt(v: number): string {
 }
 
 function MonteCarloSection({ mc }: { mc: NonNullable<ValidationData["monte_carlo"]> }) {
-  if (mc.error) return <p className="text-sm text-muted-foreground">{mc.error}</p>;
+  if (mc.error) return <p className="text-sm text-ttcc-text-secondary">{mc.error}</p>;
   const sig = mc.p_value_sharpe < 0.05;
   return (
     <div className="space-y-3">
@@ -44,10 +44,10 @@ function MonteCarloSection({ mc }: { mc: NonNullable<ValidationData["monte_carlo
         <h4 className="text-sm font-semibold">Monte Carlo Permutation Test</h4>
         <Badge value={sig ? i18n.t("validation.significant") : i18n.t("validation.notSignificant")} good={sig} />
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-ttcc-text-secondary">
         Shuffled trade order {mc.n_simulations.toLocaleString()} times to test if Sharpe is better than random.
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-xl border border-border/60 bg-muted/20 p-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-lg border border-ttcc-border-subtle/60 bg-ttcc-surface-2/20 p-3">
         <Stat label="Actual Sharpe" value={mc.actual_sharpe.toFixed(2)} />
         <Stat label="p-value (Sharpe)" value={mc.p_value_sharpe.toFixed(4)} sub={sig ? "< 0.05" : ">= 0.05"} />
         <Stat label="Simulated Mean" value={mc.simulated_sharpe_mean.toFixed(2)} sub={`std ${mc.simulated_sharpe_std.toFixed(2)}`} />
@@ -55,14 +55,14 @@ function MonteCarloSection({ mc }: { mc: NonNullable<ValidationData["monte_carlo
       </div>
       {/* Visual: where actual falls in distribution */}
       <div className="space-y-1">
-        <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+        <div className="flex justify-between text-[10px] text-ttcc-text-secondary font-mono">
           <span>P5: {mc.simulated_sharpe_p5.toFixed(2)}</span>
           <span>Actual: {mc.actual_sharpe.toFixed(2)}</span>
           <span>P95: {mc.simulated_sharpe_p95.toFixed(2)}</span>
         </div>
-        <div className="relative h-3 rounded-full bg-muted overflow-hidden">
-          <div className="absolute inset-y-0 bg-zinc-300 dark:bg-zinc-600 rounded-full" style={barStyle(mc.simulated_sharpe_p5, mc.simulated_sharpe_p95, mc.simulated_sharpe_p5, mc.simulated_sharpe_p95)} />
-          <div className="absolute top-0 bottom-0 w-0.5 bg-emerald-500" style={markerStyle(mc.actual_sharpe, mc.simulated_sharpe_p5, mc.simulated_sharpe_p95)} />
+        <div className="relative h-3 rounded-lg bg-ttcc-surface-2 overflow-hidden">
+          <div className="absolute inset-y-0 bg-ttcc-text-muted rounded-lg" style={barStyle(mc.simulated_sharpe_p5, mc.simulated_sharpe_p95, mc.simulated_sharpe_p5, mc.simulated_sharpe_p95)} />
+          <div className="absolute top-0 bottom-0 w-0.5 bg-ttcc-green" style={markerStyle(mc.actual_sharpe, mc.simulated_sharpe_p5, mc.simulated_sharpe_p95)} />
         </div>
       </div>
     </div>
@@ -70,7 +70,7 @@ function MonteCarloSection({ mc }: { mc: NonNullable<ValidationData["monte_carlo
 }
 
 function BootstrapSection({ bs }: { bs: NonNullable<ValidationData["bootstrap"]> }) {
-  if (bs.error) return <p className="text-sm text-muted-foreground">{bs.error}</p>;
+  if (bs.error) return <p className="text-sm text-ttcc-text-secondary">{bs.error}</p>;
   const reliable = bs.ci_lower > 0;
   return (
     <div className="space-y-3">
@@ -78,10 +78,10 @@ function BootstrapSection({ bs }: { bs: NonNullable<ValidationData["bootstrap"]>
         <h4 className="text-sm font-semibold">Bootstrap Sharpe CI</h4>
         <Badge value={reliable ? "CI > 0" : "CI includes 0"} good={reliable} />
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-ttcc-text-secondary">
         Resampled daily returns {bs.n_bootstrap.toLocaleString()} times to estimate {(bs.confidence * 100).toFixed(0)}% confidence interval.
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-xl border border-border/60 bg-muted/20 p-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-lg border border-ttcc-border-subtle/60 bg-ttcc-surface-2/20 p-3">
         <Stat label="Observed Sharpe" value={bs.observed_sharpe.toFixed(2)} />
         <Stat label={`${(bs.confidence * 100).toFixed(0)}% CI`} value={`[${bs.ci_lower.toFixed(2)}, ${bs.ci_upper.toFixed(2)}]`} />
         <Stat label="Median Sharpe" value={bs.median_sharpe.toFixed(2)} />
@@ -89,13 +89,13 @@ function BootstrapSection({ bs }: { bs: NonNullable<ValidationData["bootstrap"]>
       </div>
       {/* CI bar */}
       <div className="space-y-1">
-        <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+        <div className="flex justify-between text-[10px] text-ttcc-text-secondary font-mono">
           <span>{bs.ci_lower.toFixed(2)}</span>
           <span>{bs.ci_upper.toFixed(2)}</span>
         </div>
-        <div className="relative h-3 rounded-full bg-muted overflow-hidden">
-          <div className={cn("absolute inset-y-0 rounded-full", reliable ? "bg-emerald-500/30" : "bg-amber-500/30")} style={barStyle(bs.ci_lower, bs.ci_upper, Math.min(bs.ci_lower, 0), Math.max(bs.ci_upper, 1))} />
-          <div className="absolute top-0 bottom-0 w-0.5 bg-foreground" style={markerStyle(bs.observed_sharpe, Math.min(bs.ci_lower, 0), Math.max(bs.ci_upper, 1))} />
+        <div className="relative h-3 rounded-lg bg-ttcc-surface-2 overflow-hidden">
+          <div className={cn("absolute inset-y-0 rounded-lg transition-colors", reliable ? "bg-ttcc-green/30" : "bg-ttcc-yellow/30")} style={barStyle(bs.ci_lower, bs.ci_upper, Math.min(bs.ci_lower, 0), Math.max(bs.ci_upper, 1))} />
+          <div className="absolute top-0 bottom-0 w-0.5 bg-ttcc-text" style={markerStyle(bs.observed_sharpe, Math.min(bs.ci_lower, 0), Math.max(bs.ci_upper, 1))} />
         </div>
       </div>
     </div>
@@ -103,7 +103,7 @@ function BootstrapSection({ bs }: { bs: NonNullable<ValidationData["bootstrap"]>
 }
 
 function WalkForwardSection({ wf }: { wf: NonNullable<ValidationData["walk_forward"]> }) {
-  if (wf.error) return <p className="text-sm text-muted-foreground">{wf.error}</p>;
+  if (wf.error) return <p className="text-sm text-ttcc-text-secondary">{wf.error}</p>;
   const consistent = wf.consistency_rate >= 0.8;
   return (
     <div className="space-y-3">
@@ -111,10 +111,10 @@ function WalkForwardSection({ wf }: { wf: NonNullable<ValidationData["walk_forwa
         <h4 className="text-sm font-semibold">Walk-Forward Analysis</h4>
         <Badge value={`${wf.profitable_windows}/${wf.n_windows} profitable`} good={consistent ? true : wf.consistency_rate >= 0.5 ? null : false} />
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-ttcc-text-secondary">
         Split into {wf.n_windows} sequential windows to check performance consistency.
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-xl border border-border/60 bg-muted/20 p-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-lg border border-ttcc-border-subtle/60 bg-ttcc-surface-2/20 p-3">
         <Stat label="Consistency" value={pctFmt(wf.consistency_rate)} />
         <Stat label="Avg Return" value={pctFmt(wf.return_mean)} sub={`std ${pctFmt(wf.return_std)}`} />
         <Stat label="Avg Sharpe" value={wf.sharpe_mean.toFixed(2)} sub={`std ${wf.sharpe_std.toFixed(2)}`} />
@@ -123,7 +123,7 @@ function WalkForwardSection({ wf }: { wf: NonNullable<ValidationData["walk_forwa
       {/* Per-window table */}
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b text-left text-muted-foreground">
+          <tr className="border-b border-ttcc-border-subtle text-left text-ttcc-text-secondary">
             <th className="py-1.5 pr-3">#</th>
             <th className="py-1.5 pr-3">Period</th>
             <th className="py-1.5 pr-3 text-right">Return</th>
@@ -135,10 +135,10 @@ function WalkForwardSection({ wf }: { wf: NonNullable<ValidationData["walk_forwa
         </thead>
         <tbody>
           {wf.windows.map((w) => (
-            <tr key={w.window} className="border-b last:border-0">
+            <tr key={w.window} className="border-b border-ttcc-border-subtle last:border-0">
               <td className="py-1.5 pr-3 font-mono">{w.window}</td>
-              <td className="py-1.5 pr-3 font-mono text-muted-foreground">{w.start} ~ {w.end}</td>
-              <td className={cn("py-1.5 pr-3 text-right font-mono tabular-nums", w.return > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>{pctFmt(w.return)}</td>
+              <td className="py-1.5 pr-3 font-mono text-ttcc-text-secondary">{w.start} ~ {w.end}</td>
+              <td className={cn("py-1.5 pr-3 text-right font-mono tabular-nums transition-colors", w.return > 0 ? "text-ttcc-green" : "text-ttcc-red")}>{pctFmt(w.return)}</td>
               <td className="py-1.5 pr-3 text-right font-mono tabular-nums">{w.sharpe.toFixed(2)}</td>
               <td className="py-1.5 pr-3 text-right font-mono tabular-nums">{pctFmt(w.max_dd)}</td>
               <td className="py-1.5 pr-3 text-right font-mono tabular-nums">{w.trades}</td>
@@ -171,7 +171,7 @@ export function ValidationPanel({ data }: Props) {
   const hasWF = !!data.walk_forward;
 
   if (!hasMC && !hasBS && !hasWF) {
-    return <p className="p-8 text-sm text-muted-foreground">{i18n.t("validation.noData")}</p>;
+    return <p className="p-8 text-sm text-ttcc-text-secondary">{i18n.t("validation.noData")}</p>;
   }
 
   return (

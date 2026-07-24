@@ -106,7 +106,7 @@ export function AdaptivePolicyBadge({
   return (
     <span
       className={cn(
-        "hidden h-5 shrink-0 items-center gap-1 rounded border px-1.5 font-mono text-[9px] font-semibold uppercase tabular md:inline-flex",
+        "hidden h-5 shrink-0 items-center gap-1 rounded-lg border px-1.5 font-mono text-[9px] font-semibold uppercase tabular md:inline-flex",
         tone
       )}
       title={title}

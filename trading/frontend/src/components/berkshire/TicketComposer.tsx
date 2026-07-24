@@ -27,7 +27,7 @@ export function TicketComposer({
   onSubmit: (event: FormEvent) => void;
 }) {
   return (
-    <aside className="rounded-md border border-ttcc-border bg-ttcc-surface">
+    <aside className="rounded-lg border border-ttcc-border bg-ttcc-surface">
       <PanelHeader icon={SlidersHorizontal} title="Run research" right={<StatusPill tone={activeLane === "forex" ? "warning" : "success"}>{lane.status_label}</StatusPill>} />
       <form onSubmit={onSubmit} className="space-y-3 p-3">
         <div className="grid grid-cols-2 gap-2">
@@ -89,7 +89,7 @@ export function TicketComposer({
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded border border-ttcc-accent/60 bg-ttcc-accent/15 px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-ttcc-accent transition-colors hover:bg-ttcc-accent/25 disabled:opacity-50"
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-ttcc-accent/60 bg-ttcc-accent/15 px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-ttcc-accent transition-colors hover:bg-ttcc-accent/25 disabled:opacity-50"
         >
           {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BrainCircuit className="h-3.5 w-3.5" />}
           Create research run

@@ -52,7 +52,7 @@ export function AlphaZooMini({ topRows }: { topRows?: AlphaBenchTopRow[] }) {
   }, [topRows]);
 
   return (
-    <div className="rounded border border-ttcc-border bg-ttcc-surface">
+    <div className="rounded-lg border border-ttcc-border bg-ttcc-surface">
       <PanelLabel
         icon={Layers}
         tone="accent"

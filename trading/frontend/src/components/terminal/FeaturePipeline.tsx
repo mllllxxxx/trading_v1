@@ -32,7 +32,7 @@ export function FeaturePipeline() {
   }, []);
 
   return (
-    <div className="rounded border border-ttcc-border bg-ttcc-surface">
+    <div className="rounded-lg border border-ttcc-border bg-ttcc-surface">
       <PanelLabel
         icon={ListChecks}
         tone="accent"

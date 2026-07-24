@@ -67,7 +67,7 @@ export function StatusPill({ tone, children }: { tone: BerkshireTone; children: 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
+        "inline-flex items-center rounded-lg border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
         tone === "success" && "border-ttcc-green/40 bg-ttcc-green/10 text-ttcc-green",
         tone === "warning" && "border-ttcc-yellow/40 bg-ttcc-yellow/10 text-ttcc-yellow",
         tone === "danger" && "border-ttcc-red/40 bg-ttcc-red/10 text-ttcc-red",
@@ -116,7 +116,7 @@ export function PanelHeader({
 
 export function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded border border-ttcc-border bg-ttcc-surface px-2 py-1.5">
+    <div className="rounded-lg border border-ttcc-border bg-ttcc-surface px-2 py-1.5">
       <div className="text-[10px] uppercase tracking-[0.08em] text-ttcc-text-muted">{label}</div>
       <div className="mt-1 truncate font-mono text-[11px] text-ttcc-text">{value}</div>
     </div>
@@ -125,7 +125,7 @@ export function MiniMetric({ label, value }: { label: string; value: string }) {
 
 export function EmptyRun() {
   return (
-    <div className="m-3 flex min-h-36 items-center justify-center rounded-md border border-dashed border-ttcc-border bg-ttcc-bg p-5 text-center">
+    <div className="m-3 flex min-h-36 items-center justify-center rounded-lg border border-dashed border-ttcc-border bg-ttcc-bg p-5 text-center">
       <div>
         <BrainCircuit className="mx-auto h-7 w-7 text-ttcc-text-muted" />
         <h2 className="mt-3 text-sm font-semibold text-ttcc-text">No Berkshire run yet</h2>

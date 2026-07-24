@@ -18,19 +18,19 @@ export function LiveActionChip({ action }: { action: LiveAction }) {
           <span className="shrink-0 font-medium uppercase tracking-wide text-[10px]">RUNTIME</span>
           <span className="shrink-0 font-medium">{liveActionLabel(action)}</span>
           {action.intent_normalized && (
-            <span className="truncate text-foreground/80">· {action.intent_normalized}</span>
+            <span className="truncate text-ttcc-text/80">· {action.intent_normalized}</span>
           )}
           {action.outcome && (
-            <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+            <span className="shrink-0 font-mono text-[10px] text-ttcc-text-secondary">
               · {action.outcome}
             </span>
           )}
           {action.remote_tool && (
-            <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+            <span className="shrink-0 font-mono text-[10px] text-ttcc-text-secondary">
               · {action.remote_tool}
             </span>
           )}
-          {action.error && <span className="truncate text-destructive">· {action.error}</span>}
+          {action.error && <span className="truncate text-ttcc-red">· {action.error}</span>}
         </div>
       </div>
     </div>

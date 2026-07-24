@@ -41,7 +41,7 @@ export function ConfirmDialog({
       aria-modal="true"
     >
       <div
-        className="w-[360px] max-w-[92vw] rounded-md border border-ttcc-border bg-ttcc-surface p-4 shadow-2xl tt-toast-in"
+        className="w-[360px] max-w-[92vw] rounded-lg border border-ttcc-border bg-ttcc-surface p-4 shadow-2xl tt-toast-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 text-sm font-semibold text-ttcc-text">

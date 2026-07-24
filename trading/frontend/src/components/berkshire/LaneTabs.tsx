@@ -12,14 +12,14 @@ export function LaneTabs({
   onSelect: (key: BerkshireLaneKey) => void;
 }) {
   return (
-    <div className="grid min-w-[280px] grid-cols-2 rounded-md border border-ttcc-border bg-ttcc-bg p-1">
+    <div className="grid min-w-[280px] grid-cols-2 rounded-lg border border-ttcc-border bg-ttcc-bg p-1">
       {lanes.map((item) => (
         <button
           key={item.key}
           type="button"
           onClick={() => onSelect(item.key)}
           className={cn(
-            "flex min-h-12 flex-col items-start rounded px-2.5 py-1.5 text-left transition-colors",
+            "flex min-h-12 flex-col items-start rounded-lg px-2.5 py-1.5 text-left transition-colors",
             item.key === activeLane
               ? "bg-ttcc-accent/15 text-ttcc-accent ring-1 ring-ttcc-accent/40"
               : "text-ttcc-text-secondary hover:bg-ttcc-surface-2 hover:text-ttcc-text",
@@ -56,8 +56,8 @@ export function LaneCard({
         </div>
         <StatusPill tone={lane.key === "crypto" ? "success" : "warning"}>{lane.status_label}</StatusPill>
       </div>
-      <div className="mt-3 h-1.5 overflow-hidden rounded bg-ttcc-bg">
-        <div className={cn("h-full rounded", lane.readiness >= 70 ? "bg-ttcc-green" : "bg-ttcc-yellow")} style={{ width: `${lane.readiness}%` }} />
+      <div className="mt-3 h-1.5 overflow-hidden rounded-lg bg-ttcc-bg">
+        <div className={cn("h-full rounded-lg", lane.readiness >= 70 ? "bg-ttcc-green" : "bg-ttcc-yellow")} style={{ width: `${lane.readiness}%` }} />
       </div>
       <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-ttcc-text-muted tabular">
         <span>{lane.universe}</span>
@@ -68,7 +68,7 @@ export function LaneCard({
           {lane.blockers.map((blocker) => (
             <span
               key={blocker}
-              className="rounded border border-ttcc-yellow/30 bg-ttcc-yellow/10 px-1.5 py-0.5 text-[10px] font-medium text-ttcc-yellow"
+              className="rounded-lg border border-ttcc-yellow/30 bg-ttcc-yellow/10 px-1.5 py-0.5 text-[10px] font-medium text-ttcc-yellow"
             >
               {blocker}
             </span>

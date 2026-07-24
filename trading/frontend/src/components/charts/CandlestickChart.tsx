@@ -251,7 +251,7 @@ export function CandlestickChart({ data, markers, indicators, height = 500 }: Pr
   }, [data, markers, baseData, indicatorCache, extraIndicators, sub, range, overlays, dark]);
 
   if (data.length === 0) {
-    return <div className="text-muted-foreground text-sm p-4">No price data</div>;
+    return <div className="text-ttcc-text-secondary text-sm p-4">No price data</div>;
   }
 
   return (
@@ -260,35 +260,35 @@ export function CandlestickChart({ data, markers, indicators, height = 500 }: Pr
         {/* Time range */}
         <div className="flex gap-0.5">
           {(["1M", "3M", "6M", "1Y", "ALL"] as const).map((r) => (
-            <button key={r} onClick={() => setRange(r)} className={cn("px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors", range === r ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground/50 hover:text-muted-foreground")}>{r}</button>
+            <button key={r} onClick={() => setRange(r)} className={cn("px-1.5 py-0.5 rounded-lg text-[10px] font-mono transition-colors", range === r ? "bg-ttcc-accent/15 text-ttcc-accent font-medium" : "text-ttcc-text-secondary/50 hover:text-ttcc-text-secondary")}>{r}</button>
           ))}
         </div>
 
-        <div className="w-px h-3 bg-border/40" />
+        <div className="w-px h-3 bg-ttcc-border-subtle/40" />
 
         {/* Indicator dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] text-ttcc-text-secondary hover:text-ttcc-text hover:bg-ttcc-surface-2/50 transition-colors"
           >
             Indicators ({overlays.size}) <ChevronDown className="h-3 w-3" />
           </button>
           {showMenu && (
-            <div className="absolute top-full left-0 mt-1 z-50 bg-card border rounded-lg shadow-lg p-2 min-w-[160px]" onMouseLeave={() => setShowMenu(false)}>
+            <div className="absolute top-full left-0 mt-1 z-50 bg-ttcc-surface border border-ttcc-border-subtle rounded-lg shadow-lg p-2 min-w-[160px]" onMouseLeave={() => setShowMenu(false)}>
               {["MA", "Channel"].map(group => (
                 <div key={group}>
-                  <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wider px-1 pt-1">{group}</p>
+                  <p className="text-[9px] text-ttcc-text-secondary/50 uppercase tracking-wider px-1 pt-1">{group}</p>
                   {OVERLAY_OPTIONS.filter(o => o.group === group).map(o => (
-                    <label key={o.id} className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-muted/30 cursor-pointer">
-                      <input type="checkbox" checked={overlays.has(o.id)} onChange={() => toggleOverlay(o.id)} className="h-3 w-3 rounded accent-primary" />
+                    <label key={o.id} className="flex items-center gap-2 px-1 py-0.5 rounded-lg hover:bg-ttcc-surface-2/30 transition-colors cursor-pointer">
+                      <input type="checkbox" checked={overlays.has(o.id)} onChange={() => toggleOverlay(o.id)} className="h-3 w-3 rounded-lg accent-ttcc-accent" />
                       <span className="text-xs">{o.label}</span>
                     </label>
                   ))}
                 </div>
               ))}
               <div className="border-t mt-1 pt-1">
-                <button onClick={() => { setOverlays(new Set()); setShowMenu(false); }} className="text-[10px] text-muted-foreground hover:text-foreground px-1 py-0.5 w-full text-left rounded hover:bg-muted/30">
+                <button onClick={() => { setOverlays(new Set()); setShowMenu(false); }} className="text-[10px] text-ttcc-text-secondary hover:text-ttcc-text px-1 py-0.5 w-full text-left rounded-lg transition-colors hover:bg-ttcc-surface-2/30">
                   Bare K (clear all)
                 </button>
               </div>
@@ -296,12 +296,12 @@ export function CandlestickChart({ data, markers, indicators, height = 500 }: Pr
           )}
         </div>
 
-        <div className="w-px h-3 bg-border/40" />
+        <div className="w-px h-3 bg-ttcc-border-subtle/40" />
 
         {/* Sub-chart selector */}
         <div className="flex gap-0.5">
           {(["vol", "macd", "rsi", "kdj"] as const).map((id) => (
-            <button key={id} onClick={() => setSub(id)} className={cn("px-1.5 py-0.5 rounded text-[10px] font-mono uppercase transition-colors", sub === id ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground/50 hover:text-muted-foreground")}>{id}</button>
+            <button key={id} onClick={() => setSub(id)} className={cn("px-1.5 py-0.5 rounded-lg text-[10px] font-mono uppercase transition-colors", sub === id ? "bg-ttcc-accent/15 text-ttcc-accent font-medium" : "text-ttcc-text-secondary/50 hover:text-ttcc-text-secondary")}>{id}</button>
           ))}
         </div>
       </div>

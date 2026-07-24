@@ -149,19 +149,19 @@ export function BenchRunner() {
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       <Link
         to="/alpha-zoo"
-        className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        className="text-sm text-ttcc-text-secondary hover:text-ttcc-text inline-flex items-center gap-1 transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to Alpha Zoo
       </Link>
 
       <div className="space-y-1">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
+        <div className="flex items-center gap-2 text-xs text-ttcc-text-secondary uppercase tracking-wide">
           <Play className="h-3.5 w-3.5" aria-hidden="true" /> Benchmark runner
         </div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
           Score a zoo on a universe
         </h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
+        <p className="text-sm text-ttcc-text-secondary max-w-2xl">
           Computes IC / IR for every alpha in the selected zoo over the chosen
           universe and period, then bucketizes them as alive / reversed / dead.
         </p>
@@ -170,16 +170,16 @@ export function BenchRunner() {
       {/* Form */}
       <form
         onSubmit={startBench}
-        className="border rounded-xl p-4 bg-card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
+        className="border rounded-xl p-4 bg-ttcc-surface grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end"
       >
         <div>
-          <label htmlFor="bench-zoo" className="text-xs text-muted-foreground block mb-1">Zoo</label>
+          <label htmlFor="bench-zoo" className="text-xs text-ttcc-text-secondary block mb-1">Zoo</label>
           <select
             id="bench-zoo"
             value={zoo}
             onChange={(e) => setZoo(e.target.value)}
             disabled={busy}
-            className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+            className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 disabled:opacity-50 transition-colors"
           >
             {ZOO_CARDS.map((z) => (
               <option key={z.id} value={z.id}>
@@ -189,13 +189,13 @@ export function BenchRunner() {
           </select>
         </div>
         <div>
-          <label htmlFor="bench-universe" className="text-xs text-muted-foreground block mb-1">Universe</label>
+          <label htmlFor="bench-universe" className="text-xs text-ttcc-text-secondary block mb-1">Universe</label>
           <select
             id="bench-universe"
             value={universe}
             onChange={(e) => setUniverse(e.target.value)}
             disabled={busy}
-            className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+            className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 disabled:opacity-50 transition-colors"
           >
             {UNIVERSE_OPTIONS.map((u) => (
               <option key={u.value} value={u.value}>
@@ -205,18 +205,18 @@ export function BenchRunner() {
           </select>
         </div>
         <div>
-          <label htmlFor="bench-period" className="text-xs text-muted-foreground block mb-1">{i18n.t("alphaZoo.period")}</label>
+          <label htmlFor="bench-period" className="text-xs text-ttcc-text-secondary block mb-1">{i18n.t("alphaZoo.period")}</label>
           <input
             id="bench-period"
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
             disabled={busy}
             placeholder="2020-2025"
-            className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+            className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 disabled:opacity-50 transition-colors"
           />
         </div>
         <div>
-          <label htmlFor="bench-top" className="text-xs text-muted-foreground block mb-1">{i18n.t("alphaZoo.top")}</label>
+          <label htmlFor="bench-top" className="text-xs text-ttcc-text-secondary block mb-1">{i18n.t("alphaZoo.top")}</label>
           <input
             id="bench-top"
             type="number"
@@ -227,14 +227,14 @@ export function BenchRunner() {
               setTop(e.target.value === "" ? 20 : Number(e.target.value))
             }
             disabled={busy}
-            className="w-full px-3 py-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+            className="w-full px-3 py-2 rounded-lg border bg-ttcc-surface text-sm focus:outline-none focus:ring-2 focus:ring-ttcc-accent/30 disabled:opacity-50 transition-colors"
           />
         </div>
         <div className="flex flex-col gap-1">
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-ttcc-accent text-ttcc-bg text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
           >
             {busy ? (
               <>
@@ -249,7 +249,7 @@ export function BenchRunner() {
         </div>
         {formError && (
           <p
-            className="sm:col-span-2 lg:col-span-5 text-xs text-red-600 dark:text-red-400"
+            className="sm:col-span-2 lg:col-span-5 text-xs text-ttcc-red"
             role="alert"
           >
             {formError}
@@ -279,8 +279,8 @@ function BenchProgressPanel({
     ? Math.min(100, Math.round((progress.n_done / progress.n_total) * 100))
     : 0;
   return (
-    <div className="border rounded-xl p-4 bg-card space-y-3">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+    <div className="border rounded-xl p-4 bg-ttcc-surface space-y-3">
+      <div className="flex items-center justify-between text-xs text-ttcc-text-secondary">
         <span className="flex items-center gap-1.5">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
           {jobId ? `Job ${jobId.slice(0, 12)}…` : "Submitting…"}
@@ -291,14 +291,14 @@ function BenchProgressPanel({
           </span>
         )}
       </div>
-      <div className="h-2 rounded-full bg-muted overflow-hidden">
+      <div className="h-2 rounded-full bg-ttcc-surface-2 overflow-hidden">
         <div
-          className="h-full bg-primary transition-all duration-300"
+          className="h-full bg-ttcc-accent transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>
       {progress?.current_alpha_id && (
-        <p className="text-xs text-muted-foreground font-mono truncate">
+        <p className="text-xs text-ttcc-text-secondary font-mono truncate">
           Computing: {progress.current_alpha_id}
         </p>
       )}
@@ -356,10 +356,10 @@ function BenchResultPanel({ result }: { result: AlphaBenchResult }) {
   }, [result, dark]);
 
   const totals = [
-    { label: "Alive", value: result.alive, icon: CheckCircle2, tone: "text-green-600 dark:text-green-400" },
-    { label: "Reversed", value: result.reversed, icon: AlertTriangle, tone: "text-amber-600 dark:text-amber-400" },
-    { label: "Dead", value: result.dead, icon: XCircle, tone: "text-red-600 dark:text-red-400" },
-    { label: "Skipped", value: result.skipped ?? 0, icon: Loader2, tone: "text-muted-foreground" },
+    { label: "Alive", value: result.alive, icon: CheckCircle2, tone: "text-ttcc-green" },
+    { label: "Reversed", value: result.reversed, icon: AlertTriangle, tone: "text-ttcc-yellow" },
+    { label: "Dead", value: result.dead, icon: XCircle, tone: "text-ttcc-red" },
+    { label: "Skipped", value: result.skipped ?? 0, icon: Loader2, tone: "text-ttcc-text-secondary" },
   ];
 
   return (
@@ -367,10 +367,10 @@ function BenchResultPanel({ result }: { result: AlphaBenchResult }) {
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {totals.map(({ label, value, icon: Icon, tone }) => (
-          <div key={label} className="border rounded-xl p-4 bg-card flex items-center gap-3">
+          <div key={label} className="border rounded-xl p-4 bg-ttcc-surface flex items-center gap-3">
             <Icon className={cn("h-5 w-5 shrink-0", tone)} aria-hidden="true" />
             <div>
-              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className="text-xs text-ttcc-text-secondary">{label}</p>
               <p className="text-xl font-bold tabular-nums">{value}</p>
             </div>
           </div>
@@ -385,8 +385,8 @@ function BenchResultPanel({ result }: { result: AlphaBenchResult }) {
 
       {/* By-theme breakdown */}
       {result.by_theme && Object.keys(result.by_theme).length > 0 && (
-        <div className="border rounded-xl p-4 bg-card">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
+        <div className="border rounded-xl p-4 bg-ttcc-surface">
+          <h3 className="text-sm font-medium text-ttcc-text-secondary mb-2">
             By theme
           </h3>
           <div ref={chartRef} style={{ height: 240 }} />
@@ -398,39 +398,39 @@ function BenchResultPanel({ result }: { result: AlphaBenchResult }) {
 
 function TopTable({ title, rows }: { title: string; rows: AlphaBenchTopRow[] }) {
   return (
-    <div className="border rounded-xl overflow-hidden bg-card">
-      <div className="px-4 py-2.5 border-b bg-muted/40">
+    <div className="border rounded-xl overflow-hidden bg-ttcc-surface">
+      <div className="px-4 py-2.5 border-b bg-ttcc-surface-2/40">
         <h3 className="text-sm font-medium">{title}</h3>
       </div>
       {rows.length === 0 ? (
-        <div className="px-4 py-6 text-xs text-muted-foreground text-center">
+        <div className="px-4 py-6 text-xs text-ttcc-text-secondary text-center">
           No rows.
         </div>
       ) : (
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b">
-              <th className="text-left px-4 py-2 text-xs text-muted-foreground font-medium">ID</th>
-              <th className="text-right px-4 py-2 text-xs text-muted-foreground font-medium">Mean IC</th>
-              <th className="text-right px-4 py-2 text-xs text-muted-foreground font-medium">IR</th>
-              <th className="text-left px-4 py-2 text-xs text-muted-foreground font-medium">Theme</th>
-              <th className="text-left px-4 py-2 text-xs text-muted-foreground font-medium">Category</th>
+              <th className="text-left px-4 py-2 text-xs text-ttcc-text-secondary font-medium">ID</th>
+              <th className="text-right px-4 py-2 text-xs text-ttcc-text-secondary font-medium">Mean IC</th>
+              <th className="text-right px-4 py-2 text-xs text-ttcc-text-secondary font-medium">IR</th>
+              <th className="text-left px-4 py-2 text-xs text-ttcc-text-secondary font-medium">Theme</th>
+              <th className="text-left px-4 py-2 text-xs text-ttcc-text-secondary font-medium">Category</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20">
+              <tr key={r.id} className="border-b last:border-0 hover:bg-ttcc-surface-2/20 transition-colors">
                 <td className="px-4 py-2">
                   <Link
                     to={`/alpha-zoo/${encodeURIComponent(r.id)}`}
-                    className="text-primary hover:underline font-mono text-xs"
+                    className="text-ttcc-accent hover:underline font-mono text-xs transition-colors"
                   >
                     {r.id}
                   </Link>
                 </td>
                 <td className="px-4 py-2 text-right font-mono tabular-nums text-xs">{fmtNum(r.ic_mean)}</td>
                 <td className="px-4 py-2 text-right font-mono tabular-nums text-xs">{fmtNum(r.ir)}</td>
-                <td className="px-4 py-2 text-xs text-muted-foreground">{(r.theme || []).join(", ") || "—"}</td>
+                <td className="px-4 py-2 text-xs text-ttcc-text-secondary">{(r.theme || []).join(", ") || "—"}</td>
                 <td className="px-4 py-2 text-xs">
                   <span className={cn("inline-block px-2 py-0.5 rounded-full text-[10px] font-medium", categoryTone(r.category))}>
                     {r.category}

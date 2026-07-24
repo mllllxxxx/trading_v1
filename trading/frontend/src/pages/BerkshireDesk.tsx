@@ -154,11 +154,11 @@ export function BerkshireDesk() {
     return (
       <div className="min-h-full bg-ttcc-bg p-4 text-ttcc-text">
         <div className="mx-auto max-w-[1500px] space-y-3">
-          <div className="h-28 animate-pulse rounded-md border border-ttcc-border bg-ttcc-surface" />
+          <div className="h-28 animate-pulse rounded-lg border border-ttcc-border bg-ttcc-surface" />
           <div className="grid gap-3 xl:grid-cols-[minmax(280px,0.85fr)_minmax(420px,1.35fr)_minmax(300px,0.9fr)]">
-            <div className="h-96 animate-pulse rounded-md border border-ttcc-border bg-ttcc-surface" />
-            <div className="h-96 animate-pulse rounded-md border border-ttcc-border bg-ttcc-surface" />
-            <div className="h-96 animate-pulse rounded-md border border-ttcc-border bg-ttcc-surface" />
+            <div className="h-96 animate-pulse rounded-lg border border-ttcc-border bg-ttcc-surface" />
+            <div className="h-96 animate-pulse rounded-lg border border-ttcc-border bg-ttcc-surface" />
+            <div className="h-96 animate-pulse rounded-lg border border-ttcc-border bg-ttcc-surface" />
           </div>
         </div>
       </div>
@@ -168,7 +168,7 @@ export function BerkshireDesk() {
   if (!state || !lane) {
     return (
       <div className="min-h-full bg-ttcc-bg p-4 text-ttcc-text">
-        <section className="mx-auto max-w-3xl rounded-md border border-ttcc-red/40 bg-ttcc-red/10 p-4">
+        <section className="mx-auto max-w-3xl rounded-lg border border-ttcc-red/40 bg-ttcc-red/10 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-ttcc-red">
             <TriangleAlert className="h-4 w-4" />
             Berkshire state unavailable
@@ -177,7 +177,7 @@ export function BerkshireDesk() {
           <button
             type="button"
             onClick={() => loadState("refresh")}
-            className="mt-3 inline-flex items-center gap-2 rounded border border-ttcc-border bg-ttcc-surface px-3 py-1.5 text-[11px] font-semibold text-ttcc-text-secondary hover:text-ttcc-text"
+            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-ttcc-border bg-ttcc-surface px-3 py-1.5 text-[11px] font-semibold text-ttcc-text-secondary transition-colors hover:text-ttcc-text"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Retry
@@ -190,11 +190,11 @@ export function BerkshireDesk() {
   return (
     <div className="min-h-full bg-ttcc-bg px-3 py-3 text-[12px] text-ttcc-text md:px-4 md:py-4">
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-3">
-        <section className="rounded-md border border-ttcc-border bg-ttcc-surface">
+        <section className="rounded-lg border border-ttcc-border bg-ttcc-surface">
           <div className="flex flex-col gap-3 border-b border-ttcc-border/70 px-3 py-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded border border-ttcc-accent/40 bg-ttcc-accent/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-ttcc-accent">
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-ttcc-accent/40 bg-ttcc-accent/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-ttcc-accent">
                   <BrainCircuit className="h-3.5 w-3.5" />
                   AI Berkshire Desk
                 </span>
@@ -217,7 +217,7 @@ export function BerkshireDesk() {
                 type="button"
                 onClick={() => loadState("refresh")}
                 disabled={refreshing}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded border border-ttcc-border bg-ttcc-bg px-3 text-[11px] font-semibold text-ttcc-text-secondary transition-colors hover:text-ttcc-text disabled:opacity-50"
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-ttcc-border bg-ttcc-bg px-3 text-[11px] font-semibold text-ttcc-text-secondary transition-colors hover:text-ttcc-text disabled:opacity-50"
               >
                 {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                 Refresh
@@ -226,7 +226,7 @@ export function BerkshireDesk() {
                 type="button"
                 onClick={() => handleScanCrypto(false)}
                 disabled={scanning}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded border border-ttcc-accent/60 bg-ttcc-accent/15 px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-ttcc-accent transition-colors hover:bg-ttcc-accent/25 disabled:opacity-50"
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-ttcc-accent/60 bg-ttcc-accent/15 px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-ttcc-accent transition-colors hover:bg-ttcc-accent/25 disabled:opacity-50"
               >
                 {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Radar className="h-3.5 w-3.5" />}
                 Scan top 50
@@ -235,7 +235,7 @@ export function BerkshireDesk() {
                 type="button"
                 onClick={() => handleScanCrypto(true)}
                 disabled={scanning}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded border border-ttcc-green/60 bg-ttcc-green/10 px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-ttcc-green transition-colors hover:bg-ttcc-green/20 disabled:opacity-50"
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-ttcc-green/60 bg-ttcc-green/10 px-3 text-[11px] font-bold uppercase tracking-[0.08em] text-ttcc-green transition-colors hover:bg-ttcc-green/20 disabled:opacity-50"
               >
                 {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Target className="h-3.5 w-3.5" />}
                 Scan + demo top 10
@@ -252,13 +252,13 @@ export function BerkshireDesk() {
         </section>
 
         {error ? (
-          <section className="rounded-md border border-ttcc-yellow/40 bg-ttcc-yellow/10 px-3 py-2 text-[12px] text-ttcc-yellow">
+          <section className="rounded-lg border border-ttcc-yellow/40 bg-ttcc-yellow/10 px-3 py-2 text-[12px] text-ttcc-yellow">
             {error}
           </section>
         ) : null}
 
         <div className="grid gap-3 xl:grid-cols-[minmax(280px,0.85fr)_minmax(420px,1.35fr)_minmax(320px,0.95fr)]">
-          <section className="rounded-md border border-ttcc-border bg-ttcc-surface">
+          <section className="rounded-lg border border-ttcc-border bg-ttcc-surface">
             <PanelHeader icon={GitBranch} title="Market lanes" right={<StatusPill tone="accent">dual stack</StatusPill>} />
             <div className="divide-y divide-ttcc-border/70">
               {state.lanes.map((item) => (
@@ -276,7 +276,7 @@ export function BerkshireDesk() {
                     key={symbol}
                     type="button"
                     onClick={() => updateForm("symbol", symbol)}
-                    className="rounded border border-ttcc-border bg-ttcc-bg px-2 py-1 font-mono text-[10px] text-ttcc-text-secondary hover:text-ttcc-text"
+                    className="rounded-lg border border-ttcc-border bg-ttcc-bg px-2 py-1 font-mono text-[10px] text-ttcc-text-secondary transition-colors hover:text-ttcc-text"
                   >
                     {symbol}
                   </button>
@@ -285,7 +285,7 @@ export function BerkshireDesk() {
             </div>
           </section>
 
-          <section className="rounded-md border border-ttcc-border bg-ttcc-surface">
+          <section className="rounded-lg border border-ttcc-border bg-ttcc-surface">
             <div className="flex flex-col gap-2 border-b border-ttcc-border/70 px-2 py-2 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ttcc-text-secondary">
                 <Workflow className="h-3.5 w-3.5 text-ttcc-accent" />
@@ -298,7 +298,7 @@ export function BerkshireDesk() {
                     type="button"
                     onClick={() => setActiveTab(key)}
                     className={cn(
-                      "inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors",
+                      "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors",
                       activeTab === key
                         ? "border-ttcc-accent/60 bg-ttcc-accent/15 text-ttcc-accent"
                         : "border-ttcc-border bg-ttcc-bg text-ttcc-text-secondary hover:text-ttcc-text",
@@ -331,7 +331,7 @@ export function BerkshireDesk() {
           />
         </div>
 
-        <section className="rounded-md border border-ttcc-border bg-ttcc-surface">
+        <section className="rounded-lg border border-ttcc-border bg-ttcc-surface">
           <PanelHeader icon={BadgeCheck} title="Parallel trading build path" right={<StatusPill tone="accent">crypto plus forex</StatusPill>} />
           <div className="grid gap-px bg-ttcc-border/70 md:grid-cols-4">
             {state.roadmap.map((item) => (
@@ -358,9 +358,9 @@ function OverviewPanel({ pods, activeRun }: { pods: BerkshireAnalystPod[]; activ
         {pods.map((pod, index) => {
           const Icon = POD_ICONS[index] ?? Activity;
           return (
-            <article key={pod.label} className="rounded-md border border-ttcc-border bg-ttcc-bg p-3">
+            <article key={pod.label} className="rounded-lg border border-ttcc-border bg-ttcc-bg p-3">
               <div className="flex items-start gap-2">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-ttcc-border bg-ttcc-surface-2 text-ttcc-accent">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-ttcc-border bg-ttcc-surface-2 text-ttcc-accent">
                   <Icon className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
@@ -375,7 +375,7 @@ function OverviewPanel({ pods, activeRun }: { pods: BerkshireAnalystPod[]; activ
       </div>
 
       {activeRun ? (
-        <article className="rounded-md border border-ttcc-border bg-ttcc-bg p-3">
+        <article className="rounded-lg border border-ttcc-border bg-ttcc-bg p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-ttcc-text-secondary">active run</div>
@@ -403,7 +403,7 @@ function PipelinePanel({ pipeline }: { pipeline: BerkshireState["pipelines"][Ber
     <div className="p-3">
       <div className="grid gap-2">
         {pipeline.map((step, index) => (
-          <article key={step.title} className="grid gap-3 rounded-md border border-ttcc-border bg-ttcc-bg p-3 md:grid-cols-[52px_1fr_auto] md:items-center">
+          <article key={step.title} className="grid gap-3 rounded-lg border border-ttcc-border bg-ttcc-bg p-3 md:grid-cols-[52px_1fr_auto] md:items-center">
             <div className="font-mono text-lg font-bold text-ttcc-text-muted tabular">
               {String(index + 1).padStart(2, "0")}
             </div>
@@ -426,7 +426,7 @@ function PipelinePanel({ pipeline }: { pipeline: BerkshireState["pipelines"][Ber
 function AuditPanel({ events }: { events: BerkshireState["audit_events"] }) {
   return (
     <div className="p-3">
-      <div className="rounded-md border border-ttcc-border bg-ttcc-bg">
+      <div className="rounded-lg border border-ttcc-border bg-ttcc-bg">
         <div className="grid grid-cols-[64px_1fr_1fr] border-b border-ttcc-border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-ttcc-text-secondary">
           <span>time</span>
           <span>event</span>
@@ -453,7 +453,7 @@ function ReportPanel({ activeRun }: { activeRun: BerkshireResearchRun | null }) 
     <div className="space-y-3 p-3">
       <div className="grid gap-2 lg:grid-cols-2">
         {activeRun.analysts.map((analyst) => (
-          <article key={analyst.key} className="rounded-md border border-ttcc-border bg-ttcc-bg p-3">
+          <article key={analyst.key} className="rounded-lg border border-ttcc-border bg-ttcc-bg p-3">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-[12px] font-semibold text-ttcc-text">{analyst.name}</h2>
               <span className="font-mono text-[11px] text-ttcc-accent">{analyst.score.toFixed(1)}/5</span>
@@ -465,14 +465,14 @@ function ReportPanel({ activeRun }: { activeRun: BerkshireResearchRun | null }) 
         ))}
       </div>
 
-      <article className="rounded-md border border-ttcc-border bg-ttcc-bg p-3">
+      <article className="rounded-lg border border-ttcc-border bg-ttcc-bg p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[12px] font-semibold text-ttcc-text">Checklist and financial rigor</h2>
           <StatusPill tone={activeRun.financial_checks.tone}>{activeRun.financial_checks.status}</StatusPill>
         </div>
         <div className="mt-3 grid gap-2 md:grid-cols-2">
           {activeRun.checklist.map((item) => (
-            <div key={item.label} className="rounded border border-ttcc-border bg-ttcc-surface px-2.5 py-2">
+            <div key={item.label} className="rounded-lg border border-ttcc-border bg-ttcc-surface px-2.5 py-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-semibold text-ttcc-text">{item.label}</span>
                 <StatusPill tone={item.tone}>{item.status}</StatusPill>
@@ -484,7 +484,7 @@ function ReportPanel({ activeRun }: { activeRun: BerkshireResearchRun | null }) 
         <p className="mt-3 text-[11px] leading-5 text-ttcc-text-secondary">{activeRun.financial_checks.summary}</p>
       </article>
 
-      <pre className="max-h-72 overflow-auto rounded-md border border-ttcc-border bg-ttcc-bg p-3 text-[11px] leading-5 text-ttcc-text-secondary">
+      <pre className="max-h-72 overflow-auto rounded-lg border border-ttcc-border bg-ttcc-bg p-3 text-[11px] leading-5 text-ttcc-text-secondary">
         {activeRun.report_markdown}
       </pre>
     </div>

@@ -105,7 +105,7 @@ export function EquityChart({ data, height = 300 }: Props) {
   }, [data, dark]);
 
   if (data.length === 0) {
-    return <div className="text-muted-foreground text-sm p-4">No equity data</div>;
+    return <div className="text-ttcc-text-secondary text-sm p-4">No equity data</div>;
   }
   return <div ref={ref} style={{ height }} />;
 }
